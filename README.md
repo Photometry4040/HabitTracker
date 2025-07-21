@@ -28,8 +28,8 @@
 
 ### 1. 저장소 클론
 ```bash
-git clone https://github.com/Photometry4040/HabitTrackerTemplate-.git
-cd HabitTrackerTemplate-
+git clone https://github.com/Photometry4040/HabitTracker.git
+cd HabitTracker
 ```
 
 ### 2. 의존성 설치
@@ -58,7 +58,7 @@ http://localhost:5173
 ## 📁 프로젝트 구조
 
 ```
-HabitTrackerTemplate-/
+HabitTracker/
 ├── src/
 │   ├── components/
 │   │   └── ui/           # UI 컴포넌트들
