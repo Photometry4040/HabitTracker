@@ -369,22 +369,37 @@ function App() {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
   
-  if (!supabaseUrl || !supabaseKey) {
+  // URL 유효성 검증
+  let isValidUrl = false
+  try {
+    if (supabaseUrl) {
+      new URL(supabaseUrl)
+      isValidUrl = true
+    }
+  } catch (error) {
+    console.error('❌ 잘못된 Supabase URL:', supabaseUrl)
+  }
+  
+  if (!supabaseUrl || !supabaseKey || !isValidUrl) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
         <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg p-8 max-w-md text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-800 mb-4">환경변수 설정 오류</h1>
           <p className="text-gray-600 mb-4">
-            Supabase 환경변수가 설정되지 않았습니다.
+            Supabase 환경변수가 올바르게 설정되지 않았습니다.
           </p>
           <div className="bg-gray-100 p-4 rounded-lg text-left text-sm">
+            <p><strong>현재 상태:</strong></p>
+            <p>• URL: {supabaseUrl || '설정되지 않음'}</p>
+            <p>• URL 유효성: {isValidUrl ? '✅' : '❌'}</p>
+            <p>• Key: {supabaseKey ? '설정됨' : '설정되지 않음'}</p>
             <p><strong>필요한 환경변수:</strong></p>
-            <p>• VITE_SUPABASE_URL</p>
+            <p>• VITE_SUPABASE_URL (올바른 URL 형식)</p>
             <p>• VITE_SUPABASE_ANON_KEY</p>
           </div>
           <p className="text-gray-500 text-xs mt-4">
-            Netlify 대시보드에서 환경변수를 설정해주세요.
+            Netlify 대시보드에서 환경변수를 다시 확인해주세요.
           </p>
         </div>
       </div>
