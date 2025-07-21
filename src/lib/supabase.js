@@ -7,6 +7,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 console.log('🔍 환경변수 확인:')
 console.log('VITE_SUPABASE_URL:', supabaseUrl)
 console.log('VITE_SUPABASE_ANON_KEY exists:', !!supabaseAnonKey)
+console.log('VITE_SUPABASE_ANON_KEY length:', supabaseAnonKey ? supabaseAnonKey.length : 0)
+console.log('VITE_SUPABASE_ANON_KEY starts with:', supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'N/A')
 
 // URL 유효성 검증
 let isValidUrl = false
@@ -35,8 +37,18 @@ if (!supabaseUrl || !supabaseAnonKey || !isValidUrl) {
     const fallbackKey = 'your-anon-key-here'
     supabase = createClient(fallbackUrl, fallbackKey)
   } else {
-    // 프로덕션에서는 오류 발생
-    throw new Error('Supabase 환경변수가 올바르게 설정되지 않았습니다.')
+    // 프로덕션에서는 더 안전한 처리
+    console.error('❌ 프로덕션 환경변수 오류!')
+    console.error('URL:', supabaseUrl)
+    console.error('Key exists:', !!supabaseAnonKey)
+    
+    // 빈 클라이언트 생성 (오류 방지)
+    const dummyUrl = 'https://dummy.supabase.co'
+    const dummyKey = 'dummy-key'
+    supabase = createClient(dummyUrl, dummyKey)
+    
+    // 사용자에게 오류 표시를 위해 전역 플래그 설정
+    window.SUPABASE_CONFIG_ERROR = true
   }
 } else {
   console.log('✅ Supabase 환경변수 정상')
