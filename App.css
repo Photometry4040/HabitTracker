@@ -81,3 +81,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 모바일 최적화 스타일 */
+@layer components {
+  /* 모바일에서 테이블 스크롤 개선 */
+  .mobile-table-container {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  /* 모바일에서 터치 영역 확대 */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 모바일에서 텍스트 가독성 개선 */
+  .mobile-text {
+    line-height: 1.5;
+    letter-spacing: 0.025em;
+  }
+  
+  /* 모바일에서 카드 간격 조정 */
+  .mobile-card-spacing {
+    margin-bottom: 1rem;
+  }
+  
+  /* 모바일에서 버튼 크기 조정 */
+  .mobile-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}

@@ -77,20 +77,21 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 새 아이 추가 */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="flex-1">
-            <Label htmlFor="newChildName">새로운 아이 이름</Label>
+            <Label htmlFor="newChildName" className="text-sm sm:text-base">새로운 아이 이름</Label>
             <Input
               id="newChildName"
               value={newChildName}
               onChange={(e) => setNewChildName(e.target.value)}
               placeholder="아이 이름을 입력하세요"
               onKeyPress={(e) => e.key === 'Enter' && handleNewChild()}
+              className="text-sm sm:text-base"
             />
           </div>
           <Button 
             onClick={handleNewChild}
-            className="bg-green-600 hover:bg-green-700 mt-6"
+            className="bg-green-600 hover:bg-green-700 mt-6 sm:mt-0"
           >
             <Plus className="w-4 h-4 mr-1" />
             추가
@@ -104,13 +105,13 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
             {children.map((child, index) => (
               <div 
                 key={`${child.child_name}-${index}`}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg hover:bg-gray-50 gap-3"
               >
                 <div className="flex items-center gap-3">
                   <User className="w-5 h-5 text-purple-600" />
                   <div>
-                    <div className="font-semibold">{child.child_name}</div>
-                    <div className="text-sm text-gray-600 flex items-center gap-2">
+                    <div className="font-semibold text-sm sm:text-base">{child.child_name}</div>
+                    <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
                       {child.first_week && child.last_week 
                         ? child.first_week === child.last_week
@@ -123,24 +124,30 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
                 </div>
                 <div className="flex items-center gap-2">
                   {child.theme && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs hidden sm:block">
                       {child.theme}
                     </Badge>
                   )}
-                  <Button
-                    onClick={() => onChildSelect(child.child_name)}
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    선택
-                  </Button>
-                  <Button
-                    onClick={() => handleDeleteChild(child.child_name)}
-                    size="sm"
-                    variant="destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="text-xs text-purple-600 font-medium sm:hidden">
+                    주간 목표 달성
+                  </div>
+                  <div className="flex gap-1 sm:gap-2">
+                    <Button
+                      onClick={() => onChildSelect(child.child_name)}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">선택</span>
+                      <span className="sm:hidden">선택</span>
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteChild(child.child_name)}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
