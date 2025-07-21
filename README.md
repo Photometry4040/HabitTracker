@@ -42,7 +42,42 @@ npm install
 npm run dev
 ```
 
-### 4. 브라우저에서 확인
+### 4. Supabase 설정 (데이터베이스 연동)
+
+#### 4-1. Supabase 프로젝트 생성
+1. [Supabase](https://supabase.com)에 가입하고 새 프로젝트 생성
+2. 프로젝트 설정에서 API 키 확인
+
+#### 4-2. 환경 변수 설정
+```bash
+# .env 파일 생성
+cp env.example .env
+```
+
+`.env` 파일에 Supabase 정보 입력:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+#### 4-3. 데이터베이스 스키마 설정
+Supabase 대시보드의 SQL Editor에서 다음 순서로 실행:
+
+1. `supabase-schema.sql` - 기본 테이블 생성
+2. `supabase-security-policy.sql` - 보안 정책 설정
+
+### 4-4. 인증 설정
+1. Supabase 대시보드에서 Authentication > Settings
+2. Site URL 설정: `http://localhost:5173` (개발용)
+3. Redirect URLs 설정: `http://localhost:5173/**`
+4. 이메일 템플릿 커스터마이징 (선택사항)
+
+### 5. 개발 서버 실행
+```bash
+npm run dev
+```
+
+### 6. 브라우저에서 확인
 ```
 http://localhost:5173
 ```
@@ -53,7 +88,10 @@ http://localhost:5173
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
 - **State Management**: React Hooks (useState, useEffect)
-- **Storage**: Local Storage
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Security**: Row Level Security (RLS), Input Validation, Session Management
+- **Storage**: Cloud Database + Local Storage (백업)
 
 ## 📁 프로젝트 구조
 
@@ -84,10 +122,16 @@ HabitTracker/
 
 ## 💡 특징
 
-- **자동 저장**: 브라우저 로컬 스토리지에 데이터 자동 저장
-- **반응형 디자인**: 모바일, 태블릿, 데스크톱 지원
-- **직관적인 UI**: 아이들이 쉽게 사용할 수 있는 인터페이스
-- **시각적 피드백**: 색상과 이모지를 통한 명확한 피드백
+- **🔐 보안 인증**: Supabase Auth를 통한 안전한 로그인 시스템
+- **🛡️ 데이터 보호**: Row Level Security (RLS)로 사용자별 데이터 격리
+- **☁️ 클라우드 저장**: Supabase를 통한 안전한 데이터 저장
+- **👶 아이별 관리**: 여러 아이의 데이터를 개별적으로 관리
+- **⚡ 실시간 동기화**: 여러 기기에서 실시간 데이터 동기화
+- **💾 수동 저장**: 사용자가 직접 저장 버튼을 눌러 데이터 저장
+- **📱 반응형 디자인**: 모바일, 태블릿, 데스크톱 지원
+- **🎨 직관적인 UI**: 아이들이 쉽게 사용할 수 있는 인터페이스
+- **🎯 시각적 피드백**: 색상과 이모지를 통한 명확한 피드백
+- **🔒 세션 관리**: 자동 로그아웃 및 활동 시간 추적
 
 ## 📄 라이선스
 

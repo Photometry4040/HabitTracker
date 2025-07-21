@@ -5,13 +5,23 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2 } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield } from 'lucide-react'
+import { ChildSelector } from '@/components/ChildSelector.jsx'
+import { Dashboard } from '@/components/Dashboard.jsx'
+import { Auth } from '@/components/Auth.jsx'
+import { saveChildData, loadChildData, loadAllChildren, loadChildWeeks, deleteChildData } from '@/lib/database.js'
+import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import './App.css'
 
 function App() {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedChild, setSelectedChild] = useState('')
+  const [showChildSelector, setShowChildSelector] = useState(true)
   const [childName, setChildName] = useState('')
   const [weekPeriod, setWeekPeriod] = useState('')
   const [theme, setTheme] = useState('')
+  const [weekStartDate, setWeekStartDate] = useState('')
   const [habits, setHabits] = useState([
     { id: 1, name: '아침 (6-9시) 스스로 일어나기', times: Array(7).fill('') },
     { id: 2, name: '오전 (9-12시) 집중해서 공부/놀이', times: Array(7).fill('') },
@@ -25,6 +35,48 @@ function App() {
     nextWeekGoal: ''
   })
   const [reward, setReward] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
+  const [pendingSaveData, setPendingSaveData] = useState(null)
+
+  // 데이터 초기화 함수
+  const resetData = () => {
+    setWeekPeriod('')
+    setWeekStartDate('')
+    setTheme('')
+    setHabits([
+      { id: 1, name: '아침 (6-9시) 스스로 일어나기', times: Array(7).fill('') },
+      { id: 2, name: '오전 (9-12시) 집중해서 공부/놀이', times: Array(7).fill('') },
+      { id: 3, name: '점심 (12-1시) 편식 없이 골고루 먹기', times: Array(7).fill('') },
+      { id: 4, name: '오후 (1-5시) 스스로 계획한 일 하기', times: Array(7).fill('') },
+      { id: 5, name: '저녁 (6-9시) 정리 정돈 및 내일 준비', times: Array(7).fill('') }
+    ])
+    setReflection({
+      bestDay: '',
+      easiestHabit: '',
+      nextWeekGoal: ''
+    })
+    setReward('')
+  }
+
+  // weekStartDate를 유지하면서 다른 데이터만 초기화
+  const resetDataKeepDate = () => {
+    setTheme('')
+    setHabits([
+      { id: 1, name: '아침 (6-9시) 스스로 일어나기', times: Array(7).fill('') },
+      { id: 2, name: '오전 (9-12시) 집중해서 공부/놀이', times: Array(7).fill('') },
+      { id: 3, name: '점심 (12-1시) 편식 없이 골고루 먹기', times: Array(7).fill('') },
+      { id: 4, name: '오후 (1-5시) 스스로 계획한 일 하기', times: Array(7).fill('') },
+      { id: 5, name: '저녁 (6-9시) 정리 정돈 및 내일 준비', times: Array(7).fill('') }
+    ])
+    setReflection({
+      bestDay: '',
+      easiestHabit: '',
+      nextWeekGoal: ''
+    })
+    setReward('')
+  }
 
   const days = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
   const colors = [
@@ -33,36 +85,213 @@ function App() {
     { name: '빨강', value: 'red', emoji: '😔', description: '괜찮아, 내일 다시 해보자!' }
   ]
 
-  // 로컬 스토리지에서 데이터 로드
-  useEffect(() => {
-    const savedData = localStorage.getItem('habitTracker')
-    if (savedData) {
-      const data = JSON.parse(savedData)
-      setChildName(data.childName || '')
-      setWeekPeriod(data.weekPeriod || '')
-      setTheme(data.theme || '')
-      setHabits(data.habits || habits)
-      setReflection(data.reflection || reflection)
-      setReward(data.reward || '')
-    }
-  }, [])
-
-  // 데이터 저장
-  const saveData = () => {
-    const data = {
-      childName,
-      weekPeriod,
-      theme,
-      habits,
-      reflection,
-      reward
-    }
-    localStorage.setItem('habitTracker', JSON.stringify(data))
+  // 아이 선택 처리
+  const handleChildSelect = async (childName) => {
+    setSelectedChild(childName)
+    setChildName(childName)
+    setShowChildSelector(false)
+    resetData() // 아이 변경 시 데이터 초기화
+    
+    // 아이 선택 시 해당 아이의 최신 데이터 로드 (선택사항)
+    // try {
+    //   const data = await loadChildData(childName, '')
+    //   if (data) {
+    //     setWeekPeriod(data.week_period || '')
+    //     setTheme(data.theme || '')
+    //     setHabits(data.habits || habits)
+    //     setReflection(data.reflection || reflection)
+    //     setReward(data.reward || '')
+    //     
+    //     if (data.week_start_date) {
+    //       setWeekStartDate(data.week_start_date)
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.error('데이터 로드 실패:', error)
+    // }
   }
 
+  // 주간별 데이터 로드
+  const loadWeekData = async (childName, weekPeriod) => {
+    if (!childName || !weekPeriod) return
+    
+    try {
+      const data = await loadChildData(childName, weekPeriod)
+      if (data) {
+        // 대시보드 모드가 아닐 때만 현재 입력 중인 데이터 확인
+        if (!showDashboard) {
+          const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
+                                theme || reflection.bestDay || reflection.easiestHabit || 
+                                reflection.nextWeekGoal || reward
+          
+          if (hasCurrentData) {
+            const confirmLoad = window.confirm(
+              '현재 입력 중인 데이터가 있습니다. 기존 데이터로 덮어쓰시겠습니까?'
+            )
+            if (!confirmLoad) return
+          }
+        }
+        
+        // 데이터 로드 (새로고침 없이)
+        setTheme(data.theme || '')
+        setHabits(data.habits || habits)
+        setReflection(data.reflection || reflection)
+        setReward(data.reward || '')
+        
+        // 주간 시작일 설정 (새 필드 우선, 기존 데이터에서 추출은 백업)
+        if (data.week_start_date) {
+          setWeekStartDate(data.week_start_date)
+        } else if (data.week_period) {
+          const match = data.week_period.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
+          if (match) {
+            const year = match[1]
+            const month = match[2].padStart(2, '0')
+            const day = match[3].padStart(2, '0')
+            setWeekStartDate(`${year}-${month}-${day}`)
+          }
+        }
+        
+        // 성공 메시지
+        console.log('주간 데이터를 성공적으로 불러왔습니다!')
+      } else {
+        // 데이터가 없을 경우 초기화 (날짜는 유지)
+        console.log('해당 주간에 저장된 데이터가 없습니다. 초기화합니다.')
+        resetDataKeepDate()
+        
+        // 대시보드 모드가 아닐 때만 알림 표시
+        if (!showDashboard) {
+          alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
+        }
+      }
+    } catch (error) {
+      console.error('데이터 로드 실패:', error)
+      // 오류 발생 시에도 초기화 (날짜는 유지)
+      resetDataKeepDate()
+      
+      // 대시보드 모드가 아닐 때만 알림 표시
+      if (!showDashboard) {
+        alert('데이터 로드 중 오류가 발생했습니다. 새로운 데이터를 입력해주세요.')
+      }
+    }
+  }
+
+  // 새 아이 추가 처리
+  const handleNewChild = (childName) => {
+    setSelectedChild(childName)
+    setChildName(childName)
+    setShowChildSelector(false)
+    resetData() // 데이터 초기화
+  }
+
+  // 데이터 저장 (Supabase)
+  const saveData = async (forceSave = false) => {
+    if (!selectedChild) return
+    
+    try {
+      setSaving(true)
+      
+      // forceSave가 true이고 pendingSaveData가 null이면 현재 상태 사용
+      const data = forceSave && pendingSaveData ? pendingSaveData : {
+        weekPeriod: weekPeriod || '',
+        weekStartDate: weekStartDate || '',
+        theme: theme || '',
+        habits: habits || [],
+        reflection: reflection || {},
+        reward: reward || ''
+      }
+      
+      // 데이터 유효성 검사
+      if (!data.weekPeriod && !data.weekStartDate) {
+        console.log('주간 기간이 설정되지 않아 저장을 건너뜁니다.')
+        return
+      }
+      
+      // 기존 데이터 확인
+      const existingData = await loadChildData(selectedChild, data.weekPeriod)
+      if (existingData && !forceSave) {
+        // 기존 데이터가 있으면 덮어쓰기 확인
+        setPendingSaveData(data)
+        setShowOverwriteConfirm(true)
+        return
+      }
+      
+      await saveChildData(selectedChild, data)
+      setShowOverwriteConfirm(false)
+      setPendingSaveData(null)
+      
+      // 저장 성공 피드백 (부드러운 방식)
+      console.log('데이터가 성공적으로 저장되었습니다!')
+    } catch (error) {
+      console.error('저장 실패:', error)
+      alert('저장 중 오류가 발생했습니다.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // 인증 상태 확인
   useEffect(() => {
-    saveData()
-  }, [childName, weekPeriod, theme, habits, reflection, reward])
+    const checkUser = async () => {
+      try {
+        const currentUser = await getCurrentUser()
+        setUser(currentUser)
+      } catch (error) {
+        // 세션이 없는 경우는 정상적인 상황
+        if (!error.message.includes('Auth session missing')) {
+          console.error('사용자 확인 오류:', error)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkUser()
+
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      setUser(null)
+      resetData()
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+    }
+  }
+
+  // 인증 성공 처리
+  const handleAuthSuccess = () => {
+    // 인증 성공 시 추가 처리
+  }
+
+  // 주간 기간 자동 계산 및 데이터 자동 로드
+  useEffect(() => {
+    if (weekStartDate && selectedChild) {
+      const startDate = new Date(weekStartDate)
+      const endDate = new Date(startDate)
+      endDate.setDate(startDate.getDate() + 6)
+      
+      const formatDate = (date) => {
+        return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+      }
+      
+      const newWeekPeriod = `${formatDate(startDate)} ~ ${formatDate(endDate)}`
+      setWeekPeriod(newWeekPeriod)
+      
+      // 주간 시작일이 변경되면 자동으로 해당 주간 데이터 로드
+      loadWeekData(selectedChild, newWeekPeriod)
+    }
+  }, [weekStartDate, selectedChild])
+
+  // 자동 저장 제거 - 수동 저장 방식으로 변경
 
   const updateHabitColor = (habitId, dayIndex, color) => {
     setHabits(prev => prev.map(habit => 
@@ -114,232 +343,379 @@ function App() {
     return habits.length * 7
   }
 
+  // 로딩 중 표시
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 인증되지 않은 사용자
+  if (!user) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* 헤더 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-purple-800 flex items-center justify-center gap-2">
-              <Star className="text-yellow-500" />
-              주간 습관 성장 챌린지
-              <Star className="text-yellow-500" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="childName">아이 이름</Label>
-                <Input
-                  id="childName"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  placeholder="이름을 입력하세요"
-                />
-              </div>
-              <div>
-                <Label htmlFor="weekPeriod">주간 기간</Label>
-                <Input
-                  id="weekPeriod"
-                  value={weekPeriod}
-                  onChange={(e) => setWeekPeriod(e.target.value)}
-                  placeholder="2024년 1월 1일 ~ 7일"
-                />
-              </div>
-              <div>
-                <Label htmlFor="theme">이번 주 테마</Label>
-                <Input
-                  id="theme"
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
-                  placeholder="시간대별 색상 챌린지!"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 로그아웃 버튼 */}
+        <div className="flex justify-end">
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            로그아웃
+          </Button>
+        </div>
 
-        {/* 색상 코드 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-              🎨 색상 코드
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {colors.map((color) => (
-                <div key={color.value} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                  <div className={`w-6 h-6 rounded-full ${getColorClass(color.value)}`}></div>
-                  <span className="text-2xl">{color.emoji}</span>
-                  <div>
-                    <div className="font-semibold">{color.name}</div>
-                    <div className="text-sm text-gray-600">{color.description}</div>
+        {/* 아이 선택 화면 */}
+        {showChildSelector ? (
+          <ChildSelector 
+            onChildSelect={handleChildSelect}
+            onNewChild={handleNewChild}
+          />
+        ) : (
+          <>
+            {/* 헤더 */}
+            <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+              <CardHeader className="text-center">
+                <div className="flex items-center justify-between">
+                  <Button
+                    onClick={() => {
+                      setShowChildSelector(true)
+                      resetData() // 아이 변경 시 데이터 초기화
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="w-4 h-4" />
+                    아이 변경
+                  </Button>
+                  <CardTitle className="text-3xl font-bold text-purple-800 flex items-center justify-center gap-2">
+                    <Star className="text-yellow-500" />
+                    주간 습관 성장 챌린지
+                    <Star className="text-yellow-500" />
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {saving && (
+                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <Cloud className="w-4 h-4 animate-pulse" />
+                        저장 중...
+                      </div>
+                    )}
+                    <Button
+                      onClick={() => setShowDashboard(!showDashboard)}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-1" />
+                      {showDashboard ? '습관 추적' : '대시보드'}
+                    </Button>
+                    <Button
+                      onClick={() => saveData(false)}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={saving}
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      저장
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="childName">아이 이름</Label>
+                    <Input
+                      id="childName"
+                      value={childName}
+                      onChange={(e) => setChildName(e.target.value)}
+                      placeholder="이름을 입력하세요"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekStartDate">주간 시작일</Label>
+                    <Input
+                      id="weekStartDate"
+                      type="date"
+                      value={weekStartDate}
+                      onChange={(e) => setWeekStartDate(e.target.value)}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekPeriod">주간 기간</Label>
+                    <Input
+                      id="weekPeriod"
+                      value={weekPeriod}
+                      readOnly
+                      className="bg-gray-50 cursor-default"
+                      placeholder="시작일을 선택하면 자동으로 계산됩니다"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="theme">이번 주 테마</Label>
+                    <select
+                      id="theme"
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">테마를 선택하세요</option>
+                      <option value="시간대별 색상 챌린지">시간대별 색상 챌린지</option>
+                      <option value="매일매일 습관 형성">매일매일 습관 형성</option>
+                      <option value="주간 목표 달성">주간 목표 달성</option>
+                      <option value="성장하는 나">성장하는 나</option>
+                      <option value="즐거운 습관 만들기">즐거운 습관 만들기</option>
+                      <option value="꾸준함의 힘">꾸준함의 힘</option>
+                    </select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 습관 추적 테이블 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-              <Target />
-              습관 추적표
-            </CardTitle>
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="text-lg px-3 py-1">
-                총점: {getTotalScore()} / {getMaxScore()}
-              </Badge>
-              <Button onClick={addHabit} size="sm" className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-1" />
-                습관 추가
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="border p-3 bg-purple-100 text-left min-w-[250px]">시간대 / 습관</th>
-                    {days.map((day) => (
-                      <th key={day} className="border p-3 bg-purple-100 text-center min-w-[100px]">{day}</th>
-                    ))}
-                    <th className="border p-3 bg-purple-100 text-center">주간 합계</th>
-                    <th className="border p-3 bg-purple-100 text-center">삭제</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {habits.map((habit) => (
-                    <tr key={habit.id}>
-                      <td className="border p-2">
-                        <Input
-                          value={habit.name}
-                          onChange={(e) => updateHabitName(habit.id, e.target.value)}
-                          className="border-none bg-transparent font-medium"
-                        />
-                      </td>
-                      {habit.times.map((time, dayIndex) => (
-                        <td key={dayIndex} className="border p-2 text-center">
-                          <div className="flex gap-1 justify-center">
-                            {colors.map((color) => (
-                              <button
-                                key={color.value}
-                                onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
-                                className={`w-8 h-8 rounded-full border-2 transition-all ${
-                                  time === color.value 
-                                    ? `${getColorClass(color.value)} border-gray-800 scale-110` 
-                                    : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
-                                }`}
-                                title={color.description}
-                              />
-                            ))}
+            {/* 대시보드 또는 습관 추적 */}
+            {showDashboard ? (
+              <Dashboard 
+                habits={habits}
+                childName={childName}
+                weekPeriod={weekPeriod}
+                theme={theme}
+              />
+            ) : (
+              <>
+                {/* 색상 코드 */}
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+                      🎨 색상 코드
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {colors.map((color) => (
+                        <div key={color.value} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                          <div className={`w-6 h-6 rounded-full ${getColorClass(color.value)}`}></div>
+                          <span className="text-2xl">{color.emoji}</span>
+                          <div>
+                            <div className="font-semibold">{color.name}</div>
+                            <div className="text-sm text-gray-600">{color.description}</div>
                           </div>
-                        </td>
+                        </div>
                       ))}
-                      <td className="border p-3 text-center font-bold text-lg">
-                        <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"}>
-                          {getWeeklyScore(habit)} / 7
-                        </Badge>
-                      </td>
-                      <td className="border p-3 text-center">
-                        <Button
-                          onClick={() => removeHabit(habit.id)}
-                          size="sm"
-                          variant="destructive"
-                          disabled={habits.length <= 1}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    </div>
+                  </CardContent>
+                </Card>
 
-        {/* 돌아보기 섹션 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-              📈 이번 주 돌아보기
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="bestDay">가장 초록색이 많았던 요일과 시간은 언제였나요?</Label>
-              <Textarea
-                id="bestDay"
-                value={reflection.bestDay}
-                onChange={(e) => setReflection(prev => ({ ...prev, bestDay: e.target.value }))}
-                placeholder="예: 화요일 아침 시간대가 가장 좋았어요!"
-              />
-            </div>
-            <div>
-              <Label htmlFor="easiestHabit">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
-              <Textarea
-                id="easiestHabit"
-                value={reflection.easiestHabit}
-                onChange={(e) => setReflection(prev => ({ ...prev, easiestHabit: e.target.value }))}
-                placeholder="예: 아침에 일어나기는 쉬웠지만, 정리정돈은 어려웠어요."
-              />
-            </div>
-            <div>
-              <Label htmlFor="nextWeekGoal">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
-              <Textarea
-                id="nextWeekGoal"
-                value={reflection.nextWeekGoal}
-                onChange={(e) => setReflection(prev => ({ ...prev, nextWeekGoal: e.target.value }))}
-                placeholder="예: 다음 주에는 저녁 정리 시간을 더 잘 지키고 싶어요!"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                {/* 습관 추적 테이블 */}
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+                      <Target />
+                      습관 추적표
+                    </CardTitle>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="text-lg px-3 py-1">
+                        총점: {getTotalScore()} / {getMaxScore()}
+                      </Badge>
+                      <Button onClick={addHabit} size="sm" className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="w-4 h-4 mr-1" />
+                        습관 추가
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="border p-3 bg-purple-100 text-left min-w-[250px]">시간대 / 습관</th>
+                            {days.map((day) => (
+                              <th key={day} className="border p-3 bg-purple-100 text-center min-w-[100px]">{day}</th>
+                            ))}
+                            <th className="border p-3 bg-purple-100 text-center">주간 합계</th>
+                            <th className="border p-3 bg-purple-100 text-center">삭제</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {habits.map((habit) => (
+                            <tr key={habit.id}>
+                              <td className="border p-2">
+                                <Input
+                                  value={habit.name}
+                                  onChange={(e) => updateHabitName(habit.id, e.target.value)}
+                                  className="border-none bg-transparent font-medium"
+                                />
+                              </td>
+                              {habit.times.map((time, dayIndex) => (
+                                <td key={dayIndex} className="border p-2 text-center">
+                                  <div className="flex gap-1 justify-center">
+                                    {colors.map((color) => (
+                                      <button
+                                        key={color.value}
+                                        onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
+                                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                          time === color.value 
+                                            ? `${getColorClass(color.value)} border-gray-800 scale-110` 
+                                            : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
+                                        }`}
+                                        title={color.description}
+                                      />
+                                    ))}
+                                  </div>
+                                </td>
+                              ))}
+                              <td className="border p-3 text-center font-bold text-lg">
+                                <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"}>
+                                  {getWeeklyScore(habit)} / 7
+                                </Badge>
+                              </td>
+                              <td className="border p-3 text-center">
+                                <Button
+                                  onClick={() => removeHabit(habit.id)}
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={habits.length <= 1}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
 
-        {/* 보상 아이디어 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-              <Trophy className="text-yellow-500" />
-              이번 주 보상 아이디어
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <Label htmlFor="reward">목표 달성 시 받을 보상을 정해보세요!</Label>
-              <Textarea
-                id="reward"
-                value={reward}
-                onChange={(e) => setReward(e.target.value)}
-                placeholder="예: 영화 보기, 특별한 간식 먹기, 보드게임 시간, 공원 가기 등"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                {/* 돌아보기 섹션 */}
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+                      📈 이번 주 돌아보기
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="bestDay">가장 초록색이 많았던 요일과 시간은 언제였나요?</Label>
+                      <Textarea
+                        id="bestDay"
+                        value={reflection.bestDay}
+                        onChange={(e) => setReflection(prev => ({ ...prev, bestDay: e.target.value }))}
+                        placeholder="예: 화요일 아침 시간대가 가장 좋았어요!"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="easiestHabit">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
+                      <Textarea
+                        id="easiestHabit"
+                        value={reflection.easiestHabit}
+                        onChange={(e) => setReflection(prev => ({ ...prev, easiestHabit: e.target.value }))}
+                        placeholder="예: 아침에 일어나기는 쉬웠지만, 정리정돈은 어려웠어요."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nextWeekGoal">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
+                      <Textarea
+                        id="nextWeekGoal"
+                        value={reflection.nextWeekGoal}
+                        onChange={(e) => setReflection(prev => ({ ...prev, nextWeekGoal: e.target.value }))}
+                        placeholder="예: 다음 주에는 저녁 정리 시간을 더 잘 지키고 싶어요!"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
-        {/* 푸터 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <div className="text-lg font-semibold">
-                서명: _________________ (부모님) &nbsp;&nbsp;&nbsp; _________________ ({childName || '나'}!)
-              </div>
-              <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
+                {/* 보상 아이디어 */}
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+                      <Trophy className="text-yellow-500" />
+                      이번 주 보상 아이디어
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <Label htmlFor="reward">목표 달성 시 받을 보상을 정해보세요!</Label>
+                      <Textarea
+                        id="reward"
+                        value={reward}
+                        onChange={(e) => setReward(e.target.value)}
+                        placeholder="예: 영화 보기, 특별한 간식 먹기, 보드게임 시간, 공원 가기 등"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 푸터 */}
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-2">
+                      <div className="text-lg font-semibold">
+                        서명: _________________ (부모님) &nbsp;&nbsp;&nbsp; _________________ ({childName || '나'}!)
+                      </div>
+                                    <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
                 <Calendar className="w-4 h-4" />
-                데이터는 자동으로 저장됩니다
+                저장 버튼을 눌러 데이터를 저장하세요
               </div>
-            </div>
-          </CardContent>
-        </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {/* 덮어쓰기 확인 모달 */}
+            {showOverwriteConfirm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    기존 데이터 덮어쓰기
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    이 주간에 이미 저장된 데이터가 있습니다. 
+                    새로운 데이터로 덮어쓰시겠습니까?
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowOverwriteConfirm(false)
+                        setPendingSaveData(null)
+                      }}
+                    >
+                      취소
+                    </Button>
+                                    <Button
+                  onClick={() => {
+                    if (pendingSaveData) {
+                      saveData(true)
+                    } else {
+                      saveData(false)
+                    }
+                  }}
+                  disabled={saving}
+                >
+                  {saving ? '저장 중...' : '덮어쓰기'}
+                </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
 
 export default App
-
