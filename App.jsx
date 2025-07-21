@@ -412,8 +412,8 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* 로그아웃 버튼 */}
         <div className="flex justify-end">
           <Button
@@ -438,7 +438,7 @@ function App() {
             {/* 헤더 */}
             <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
               <CardHeader className="text-center">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <Button
                     onClick={() => {
                       setShowChildSelector(true)
@@ -449,73 +449,83 @@ function App() {
                     className="flex items-center gap-2"
                   >
                     <Users className="w-4 h-4" />
-                    아이 변경
+                    <span className="hidden sm:inline">아이 변경</span>
+                    <span className="sm:hidden">변경</span>
                   </Button>
-                  <CardTitle className="text-3xl font-bold text-purple-800 flex items-center justify-center gap-2">
-                    <Star className="text-yellow-500" />
-                    주간 습관 성장 챌린지
-                    <Star className="text-yellow-500" />
+                  <CardTitle className="text-2xl md:text-3xl font-bold text-purple-800 flex items-center justify-center gap-2 text-center">
+                    <Star className="text-yellow-500 hidden sm:block" />
+                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                      <span>주간 습관 성장 챌린지</span>
+                      <span className="text-sm md:text-base text-purple-600 font-medium">(주간 목표 달성)</span>
+                    </div>
+                    <Star className="text-yellow-500 hidden sm:block" />
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
                     {saving && (
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Cloud className="w-4 h-4 animate-pulse" />
-                        저장 중...
+                        <span className="hidden sm:inline">저장 중...</span>
+                        <span className="sm:hidden">저장중</span>
                       </div>
                     )}
-                    <Button
-                      onClick={() => setShowDashboard(!showDashboard)}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      <BarChart3 className="w-4 h-4 mr-1" />
-                      {showDashboard ? '습관 추적' : '대시보드'}
-                    </Button>
-                    <Button
-                      onClick={() => saveData(false)}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={saving}
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      저장
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setShowDashboard(!showDashboard)}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        <BarChart3 className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">{showDashboard ? '습관 추적' : '대시보드'}</span>
+                        <span className="sm:hidden">{showDashboard ? '추적' : '보드'}</span>
+                      </Button>
+                      <Button
+                        onClick={() => saveData(false)}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={saving}
+                      >
+                        <Save className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">저장</span>
+                        <span className="sm:hidden">저장</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="childName">아이 이름</Label>
+                    <Label htmlFor="childName" className="text-sm sm:text-base">아이 이름</Label>
                     <Input
                       id="childName"
                       value={childName}
                       onChange={(e) => setChildName(e.target.value)}
                       placeholder="이름을 입력하세요"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="weekStartDate">주간 시작일</Label>
+                    <Label htmlFor="weekStartDate" className="text-sm sm:text-base">주간 시작일</Label>
                     <Input
                       id="weekStartDate"
                       type="date"
                       value={weekStartDate}
                       onChange={(e) => setWeekStartDate(e.target.value)}
-                      className="cursor-pointer"
+                      className="cursor-pointer text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="weekPeriod">주간 기간</Label>
+                    <Label htmlFor="weekPeriod" className="text-sm sm:text-base">주간 기간</Label>
                     <Input
                       id="weekPeriod"
                       value={weekPeriod}
                       readOnly
-                      className="bg-gray-50 cursor-default"
+                      className="bg-gray-50 cursor-default text-sm sm:text-base"
                       placeholder="시작일을 선택하면 자동으로 계산됩니다"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="theme">이번 주 테마</Label>
+                    <Label htmlFor="theme" className="text-sm sm:text-base">이번 주 테마</Label>
                     <select
                       id="theme"
                       value={theme}
@@ -553,14 +563,14 @@ function App() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                       {colors.map((color) => (
-                        <div key={color.value} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                          <div className={`w-6 h-6 rounded-full ${getColorClass(color.value)}`}></div>
-                          <span className="text-2xl">{color.emoji}</span>
-                          <div>
-                            <div className="font-semibold">{color.name}</div>
-                            <div className="text-sm text-gray-600">{color.description}</div>
+                        <div key={color.value} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-50">
+                          <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getColorClass(color.value)}`}></div>
+                          <span className="text-xl sm:text-2xl">{color.emoji}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-sm sm:text-base">{color.name}</div>
+                            <div className="text-xs sm:text-sm text-gray-600">{color.description}</div>
                           </div>
                         </div>
                       ))}
@@ -570,29 +580,81 @@ function App() {
 
                 {/* 습관 추적 테이블 */}
                 <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
                       <Target />
                       습관 추적표
                     </CardTitle>
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className="text-lg px-3 py-1">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                      <Badge variant="outline" className="text-base sm:text-lg px-3 py-1">
                         총점: {getTotalScore()} / {getMaxScore()}
                       </Badge>
                       <Button onClick={addHabit} size="sm" className="bg-purple-600 hover:bg-purple-700">
                         <Plus className="w-4 h-4 mr-1" />
-                        습관 추가
+                        <span className="hidden sm:inline">습관 추가</span>
+                        <span className="sm:hidden">추가</span>
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
+                    {/* 모바일용 카드 레이아웃 */}
+                    <div className="block md:hidden space-y-4">
+                      {habits.map((habit) => (
+                        <div key={habit.id} className="border rounded-lg p-4 bg-white mobile-card-spacing">
+                          <div className="mb-3">
+                            <Input
+                              value={habit.name}
+                              onChange={(e) => updateHabitName(habit.id, e.target.value)}
+                              className="border-none bg-transparent font-medium text-sm"
+                              placeholder="습관 이름을 입력하세요"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            {days.map((day, dayIndex) => (
+                              <div key={dayIndex} className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700 min-w-[60px]">{day}</span>
+                                <div className="flex gap-1">
+                                  {colors.map((color) => (
+                                    <button
+                                      key={color.value}
+                                      onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
+                                      className={`w-6 h-6 rounded-full border-2 transition-all mobile-touch-target ${
+                                        habit.times[dayIndex] === color.value 
+                                          ? `${getColorClass(color.value)} border-gray-800 scale-110` 
+                                          : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
+                                      }`}
+                                      title={color.description}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                            <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"}>
+                              {getWeeklyScore(habit)} / 7
+                            </Badge>
+                            <Button
+                              onClick={() => removeHabit(habit.id)}
+                              size="sm"
+                              variant="destructive"
+                              disabled={habits.length <= 1}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 데스크톱용 테이블 레이아웃 */}
+                    <div className="hidden md:block overflow-x-auto mobile-table-container">
                       <table className="w-full border-collapse">
                         <thead>
                           <tr>
-                            <th className="border p-3 bg-purple-100 text-left min-w-[250px]">시간대 / 습관</th>
+                            <th className="border p-3 bg-purple-100 text-left min-w-[200px] max-w-[300px]">시간대 / 습관</th>
                             {days.map((day) => (
-                              <th key={day} className="border p-3 bg-purple-100 text-center min-w-[100px]">{day}</th>
+                              <th key={day} className="border p-3 bg-purple-100 text-center min-w-[80px]">{day}</th>
                             ))}
                             <th className="border p-3 bg-purple-100 text-center">주간 합계</th>
                             <th className="border p-3 bg-purple-100 text-center">삭제</th>
@@ -605,7 +667,8 @@ function App() {
                                 <Input
                                   value={habit.name}
                                   onChange={(e) => updateHabitName(habit.id, e.target.value)}
-                                  className="border-none bg-transparent font-medium"
+                                  className="border-none bg-transparent font-medium text-sm"
+                                  placeholder="습관 이름"
                                 />
                               </td>
                               {habit.times.map((time, dayIndex) => (
@@ -615,7 +678,7 @@ function App() {
                                       <button
                                         key={color.value}
                                         onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
-                                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                        className={`w-7 h-7 rounded-full border-2 transition-all mobile-touch-target ${
                                           time === color.value 
                                             ? `${getColorClass(color.value)} border-gray-800 scale-110` 
                                             : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
@@ -658,30 +721,33 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="bestDay">가장 초록색이 많았던 요일과 시간은 언제였나요?</Label>
+                      <Label htmlFor="bestDay" className="text-sm sm:text-base">가장 초록색이 많았던 요일과 시간은 언제였나요?</Label>
                       <Textarea
                         id="bestDay"
                         value={reflection.bestDay}
                         onChange={(e) => setReflection(prev => ({ ...prev, bestDay: e.target.value }))}
                         placeholder="예: 화요일 아침 시간대가 가장 좋았어요!"
+                        className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="easiestHabit">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
+                      <Label htmlFor="easiestHabit" className="text-sm sm:text-base">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
                       <Textarea
                         id="easiestHabit"
                         value={reflection.easiestHabit}
                         onChange={(e) => setReflection(prev => ({ ...prev, easiestHabit: e.target.value }))}
                         placeholder="예: 아침에 일어나기는 쉬웠지만, 정리정돈은 어려웠어요."
+                        className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="nextWeekGoal">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
+                      <Label htmlFor="nextWeekGoal" className="text-sm sm:text-base">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
                       <Textarea
                         id="nextWeekGoal"
                         value={reflection.nextWeekGoal}
                         onChange={(e) => setReflection(prev => ({ ...prev, nextWeekGoal: e.target.value }))}
                         placeholder="예: 다음 주에는 저녁 정리 시간을 더 잘 지키고 싶어요!"
+                        className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                       />
                     </div>
                   </CardContent>
@@ -697,12 +763,13 @@ function App() {
                   </CardHeader>
                   <CardContent>
                     <div>
-                      <Label htmlFor="reward">목표 달성 시 받을 보상을 정해보세요!</Label>
+                      <Label htmlFor="reward" className="text-sm sm:text-base">목표 달성 시 받을 보상을 정해보세요!</Label>
                       <Textarea
                         id="reward"
                         value={reward}
                         onChange={(e) => setReward(e.target.value)}
                         placeholder="예: 영화 보기, 특별한 간식 먹기, 보드게임 시간, 공원 가기 등"
+                        className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                       />
                     </div>
                   </CardContent>
@@ -712,12 +779,16 @@ function App() {
                 <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
                   <CardContent className="pt-6">
                     <div className="text-center space-y-2">
-                      <div className="text-lg font-semibold">
-                        서명: _________________ (부모님) &nbsp;&nbsp;&nbsp; _________________ ({childName || '나'}!)
+                      <div className="text-base sm:text-lg font-semibold">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                          <div>서명: _________________ (부모님)</div>
+                          <div>_________________ ({childName || '나'}!)</div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
+                      <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        저장 버튼을 눌러 데이터를 저장하세요
+                        <span className="hidden sm:inline">저장 버튼을 눌러 데이터를 저장하세요</span>
+                        <span className="sm:hidden">저장 버튼을 눌러 저장하세요</span>
                       </div>
                     </div>
                   </CardContent>
