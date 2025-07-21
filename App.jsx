@@ -715,10 +715,10 @@ function App() {
                       <div className="text-lg font-semibold">
                         서명: _________________ (부모님) &nbsp;&nbsp;&nbsp; _________________ ({childName || '나'}!)
                       </div>
-                                    <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
-                <Calendar className="w-4 h-4" />
-                저장 버튼을 눌러 데이터를 저장하세요
-              </div>
+                      <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        저장 버튼을 눌러 데이터를 저장하세요
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -746,18 +746,18 @@ function App() {
                     >
                       취소
                     </Button>
-                                    <Button
-                  onClick={() => {
-                    if (pendingSaveData) {
-                      saveData(true)
-                    } else {
-                      saveData(false)
-                    }
-                  }}
-                  disabled={saving}
-                >
-                  {saving ? '저장 중...' : '덮어쓰기'}
-                </Button>
+                    <Button
+                      onClick={() => {
+                        if (pendingSaveData) {
+                          saveData(true)
+                        } else {
+                          saveData(false)
+                        }
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? '저장 중...' : '덮어쓰기'}
+                    </Button>
                   </div>
                 </div>
               </div>
