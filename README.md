@@ -133,6 +133,157 @@ HabitTracker/
 - **🎯 시각적 피드백**: 색상과 이모지를 통한 명확한 피드백
 - **🔒 세션 관리**: 자동 로그아웃 및 활동 시간 추적
 
+## 🚀 배포 가이드
+
+### Netlify 배포
+
+#### 1. Netlify 프로젝트 생성
+1. [Netlify](https://netlify.com)에 가입
+2. "New site from Git" 선택
+3. GitHub 저장소 연결: `https://github.com/Photometry4040/HabitTracker.git`
+4. 빌드 설정:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+
+#### 2. 환경 변수 설정 (중요!)
+**Netlify 대시보드에서 설정:**
+1. Site settings > Environment variables
+2. 다음 변수 추가:
+   ```
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   ```
+
+#### 3. Supabase 인증 설정
+1. Supabase 대시보드 > Authentication > Settings
+2. Site URL 추가: `https://your-site.netlify.app`
+3. Redirect URLs 추가: `https://your-site.netlify.app/**`
+
+### GitHub Pages 배포
+
+#### 1. GitHub Actions 설정
+`.github/workflows/deploy.yml` 파일 생성:
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: npm install
+    - name: Build
+      run: npm run build
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
+```
+
+#### 2. GitHub Secrets 설정
+1. 저장소 Settings > Secrets and variables > Actions
+2. 다음 secrets 추가:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+
+## 🔧 문제 해결 가이드
+
+### 환경 변수 문제 해결
+
+#### ❌ 문제: 환경 변수가 제대로 로드되지 않음
+**증상:**
+```
+VITE_SUPABASE_URL: your_production_supabase_url
+VITE_SUPABASE_ANON_KEY: your_production_supabase_anon_key
+```
+
+#### ✅ 해결 방법:
+
+**1. netlify.toml 파일 확인**
+```toml
+# ❌ 잘못된 설정 (제거해야 함)
+[context.production.environment]
+  VITE_SUPABASE_URL = "your_production_supabase_url"
+  VITE_SUPABASE_ANON_KEY = "your_production_supabase_anon_key"
+```
+
+**2. 올바른 netlify.toml 설정**
+```toml
+# ✅ 올바른 설정
+# 환경 변수는 Netlify 대시보드에서 설정하세요
+# 이 파일에서는 환경변수를 설정하지 않습니다
+```
+
+**3. 우선순위 확인**
+- **1순위**: Netlify 대시보드 환경 변수
+- **2순위**: netlify.toml 파일 환경 변수
+- **주의**: netlify.toml의 잘못된 설정이 대시보드 설정을 덮어쓸 수 있음
+
+#### 🔍 디버깅 방법:
+
+**1. Console에서 환경 변수 확인**
+```javascript
+console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+```
+
+**2. Netlify 배포 로그 확인**
+- Netlify 대시보드 > Deploys > 최신 배포 > Build log
+- 환경 변수 로드 과정 확인
+
+**3. 로컬 vs 배포 환경 비교**
+```bash
+# 로컬에서 확인
+npm run dev
+# 브라우저 Console에서 환경 변수 출력
+
+# 배포 후 확인
+# Netlify URL에서 Console 확인
+```
+
+### 배포 후 확인 사항
+
+#### ✅ 정상 동작 확인:
+1. **환경 변수 로드**: Console에서 올바른 URL과 Key 확인
+2. **Supabase 연결**: 로그인/회원가입 기능 정상 동작
+3. **데이터 저장**: 습관 데이터 저장 및 불러오기 정상
+4. **인증 리다이렉트**: 로그인 후 올바른 페이지로 이동
+
+#### 🚨 문제 발생 시:
+1. **환경 변수 재설정**: Netlify 대시보드에서 환경 변수 재입력
+2. **캐시 클리어**: 브라우저 캐시 및 Netlify 캐시 클리어
+3. **재배포**: 강제 재배포 실행
+
+## 📝 개발 노하우
+
+### 1. 환경 변수 관리
+- **로컬 개발**: `.env` 파일 사용
+- **배포 환경**: 플랫폼별 환경 변수 설정
+- **보안**: 민감한 정보는 절대 코드에 하드코딩하지 않기
+
+### 2. 배포 전 체크리스트
+- [ ] 환경 변수 올바르게 설정됨
+- [ ] Supabase 인증 설정 완료
+- [ ] 빌드 에러 없음 (`npm run build`)
+- [ ] 로컬에서 정상 동작 확인
+
+### 3. 문제 해결 순서
+1. **로컬 테스트**: `npm run dev`로 로컬 동작 확인
+2. **환경 변수 확인**: Console에서 환경 변수 출력 확인
+3. **배포 로그 확인**: 플랫폼별 배포 로그 분석
+4. **캐시 클리어**: 브라우저 및 배포 플랫폼 캐시 클리어
+
 ## 📄 라이선스
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다.
