@@ -415,7 +415,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* 로그아웃 버튼 */}
-        <div className="flex justify-end">
+        <div className="flex justify-end no-print">
           <Button
             onClick={handleLogout}
             variant="outline"
@@ -460,7 +460,7 @@ function App() {
                     </div>
                     <Star className="text-yellow-500 hidden sm:block" />
                   </CardTitle>
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 no-print">
                     {saving && (
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Cloud className="w-4 h-4 animate-pulse" />
@@ -618,10 +618,10 @@ function App() {
                                     <button
                                       key={color.value}
                                       onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
-                                      className={`w-6 h-6 rounded-full border-2 transition-all mobile-touch-target ${
+                                      className={`w-6 h-6 rounded-full transition-all mobile-touch-target ${
                                         habit.times[dayIndex] === color.value 
-                                          ? `${getColorClass(color.value)} border-gray-800 scale-110` 
-                                          : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
+                                          ? `${getColorClass(color.value)} traffic-light-border border-gray-800 scale-110` 
+                                          : `${getColorClass(color.value)} border-2 border-gray-300 opacity-50 hover:opacity-100`
                                       }`}
                                       title={color.description}
                                     />
@@ -648,40 +648,41 @@ function App() {
                     </div>
 
                     {/* 데스크톱용 테이블 레이아웃 */}
-                    <div className="hidden md:block overflow-x-auto mobile-table-container">
-                      <table className="w-full border-collapse">
+                    <div className="hidden md:block responsive-table">
+                      <table className="desktop-table-responsive border-collapse">
                         <thead>
                           <tr>
-                            <th className="border p-3 bg-purple-100 text-left min-w-[200px] max-w-[300px]">시간대 / 습관</th>
+                            <th className="border p-3 bg-purple-100 text-left habit-name-cell">시간대 / 습관</th>
                             {days.map((day) => (
-                              <th key={day} className="border p-3 bg-purple-100 text-center min-w-[80px]">{day}</th>
+                              <th key={day} className="border p-3 bg-purple-100 text-center day-column">{day}</th>
                             ))}
-                            <th className="border p-3 bg-purple-100 text-center">주간 합계</th>
-                            <th className="border p-3 bg-purple-100 text-center">삭제</th>
+                            <th className="border p-3 bg-purple-100 text-center weekly-total-column">주간 합계</th>
+                            <th className="border p-3 bg-purple-100 text-center delete-column">삭제</th>
                           </tr>
                         </thead>
                         <tbody>
                           {habits.map((habit) => (
                             <tr key={habit.id}>
-                              <td className="border p-2">
-                                <Input
+                              <td className="border p-2 habit-name-cell">
+                                <Textarea
                                   value={habit.name}
                                   onChange={(e) => updateHabitName(habit.id, e.target.value)}
-                                  className="border-none bg-transparent font-medium text-sm"
-                                  placeholder="습관 이름"
+                                  className="border-none bg-transparent font-medium text-base resize-none min-h-[60px] max-h-[80px]"
+                                  placeholder="습관 이름을 입력하세요"
+                                  rows={2}
                                 />
                               </td>
                               {habit.times.map((time, dayIndex) => (
-                                <td key={dayIndex} className="border p-2 text-center">
-                                  <div className="flex gap-1 justify-center">
+                                <td key={dayIndex} className="border p-2 text-center day-column">
+                                  <div className="traffic-light-container">
                                     {colors.map((color) => (
                                       <button
                                         key={color.value}
                                         onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
-                                        className={`w-7 h-7 rounded-full border-2 transition-all mobile-touch-target ${
+                                        className={`rounded-full transition-all mobile-touch-target desktop-traffic-light ${
                                           time === color.value 
-                                            ? `${getColorClass(color.value)} border-gray-800 scale-110` 
-                                            : `${getColorClass(color.value)} border-gray-300 opacity-50 hover:opacity-100`
+                                            ? `${getColorClass(color.value)} traffic-light-border border-gray-800 scale-110` 
+                                            : `${getColorClass(color.value)} border-2 border-gray-300 opacity-50 hover:opacity-100`
                                         }`}
                                         title={color.description}
                                       />
@@ -689,12 +690,12 @@ function App() {
                                   </div>
                                 </td>
                               ))}
-                              <td className="border p-3 text-center font-bold text-lg">
+                              <td className="border p-2 text-center font-bold text-lg weekly-total-column">
                                 <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"}>
                                   {getWeeklyScore(habit)} / 7
                                 </Badge>
                               </td>
-                              <td className="border p-3 text-center">
+                              <td className="border p-2 text-center delete-column">
                                 <Button
                                   onClick={() => removeHabit(habit.id)}
                                   size="sm"

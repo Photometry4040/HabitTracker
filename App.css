@@ -112,4 +112,537 @@
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
   }
+
+  /* 데스크탑 테이블 반응형 개선 */
+  .desktop-table-responsive {
+    width: 100%;
+    table-layout: auto;
+  }
+
+  /* 시간대/습관 컬럼 2줄 표현 */
+  .habit-name-cell {
+    min-width: 220px;
+    max-width: 250px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.4;
+    vertical-align: middle;
+    font-size: 1.2rem !important;
+  }
+
+  /* 요일 컬럼 최적화 */
+  .day-column {
+    min-width: 70px;
+    max-width: 80px;
+    width: auto;
+  }
+
+  /* 주간 합계 컬럼 최적화 */
+  .weekly-total-column {
+    min-width: 60px;
+    max-width: 70px;
+    width: auto;
+  }
+
+  /* 삭제 컬럼 최적화 */
+  .delete-column {
+    min-width: 50px;
+    max-width: 60px;
+    width: auto;
+  }
+
+  /* 신호등 색깔 테두리 굵기 조정 (3픽셀 더 굵게) */
+  .traffic-light-border {
+    border-width: 3px !important;
+  }
+
+  /* 테이블 전체 반응형 */
+  .responsive-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* 데스크탑에서 신호등 컨테이너 최적화 */
+  .traffic-light-container {
+    display: flex !important;
+    gap: 3px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-width: 90px !important;
+    max-width: 95px !important;
+    padding: 3px !important;
+  }
+
+  /* 데스크탑에서 신호등 크기 조정 - 강제 적용 */
+  .desktop-traffic-light {
+    width: 22px !important;
+    height: 22px !important;
+    flex-shrink: 0 !important;
+    min-width: 22px !important;
+    min-height: 22px !important;
+    max-width: 22px !important;
+    max-height: 22px !important;
+  }
+
+  /* 큰 화면에서 테이블 최적화 */
+  @media (min-width: 1024px) {
+    .responsive-table {
+      white-space: normal;
+    }
+    
+    .desktop-table-responsive {
+      table-layout: fixed;
+    }
+    
+    .habit-name-cell {
+      width: 22%;
+    }
+    
+    .day-column {
+      width: 9%;
+      min-width: 90px;
+      max-width: 95px;
+    }
+
+    .weekly-total-column {
+      width: 6%;
+      min-width: 65px;
+      max-width: 70px;
+    }
+
+    .delete-column {
+      width: 5%;
+      min-width: 55px;
+      max-width: 60px;
+    }
+
+    /* 큰 화면에서 신호등 크기 조정 - 강제 적용 */
+    .desktop-traffic-light {
+      width: 26px !important;
+      height: 26px !important;
+      min-width: 26px !important;
+      min-height: 26px !important;
+      max-width: 26px !important;
+      max-height: 26px !important;
+    }
+
+    .traffic-light-container {
+      gap: 4px !important;
+      min-width: 90px !important;
+      max-width: 95px !important;
+    }
+  }
+
+  /* 중간 화면에서 테이블 최적화 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .habit-name-cell {
+      min-width: 170px;
+      max-width: 220px;
+    }
+    
+    .day-column {
+      min-width: 90px;
+      max-width: 95px;
+    }
+
+    .weekly-total-column {
+      min-width: 60px;
+      max-width: 65px;
+    }
+
+    .delete-column {
+      min-width: 50px;
+      max-width: 55px;
+    }
+
+    /* 중간 화면에서 신호등 크기 조정 - 강제 적용 */
+    .desktop-traffic-light {
+      width: 22px !important;
+      height: 22px !important;
+      min-width: 22px !important;
+      min-height: 22px !important;
+      max-width: 22px !important;
+      max-height: 22px !important;
+    }
+
+    .traffic-light-container {
+      gap: 3px !important;
+      min-width: 90px !important;
+      max-width: 95px !important;
+    }
+  }
+}
+
+/* 인쇄 전용 스타일 */
+@media print {
+  /* 기본 페이지 설정 */
+  @page {
+    size: A4 portrait;
+    margin: 0.5cm;
+  }
+
+  /* 전체 페이지 강제 1페이지 */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 인쇄 시 숨길 요소들 */
+  .no-print {
+    display: none !important;
+  }
+
+  /* 모바일 카드 숨기기 */
+  .block.md\:hidden {
+    display: none !important;
+  }
+
+  /* 데스크탑 테이블 강제 표시 */
+  .hidden.md\:block {
+    display: block !important;
+  }
+
+  /* 배경과 그림자 제거 */
+  * {
+    background: white !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* 카드 스타일 단순화 */
+  .bg-white\/80 {
+    background: white !important;
+  }
+
+  .backdrop-blur-sm {
+    backdrop-filter: none !important;
+  }
+
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* 전체 컨테이너 크기 조정 */
+  .max-w-6xl {
+    max-width: none !important;
+  }
+
+  .space-y-4 {
+    margin-bottom: 0.25rem !important;
+  }
+
+  .space-y-6 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* 카드 패딩 최소화 */
+  .p-4 {
+    padding: 0.25rem !important;
+  }
+
+  .p-6 {
+    padding: 0.5rem !important;
+  }
+
+  /* 테이블 스타일 최적화 */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 9px !important;
+    margin: 0 !important;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 3px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+
+  th {
+    background: #f3f4f6 !important;
+    font-weight: bold !important;
+    font-size: 9px !important;
+  }
+
+  /* 신호등 크기 최소화 */
+  .desktop-traffic-light {
+    width: 12px !important;
+    height: 12px !important;
+    border: 1px solid #000 !important;
+  }
+
+  /* 텍스트 크기 최소화 */
+  .text-sm {
+    font-size: 8px !important;
+  }
+
+  .text-base {
+    font-size: 9px !important;
+  }
+
+  .text-lg {
+    font-size: 10px !important;
+  }
+
+  .text-xl {
+    font-size: 11px !important;
+  }
+
+  .text-2xl {
+    font-size: 12px !important;
+  }
+
+  /* 버튼 숨기기 */
+  button {
+    display: none !important;
+  }
+
+  /* 인쇄 시 보여줄 버튼들 */
+  .print-show {
+    display: block !important;
+  }
+
+  /* 페이지 나누기 방지 */
+  .no-break {
+    page-break-inside: avoid !important;
+  }
+
+  /* 제목 강조 */
+  .text-purple-800 {
+    color: #000 !important;
+  }
+
+  /* 배지 스타일 단순화 */
+  .bg-purple-600, .bg-green-600, .bg-blue-600 {
+    background: #f3f4f6 !important;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    font-size: 8px !important;
+    padding: 2px 4px !important;
+  }
+
+  /* 테이블 컨테이너 최적화 */
+  .responsive-table {
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+
+  /* 습관 이름 셀 최소화 */
+  .habit-name-cell {
+    min-width: 120px !important;
+    max-width: 140px !important;
+    font-size: 8px !important;
+  }
+
+  /* 요일 컬럼 최소화 */
+  .day-column {
+    min-width: 40px !important;
+    max-width: 45px !important;
+  }
+
+  /* 신호등 컨테이너 최소화 */
+  .traffic-light-container {
+    gap: 0.5px !important;
+    min-width: 40px !important;
+    max-width: 45px !important;
+    padding: 0.5px !important;
+  }
+
+  /* 주간 합계 컬럼 최소화 */
+  .weekly-total-column {
+    min-width: 35px !important;
+    max-width: 40px !important;
+  }
+
+  /* 삭제 컬럼 최소화 */
+  .delete-column {
+    min-width: 25px !important;
+    max-width: 30px !important;
+  }
+
+  /* 헤더 카드 최소화 */
+  .text-2xl, .text-3xl {
+    font-size: 14px !important;
+  }
+
+  /* 입력 필드 최소화 */
+  input, select, textarea {
+    font-size: 8px !important;
+    padding: 2px !important;
+    height: auto !important;
+  }
+
+  /* 라벨 최소화 */
+  label {
+    font-size: 8px !important;
+    margin-bottom: 1px !important;
+  }
+
+  /* 색상 코드 섹션 최소화 */
+  .grid {
+    gap: 0.25rem !important;
+  }
+
+  .grid > div {
+    padding: 0.25rem !important;
+  }
+
+  /* 색상 코드 컨테이너 높이 최소화 - 더 구체적인 선택자 */
+  .flex.items-center.gap-2, .flex.items-center.gap-3,
+  div.flex.items-center.gap-2, div.flex.items-center.gap-3,
+  .bg-gray-50.flex.items-center.gap-2, .bg-gray-50.flex.items-center.gap-3 {
+    padding: 0.125rem !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
+  /* 색상 코드 원형 아이콘 크기 최소화 - 더 구체적인 선택자 */
+  .w-5.h-5, .w-6.h-6,
+  div.w-5.h-5, div.w-6.h-6,
+  .rounded-full.w-5.h-5, .rounded-full.w-6.h-6 {
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
+  }
+
+  /* 색상 코드 이모지 크기 최소화 - 더 구체적인 선택자 */
+  .text-xl, .text-2xl,
+  span.text-xl, span.text-2xl {
+    font-size: 10px !important;
+  }
+
+  /* 색상 코드 텍스트 크기 최소화 - 더 구체적인 선택자 */
+  .font-semibold.text-sm, .font-semibold.text-base,
+  div.font-semibold.text-sm, div.font-semibold.text-base {
+    font-size: 8px !important;
+    font-weight: normal !important;
+  }
+
+  .text-xs, .text-sm,
+  div.text-xs, div.text-sm {
+    font-size: 7px !important;
+  }
+
+  /* 색상 코드 컨테이너 배경 제거 - 더 구체적인 선택자 */
+  .bg-gray-50,
+  div.bg-gray-50,
+  .rounded-lg.bg-gray-50 {
+    background: transparent !important;
+  }
+
+  /* 색상 코드 섹션 전체 높이 최소화 - 더 구체적인 선택자 */
+  .rounded-lg,
+  div.rounded-lg {
+    border-radius: 0 !important;
+  }
+
+  /* 색상 코드 섹션 패딩 최소화 - 더 구체적인 선택자 */
+  .p-2, .p-3,
+  div.p-2, div.p-3 {
+    padding: 0.125rem !important;
+  }
+
+  /* 색상 코드 섹션 마진 최소화 - 더 구체적인 선택자 */
+  .gap-2, .gap-3,
+  div.gap-2, div.gap-3 {
+    gap: 0.25rem !important;
+  }
+
+  /* 돌아보기 섹션 최소화 */
+  .min-h-\[80px\], .min-h-\[100px\] {
+    min-height: 30px !important;
+  }
+
+  /* 푸터 최소화 */
+  .pt-6 {
+    padding-top: 0.5rem !important;
+  }
+
+  /* 강제 1페이지 설정 */
+  .min-h-screen {
+    min-height: auto !important;
+  }
+
+  /* 카드 간격 완전 제거 */
+  .space-y-4 > * + * {
+    margin-top: 0.25rem !important;
+  }
+
+  .space-y-6 > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  /* 주간 습관 챌린지 컨테이너 최소화 - 더 구체적인 선택자 */
+  .space-y-4, .space-y-6,
+  div.space-y-4, div.space-y-6 {
+    margin-bottom: 0.125rem !important;
+  }
+
+  /* 카드 헤더 최소화 - 더 구체적인 선택자 */
+  .CardHeader,
+  div[class*="CardHeader"],
+  .p-6,
+  div.p-6 {
+    padding: 0.25rem !important;
+    margin: 0 !important;
+  }
+
+  /* 카드 콘텐츠 최소화 - 더 구체적인 선택자 */
+  .CardContent,
+  div[class*="CardContent"],
+  .p-4,
+  div.p-4 {
+    padding: 0.125rem !important;
+    margin: 0 !important;
+  }
+
+  /* 카드 제목 최소화 - 더 구체적인 선택자 */
+  .CardTitle,
+  div[class*="CardTitle"],
+  .text-xl,
+  div.text-xl {
+    font-size: 12px !important;
+    margin: 0 !important;
+    padding: 0.125rem !important;
+  }
+
+  /* 전체 카드 최소화 - 더 구체적인 선택자 */
+  .Card,
+  div[class*="Card"],
+  .bg-white\/80,
+  div.bg-white\/80 {
+    margin: 0.125rem 0 !important;
+    padding: 0.125rem !important;
+  }
+
+  /* 색상 코드 섹션 전체 최소화 - 가장 구체적인 선택자 */
+  .Card.bg-white\/80.backdrop-blur-sm.shadow-lg,
+  div.Card.bg-white\/80.backdrop-blur-sm.shadow-lg {
+    margin: 0.125rem 0 !important;
+    padding: 0.125rem !important;
+  }
+
+  /* 색상 코드 그리드 최소화 - 가장 구체적인 선택자 */
+  .grid.grid-cols-1.sm\:grid-cols-2.md\:grid-cols-3.gap-3.sm\:gap-4,
+  div.grid.grid-cols-1.sm\:grid-cols-2.md\:grid-cols-3.gap-3.sm\:gap-4 {
+    gap: 0.125rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 색상 코드 개별 아이템 최소화 - 가장 구체적인 선택자 */
+  .flex.items-center.gap-2.sm\:gap-3.p-2.sm\:p-3.rounded-lg.bg-gray-50,
+  div.flex.items-center.gap-2.sm\:gap-3.p-2.sm\:p-3.rounded-lg.bg-gray-50 {
+    padding: 0.0625rem !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
 }
