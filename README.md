@@ -29,6 +29,12 @@
 - 수동 저장 방식으로 데이터 보안 강화
 - 아이별 개별 데이터 관리
 
+### 📱 **앱 아이콘 및 PWA 지원**
+- 모든 플랫폼용 앱 아이콘 제공
+- iOS/Android 홈스크린 추가 지원
+- PWA(Progressive Web App) 기능
+- 브라우저 탭 파비콘 최적화
+
 ## 🚀 실행 방법
 
 ### 1. 저장소 클론
@@ -87,6 +93,12 @@ npm run dev
 http://localhost:5173
 ```
 
+### 7. 앱 아이콘 확인
+개발 서버 실행 후 다음을 확인하세요:
+- **브라우저 탭**: 파비콘 표시 확인
+- **북마크**: 아이콘 표시 확인
+- **모바일**: "홈 화면에 추가" 시 아이콘 확인
+
 ## 🛠️ 기술 스택
 
 - **Frontend**: React 18 + Vite
@@ -97,11 +109,23 @@ http://localhost:5173
 - **Authentication**: Supabase Auth
 - **Security**: Row Level Security (RLS), Input Validation, Session Management
 - **Storage**: Cloud Database + Local Storage (백업)
+- **PWA**: Web App Manifest, Service Workers
+- **Icons**: Multi-platform app icons (iOS, Android, Desktop)
 
 ## 📁 프로젝트 구조
 
 ```
 HabitTracker/
+├── public/               # 정적 파일들
+│   ├── favicon.ico       # 기본 파비콘
+│   ├── favicon-16x16.png # 16x16 파비콘
+│   ├── favicon-32x32.png # 32x32 파비콘
+│   ├── apple-touch-icon.png # iOS 홈스크린 아이콘
+│   ├── android-chrome-192x192.png # Android 아이콘
+│   ├── android-chrome-512x512.png # Android 고해상도 아이콘
+│   ├── mask-icon.svg     # Safari 핀 탭 아이콘
+│   ├── site.webmanifest  # PWA 매니페스트
+│   └── robots.txt        # SEO 설정
 ├── src/
 │   ├── components/
 │   │   └── ui/           # UI 컴포넌트들
@@ -137,6 +161,33 @@ HabitTracker/
 - **🎨 직관적인 UI**: 아이들이 쉽게 사용할 수 있는 인터페이스
 - **🎯 시각적 피드백**: 색상과 이모지를 통한 명확한 피드백
 - **🔒 세션 관리**: 자동 로그아웃 및 활동 시간 추적
+- **📱 PWA 지원**: 홈스크린 추가, 오프라인 기능 지원
+- **🎨 멀티플랫폼 아이콘**: iOS, Android, 데스크톱 최적화된 앱 아이콘
+
+## 🎨 앱 아이콘 가이드
+
+### 📱 지원되는 아이콘
+- **favicon.ico**: 브라우저 탭, 북마크 (16x16, 32x32)
+- **favicon-16x16.png**: 모던 브라우저용 (16x16)
+- **favicon-32x32.png**: 모던 브라우저용 (32x32)
+- **apple-touch-icon.png**: iOS 홈스크린 (180x180)
+- **android-chrome-192x192.png**: Android 홈스크린 (192x192)
+- **android-chrome-512x512.png**: Android 고해상도 (512x512)
+- **mask-icon.svg**: Safari 핀 탭 (단색 SVG)
+
+### 🎨 디자인 특징
+- **테마**: 습관 추적을 상징하는 달력 아이콘
+- **색상**: 앱 메인 컬러 보라색 (#7C3AED) 활용
+- **스타일**: 아이들이 좋아할 만한 친근한 디자인
+- **호환성**: 모든 플랫폼에서 최적화된 표시
+
+### 🔧 커스터마이징
+아이콘을 변경하려면 `public` 폴더의 해당 파일을 교체하세요:
+```bash
+# 예시: 새로운 파비콘으로 교체
+cp your-new-favicon.ico public/favicon.ico
+cp your-new-icon-192.png public/android-chrome-192x192.png
+```
 
 ## 🚀 배포 가이드
 
