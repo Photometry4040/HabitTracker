@@ -478,15 +478,16 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
   console.log(`Updating habit record: ${child_name}, ${week_start_date} (adjusted to ${adjustedDateStr}), ${habit_name}, day ${day_index} -> ${status}`);
 
   // Step 1: Update OLD SCHEMA (JSONB habits array)
+  // Use adjusted date for querying (same date used for saving)
   const { data: oldRecord, error: oldFetchError } = await supabase
     .from('habit_tracker')
     .select('*')
     .eq('child_name', child_name)
-    .eq('week_start_date', week_start_date)
+    .eq('week_start_date', adjustedDateStr) // Use adjusted Monday date
     .single();
 
   if (oldFetchError || !oldRecord) {
-    throw new Error(`Old record not found: ${oldFetchError?.message || 'No data'}`);
+    throw new Error(`Old record not found: ${oldFetchError?.message || 'No data'}. Searched for child='${child_name}', week_start_date='${adjustedDateStr}'`);
   }
 
   // Update habits JSONB array
