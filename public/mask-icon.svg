@@ -1,1 +1,10 @@
- 
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 달력 아이콘의 단색 버전 -->
+  <rect x="2" y="3" width="12" height="11" rx="2" fill="black"/>
+  <rect x="3" y="4" width="10" height="9" rx="1" fill="white"/>
+  <!-- 상단 링 -->
+  <rect x="4" y="1" width="2" height="3" rx="1" fill="black"/>
+  <rect x="10" y="1" width="2" height="3" rx="1" fill="black"/>
+  <!-- 중앙 요소 (U자 모양) -->
+  <path d="M10 6C10 7.1 9.1 8 8 8C6.9 8 6 7.1 6 6V5H10V6Z" fill="black"/>
+</svg> 
