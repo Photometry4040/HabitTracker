@@ -414,37 +414,106 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
 
   // Step 2: Update NEW SCHEMA (habit_records table)
   try {
-    // Find week and habit
-    const { data: child } = await supabase
+    // Find or create child
+    let child;
+    const { data: existingChild } = await supabase
       .from('children')
       .select('id')
       .eq('name', child_name)
       .single();
 
-    if (!child) {
-      throw new Error(`Child '${child_name}' not found in new schema`);
+    if (existingChild) {
+      child = existingChild;
+    } else {
+      // Auto-create child if not exists
+      const { data: newChild, error: childError } = await supabase
+        .from('children')
+        .insert({
+          user_id: oldRecord.user_id,
+          name: child_name,
+          source_version: 'dual_write'
+        })
+        .select()
+        .single();
+
+      if (childError) {
+        throw new Error(`Failed to create child: ${childError.message}`);
+      }
+      child = newChild;
+      console.log(`✅ Auto-created child: ${child.id}`);
     }
 
-    const { data: week } = await supabase
+    // Find or create week
+    let week;
+    const { data: existingWeek } = await supabase
       .from('weeks')
       .select('id')
       .eq('child_id', child.id)
       .eq('week_start_date', week_start_date)
       .single();
 
-    if (!week) {
-      throw new Error(`Week not found in new schema`);
+    if (existingWeek) {
+      week = existingWeek;
+    } else {
+      // Auto-create week if not exists
+      const endDate = new Date(week_start_date);
+      endDate.setDate(endDate.getDate() + 6);
+
+      const { data: newWeek, error: weekError } = await supabase
+        .from('weeks')
+        .insert({
+          user_id: oldRecord.user_id,
+          child_id: child.id,
+          week_start_date,
+          week_end_date: endDate.toISOString().split('T')[0],
+          theme: oldRecord.theme || null,
+          reflection: oldRecord.reflection || null,
+          reward: oldRecord.reward || null,
+          source_version: 'dual_write'
+        })
+        .select()
+        .single();
+
+      if (weekError) {
+        throw new Error(`Failed to create week: ${weekError.message}`);
+      }
+      week = newWeek;
+      console.log(`✅ Auto-created week: ${week.id}`);
     }
 
-    const { data: habit } = await supabase
+    // Find or create habit
+    let habit;
+    const { data: existingHabit } = await supabase
       .from('habits')
       .select('id')
       .eq('week_id', week.id)
       .eq('name', habit_name)
       .single();
 
-    if (!habit) {
-      throw new Error(`Habit '${habit_name}' not found in new schema`);
+    if (existingHabit) {
+      habit = existingHabit;
+    } else {
+      // Auto-create habit if not exists
+      // Find the display_order from old schema
+      const oldHabit = habits.find((h: any) => h.name === habit_name);
+      const displayOrder = oldHabit?.id || 999;
+
+      const { data: newHabit, error: habitError } = await supabase
+        .from('habits')
+        .insert({
+          week_id: week.id,
+          name: habit_name,
+          display_order: displayOrder,
+          source_version: 'dual_write'
+        })
+        .select()
+        .single();
+
+      if (habitError) {
+        throw new Error(`Failed to create habit: ${habitError.message}`);
+      }
+      habit = newHabit;
+      console.log(`✅ Auto-created habit: ${habit.id} (${habit_name})`);
     }
 
     // Calculate record_date
