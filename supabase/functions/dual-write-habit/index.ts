@@ -177,22 +177,27 @@ async function createWeekDualWrite(supabase: any, data: any) {
     throw new Error('Missing required fields: user_id, child_name, week_start_date');
   }
 
+  // Adjust week_start_date to Monday (for new schema constraint)
+  const originalDate = new Date(week_start_date);
+  const adjustedDate = adjustToMonday(originalDate);
+  const adjustedDateStr = adjustedDate.toISOString().split('T')[0];
+
   // Calculate week_end_date and week_period
-  const startDate = new Date(week_start_date);
+  const startDate = adjustedDate; // Use adjusted Monday date
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 6);
 
   const weekPeriod = formatWeekPeriod(startDate);
 
-  console.log(`Creating week for ${child_name}, ${week_start_date} to ${endDate.toISOString().split('T')[0]}`);
+  console.log(`Creating week for ${child_name}, ${week_start_date} (adjusted to ${adjustedDateStr}) to ${endDate.toISOString().split('T')[0]}`);
 
-  // Step 1: Write to OLD SCHEMA (habit_tracker)
+  // Step 1: Write to OLD SCHEMA (habit_tracker) - use adjusted Monday date
   const { data: oldRecord, error: oldError } = await supabase
     .from('habit_tracker')
     .insert({
       user_id,
       child_name,
-      week_start_date,
+      week_start_date: adjustedDateStr, // Use adjusted Monday date
       week_period: weekPeriod,
       habits: habits || [],
       theme: theme || null,
@@ -241,13 +246,13 @@ async function createWeekDualWrite(supabase: any, data: any) {
       console.log(`✅ Created new child: ${child.id}`);
     }
 
-    // 2b. Create week
+    // 2b. Create week (use adjusted Monday date)
     const { data: week, error: weekError } = await supabase
       .from('weeks')
       .insert({
         user_id,
         child_id: child.id,
-        week_start_date,
+        week_start_date: adjustedDateStr,
         week_end_date: endDate.toISOString().split('T')[0],
         theme: theme || null,
         reflection: reflection || null,
@@ -336,6 +341,28 @@ async function createWeekDualWrite(supabase: any, data: any) {
 }
 
 /**
+ * Adjust date to the nearest Monday (start of week)
+ * If date is already Monday, return as-is
+ * Otherwise, find the Monday of that week (go backwards)
+ */
+function adjustToMonday(date: Date): Date {
+  const adjusted = new Date(date);
+  const dayOfWeek = adjusted.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+  if (dayOfWeek === 1) {
+    // Already Monday
+    return adjusted;
+  }
+
+  // Calculate days to subtract to get to Monday
+  // Sunday (0) -> -6, Tuesday (2) -> -1, Wednesday (3) -> -2, etc.
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  adjusted.setDate(adjusted.getDate() - daysToSubtract);
+
+  return adjusted;
+}
+
+/**
  * Format week period string (Korean format)
  * Example: "2025년 10월 14일 ~ 2025년 10월 20일"
  */
@@ -368,7 +395,12 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
     throw new Error('Missing required fields: child_name, week_start_date, habit_name, day_index, status');
   }
 
-  console.log(`Updating habit record: ${child_name}, ${week_start_date}, ${habit_name}, day ${day_index} -> ${status}`);
+  // Adjust week_start_date to Monday (for new schema constraint)
+  const originalDate = new Date(week_start_date);
+  const adjustedDate = adjustToMonday(originalDate);
+  const adjustedDateStr = adjustedDate.toISOString().split('T')[0];
+
+  console.log(`Updating habit record: ${child_name}, ${week_start_date} (adjusted to ${adjustedDateStr}), ${habit_name}, day ${day_index} -> ${status}`);
 
   // Step 1: Update OLD SCHEMA (JSONB habits array)
   const { data: oldRecord, error: oldFetchError } = await supabase
@@ -443,20 +475,20 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
       console.log(`✅ Auto-created child: ${child.id}`);
     }
 
-    // Find or create week
+    // Find or create week (use adjusted Monday date)
     let week;
     const { data: existingWeek } = await supabase
       .from('weeks')
       .select('id')
       .eq('child_id', child.id)
-      .eq('week_start_date', week_start_date)
+      .eq('week_start_date', adjustedDateStr)
       .single();
 
     if (existingWeek) {
       week = existingWeek;
     } else {
       // Auto-create week if not exists
-      const endDate = new Date(week_start_date);
+      const endDate = new Date(adjustedDateStr);
       endDate.setDate(endDate.getDate() + 6);
 
       const { data: newWeek, error: weekError } = await supabase
@@ -464,7 +496,7 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
         .insert({
           user_id: oldRecord.user_id,
           child_id: child.id,
-          week_start_date,
+          week_start_date: adjustedDateStr,
           week_end_date: endDate.toISOString().split('T')[0],
           theme: oldRecord.theme || null,
           reflection: oldRecord.reflection || null,
@@ -478,7 +510,7 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
         throw new Error(`Failed to create week: ${weekError.message}`);
       }
       week = newWeek;
-      console.log(`✅ Auto-created week: ${week.id}`);
+      console.log(`✅ Auto-created week: ${week.id} (${adjustedDateStr})`);
     }
 
     // Find or create habit
@@ -516,8 +548,8 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
       console.log(`✅ Auto-created habit: ${habit.id} (${habit_name})`);
     }
 
-    // Calculate record_date
-    const recordDate = new Date(week_start_date);
+    // Calculate record_date (use adjusted Monday date + day_index)
+    const recordDate = new Date(adjustedDateStr);
     recordDate.setDate(recordDate.getDate() + day_index);
     const recordDateStr = recordDate.toISOString().split('T')[0];
 
