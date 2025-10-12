@@ -13,6 +13,7 @@ import { saveChildData, deleteChildData } from '@/lib/database.js'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
+import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
 import './App.css'
 
 function App() {
@@ -254,6 +255,20 @@ function App() {
 
       // 저장 성공 피드백 (부드러운 방식)
       console.log('데이터가 성공적으로 저장되었습니다! (Dual-write)', result)
+
+      // Discord 알림 전송 (비동기, 실패해도 무시)
+      // 1. 주간 저장 알림
+      notifyWeekSave(selectedChild, data.weekPeriod, data.habits.length).catch(err => {
+        console.log('Discord week save notification skipped:', err)
+      })
+
+      // 2. 주간 목표 달성 확인 (성공률 80% 이상)
+      const stats = calculateWeekStats(data.habits)
+      if (stats.successRate >= 80) {
+        notifyWeekComplete(selectedChild, data.weekPeriod, stats).catch(err => {
+          console.log('Discord week complete notification skipped:', err)
+        })
+      }
     } catch (error) {
       console.error('저장 실패:', error)
       alert('저장 중 오류가 발생했습니다.')
@@ -370,6 +385,15 @@ function App() {
       )
 
       console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${color}`)
+
+      // Discord 알림 전송 (비동기, 실패해도 무시)
+      if (color) { // 색상이 있을 때만 (빈 문자열이 아닐 때)
+        const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+        const dayOfWeek = dayNames[dayIndex] || `${dayIndex + 1}일차`
+        notifyHabitCheck(selectedChild, habit.name, color, dayOfWeek).catch(err => {
+          console.log('Discord notification skipped:', err)
+        })
+      }
     } catch (error) {
       console.error('Failed to update habit record:', error)
       // TODO: Revert UI change on error
