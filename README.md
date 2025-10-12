@@ -1,6 +1,11 @@
 # 🎯 아이들을 위한 습관 추적기 (Habit Tracker for Kids)
 
+**업데이트**: 2025-10-12
+**상태**: Phase 2 진행 중 (데이터베이스 마이그레이션)
+
 아이들이 재미있게 습관을 형성할 수 있도록 만든 시각적 습관 추적 웹 애플리케이션입니다.
+
+> **📚 개발 문서**: 자세한 기술 문서 및 마이그레이션 정보는 [docs/README.md](docs/README.md)를 참고하세요.
 
 ## ✨ 주요 기능
 
@@ -355,6 +360,28 @@ npm run dev
 ## 📞 문의
 
 프로젝트에 대한 문의사항이 있으시면 이슈를 생성해주세요.
+
+---
+
+## 📚 문서 구조
+
+이 프로젝트는 체계적인 문서 구조를 갖추고 있습니다:
+
+- **[README.md](README.md)** (이 파일) - 사용자용 프로젝트 소개 및 설치 가이드
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code 작업 지침
+- **[docs/README.md](docs/README.md)** - 개발 문서 색인 (필독!)
+  - `docs/00-overview/` - 전체 기술 명세 및 아키텍처
+  - `docs/01-architecture/` - 설계 문서
+  - `docs/02-active/` - 현재 진행 중인 작업 (Phase 2)
+  - `docs/03-deployment/` - 배포 가이드
+  - `docs/04-completed/` - 완료된 작업 아카이브
+  - `docs/05-reviews/` - 주간 리뷰 및 계획
+  - `docs/06-future/` - 미래 개발 계획
+
+### 개발자를 위한 빠른 링크
+- 🎯 **현재 작업**: [docs/02-active/PHASE_2_PLAN.md](docs/02-active/PHASE_2_PLAN.md)
+- 📖 **기술 명세**: [docs/00-overview/TECH_SPEC.md](docs/00-overview/TECH_SPEC.md)
+- 🚀 **배포 가이드**: [docs/03-deployment/](docs/03-deployment/)
 
 ---
 
