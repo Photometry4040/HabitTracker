@@ -9,7 +9,9 @@ import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarCh
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import { Auth } from '@/components/Auth.jsx'
-import { saveChildData, loadChildData, loadAllChildren, loadChildWeeks, deleteChildData } from '@/lib/database.js'
+import { saveChildData, deleteChildData } from '@/lib/database.js'
+import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
+import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import './App.css'
 
@@ -114,9 +116,20 @@ function App() {
   // 주간별 데이터 로드
   const loadWeekData = async (childName, weekPeriod) => {
     if (!childName || !weekPeriod) return
-    
+
     try {
-      const data = await loadChildData(childName, weekPeriod)
+      // Convert weekPeriod to weekStartDate for new schema
+      const match = weekPeriod.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
+      if (!match) {
+        console.error('Invalid weekPeriod format:', weekPeriod)
+        return
+      }
+      const year = match[1]
+      const month = match[2].padStart(2, '0')
+      const day = match[3].padStart(2, '0')
+      const weekStartDateISO = `${year}-${month}-${day}`
+
+      const data = await loadChildData(childName, weekStartDateISO)
       if (data) {
         // 대시보드 모드가 아닐 때만 현재 입력 중인 데이터 확인
         if (!showDashboard) {
@@ -207,7 +220,18 @@ function App() {
       }
       
       // 기존 데이터 확인
-      const existingData = await loadChildData(selectedChild, data.weekPeriod)
+      // Convert weekPeriod to weekStartDate for new schema
+      let weekStartDateForCheck = data.weekStartDate
+      if (!weekStartDateForCheck && data.weekPeriod) {
+        const match = data.weekPeriod.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
+        if (match) {
+          const year = match[1]
+          const month = match[2].padStart(2, '0')
+          const day = match[3].padStart(2, '0')
+          weekStartDateForCheck = `${year}-${month}-${day}`
+        }
+      }
+      const existingData = weekStartDateForCheck ? await loadChildData(selectedChild, weekStartDateForCheck) : null
       if (existingData && !forceSave) {
         // 기존 데이터가 있으면 덮어쓰기 확인
         setPendingSaveData(data)
@@ -215,12 +239,21 @@ function App() {
         return
       }
       
-      await saveChildData(selectedChild, data)
+      // Use Edge Function for dual-write (Phase 2)
+      const result = await createWeekDualWrite(
+        selectedChild,
+        weekStartDateForCheck,
+        data.habits,
+        data.theme,
+        data.reflection,
+        data.reward
+      )
+
       setShowOverwriteConfirm(false)
       setPendingSaveData(null)
-      
+
       // 저장 성공 피드백 (부드러운 방식)
-      console.log('데이터가 성공적으로 저장되었습니다!')
+      console.log('데이터가 성공적으로 저장되었습니다! (Dual-write)', result)
     } catch (error) {
       console.error('저장 실패:', error)
       alert('저장 중 오류가 발생했습니다.')
@@ -303,14 +336,45 @@ function App() {
 
   // 자동 저장 제거 - 수동 저장 방식으로 변경
 
-  const updateHabitColor = (habitId, dayIndex, color) => {
-    setHabits(prev => prev.map(habit => 
-      habit.id === habitId 
-        ? { ...habit, times: habit.times.map((time, index) => 
+  const updateHabitColor = async (habitId, dayIndex, color) => {
+    // Optimistic UI update
+    setHabits(prev => prev.map(habit =>
+      habit.id === habitId
+        ? { ...habit, times: habit.times.map((time, index) =>
             index === dayIndex ? color : time
           )}
         : habit
     ))
+
+    // Persist to database via Edge Function (Phase 2)
+    if (!selectedChild || !weekStartDate) {
+      console.warn('Cannot save: missing selectedChild or weekStartDate')
+      return
+    }
+
+    try {
+      // Find habit name
+      const habit = habits.find(h => h.id === habitId)
+      if (!habit) {
+        console.error('Habit not found:', habitId)
+        return
+      }
+
+      // Call Edge Function for dual-write
+      await updateHabitRecordDualWrite(
+        selectedChild,
+        weekStartDate,
+        habit.name,
+        dayIndex,
+        color
+      )
+
+      console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${color}`)
+    } catch (error) {
+      console.error('Failed to update habit record:', error)
+      // TODO: Revert UI change on error
+      alert('습관 기록 저장 중 오류가 발생했습니다.')
+    }
   }
 
   const addHabit = () => {
