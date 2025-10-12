@@ -189,30 +189,64 @@ async function createWeekDualWrite(supabase: any, data: any) {
 
   const weekPeriod = formatWeekPeriod(startDate);
 
-  console.log(`Creating week for ${child_name}, ${week_start_date} (adjusted to ${adjustedDateStr}) to ${endDate.toISOString().split('T')[0]}`);
+  console.log(`Creating/updating week for ${child_name}, ${week_start_date} (adjusted to ${adjustedDateStr}) to ${endDate.toISOString().split('T')[0]}`);
 
-  // Step 1: Write to OLD SCHEMA (habit_tracker) - use adjusted Monday date
-  const { data: oldRecord, error: oldError } = await supabase
+  // Step 1: UPSERT to OLD SCHEMA (habit_tracker) - use adjusted Monday date
+  // Check if record already exists
+  const { data: existingOldRecord } = await supabase
     .from('habit_tracker')
-    .insert({
-      user_id,
-      child_name,
-      week_start_date: adjustedDateStr, // Use adjusted Monday date
-      week_period: weekPeriod,
-      habits: habits || [],
-      theme: theme || null,
-      reflection: reflection || null,
-      reward: reward || null
-    })
-    .select()
+    .select('id')
+    .eq('child_name', child_name)
+    .eq('week_start_date', adjustedDateStr)
     .single();
 
-  if (oldError) {
-    console.error('Failed to write to old schema:', oldError);
-    throw new Error(`Old schema write failed: ${oldError.message}`);
-  }
+  let oldRecord;
+  if (existingOldRecord) {
+    // UPDATE existing record
+    const { data: updated, error: updateError } = await supabase
+      .from('habit_tracker')
+      .update({
+        week_period: weekPeriod,
+        habits: habits || [],
+        theme: theme || null,
+        reflection: reflection || null,
+        reward: reward || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingOldRecord.id)
+      .select()
+      .single();
 
-  console.log(`✅ Old schema: Created record ${oldRecord.id}`);
+    if (updateError) {
+      console.error('Failed to update old schema:', updateError);
+      throw new Error(`Old schema update failed: ${updateError.message}`);
+    }
+    oldRecord = updated;
+    console.log(`✅ Old schema: Updated record ${oldRecord.id}`);
+  } else {
+    // INSERT new record
+    const { data: inserted, error: insertError } = await supabase
+      .from('habit_tracker')
+      .insert({
+        user_id,
+        child_name,
+        week_start_date: adjustedDateStr,
+        week_period: weekPeriod,
+        habits: habits || [],
+        theme: theme || null,
+        reflection: reflection || null,
+        reward: reward || null
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Failed to insert to old schema:', insertError);
+      throw new Error(`Old schema insert failed: ${insertError.message}`);
+    }
+    oldRecord = inserted;
+    console.log(`✅ Old schema: Created record ${oldRecord.id}`);
+  }
 
   try {
     // Step 2: Write to NEW SCHEMA
@@ -246,29 +280,70 @@ async function createWeekDualWrite(supabase: any, data: any) {
       console.log(`✅ Created new child: ${child.id}`);
     }
 
-    // 2b. Create week (use adjusted Monday date)
-    const { data: week, error: weekError } = await supabase
+    // 2b. Upsert week (use adjusted Monday date)
+    const { data: existingWeek } = await supabase
       .from('weeks')
-      .insert({
-        user_id,
-        child_id: child.id,
-        week_start_date: adjustedDateStr,
-        week_end_date: endDate.toISOString().split('T')[0],
-        theme: theme || null,
-        reflection: reflection || null,
-        reward: reward || null,
-        source_version: 'dual_write'
-      })
-      .select()
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('week_start_date', adjustedDateStr)
       .single();
 
-    if (weekError) {
-      throw new Error(`Failed to create week: ${weekError.message}`);
+    let week;
+    if (existingWeek) {
+      // UPDATE existing week
+      const { data: updated, error: updateError } = await supabase
+        .from('weeks')
+        .update({
+          theme: theme || null,
+          reflection: reflection || null,
+          reward: reward || null,
+          source_version: 'dual_write'
+        })
+        .eq('id', existingWeek.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error(`Failed to update week: ${updateError.message}`);
+      }
+      week = updated;
+      console.log(`✅ New schema: Updated week ${week.id}`);
+    } else {
+      // INSERT new week
+      const { data: inserted, error: insertError } = await supabase
+        .from('weeks')
+        .insert({
+          user_id,
+          child_id: child.id,
+          week_start_date: adjustedDateStr,
+          week_end_date: endDate.toISOString().split('T')[0],
+          theme: theme || null,
+          reflection: reflection || null,
+          reward: reward || null,
+          source_version: 'dual_write'
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(`Failed to create week: ${insertError.message}`);
+      }
+      week = inserted;
+      console.log(`✅ New schema: Created week ${week.id}`);
     }
 
-    console.log(`✅ New schema: Created week ${week.id}`);
+    // 2c. Sync habits and habit_records
+    // Strategy: Delete all existing habits for this week and recreate
+    // (CASCADE will delete habit_records automatically)
+    const { error: deleteHabitsError } = await supabase
+      .from('habits')
+      .delete()
+      .eq('week_id', week.id);
 
-    // 2c. Create habits and habit_records
+    if (deleteHabitsError) {
+      console.warn(`Failed to delete old habits: ${deleteHabitsError.message}`);
+    }
+
     let habitsCreated = 0;
     if (habits && habits.length > 0) {
       for (const habit of habits) {
