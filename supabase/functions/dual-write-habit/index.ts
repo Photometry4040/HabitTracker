@@ -657,7 +657,7 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
     } else {
       // Auto-create habit if not exists
       // Find the display_order from old schema
-      const oldHabit = habits.find((h: any) => h.name === habit_name);
+      const oldHabit = oldRecord.habits?.find((h: any) => h.name === habit_name);
       const displayOrder = oldHabit?.id || 999;
 
       const { data: newHabit, error: habitError } = await supabase
