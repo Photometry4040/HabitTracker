@@ -463,11 +463,11 @@ function formatWeekPeriod(startDate: Date): string {
  * @returns Promise<{ old_updated: boolean, new_updated: boolean, record_id: string }>
  */
 async function updateHabitRecordDualWrite(supabase: any, data: any) {
-  const { child_name, week_start_date, habit_name, day_index, status } = data;
+  const { user_id, child_name, week_start_date, habit_name, day_index, status } = data;
 
   // Validate required fields
-  if (!child_name || !week_start_date || !habit_name || day_index === undefined || !status) {
-    throw new Error('Missing required fields: child_name, week_start_date, habit_name, day_index, status');
+  if (!user_id || !child_name || !week_start_date || !habit_name || day_index === undefined || !status) {
+    throw new Error('Missing required fields: user_id, child_name, week_start_date, habit_name, day_index, status');
   }
 
   // Adjust week_start_date to Monday (for new schema constraint)
@@ -479,46 +479,100 @@ async function updateHabitRecordDualWrite(supabase: any, data: any) {
 
   // Step 1: Update OLD SCHEMA (JSONB habits array)
   // Use adjusted date for querying (same date used for saving)
-  const { data: oldRecord, error: oldFetchError } = await supabase
+  const { data: existingOldRecord } = await supabase
     .from('habit_tracker')
     .select('*')
     .eq('child_name', child_name)
     .eq('week_start_date', adjustedDateStr) // Use adjusted Monday date
-    .single();
+    .maybeSingle(); // Use maybeSingle instead of single to avoid error on no rows
 
-  if (oldFetchError || !oldRecord) {
-    throw new Error(`Old record not found: ${oldFetchError?.message || 'No data'}. Searched for child='${child_name}', week_start_date='${adjustedDateStr}'`);
-  }
+  let oldRecord;
 
-  // Update habits JSONB array
-  const habits = oldRecord.habits || [];
-  let habitFound = false;
+  if (!existingOldRecord) {
+    // OLD RECORD NOT FOUND - Auto-create it
+    console.log(`⚠️ Old record not found for ${child_name}, ${adjustedDateStr}. Auto-creating...`);
 
-  for (const habit of habits) {
-    if (habit.name === habit_name) {
-      habitFound = true;
-      if (!habit.times) {
-        habit.times = Array(7).fill('');
+    const weekPeriod = formatWeekPeriod(adjustedDate);
+
+    // Create default habits array with the habit we're trying to update
+    const defaultHabits = [
+      { id: 1, name: '아침 (6-9시) 스스로 일어나기', times: Array(7).fill('') },
+      { id: 2, name: '오전 (9-12시) 집중해서 공부/놀이', times: Array(7).fill('') },
+      { id: 3, name: '점심 (12-1시) 편식 없이 골고루 먹기', times: Array(7).fill('') },
+      { id: 4, name: '오후 (1-5시) 스스로 계획한 일 하기', times: Array(7).fill('') },
+      { id: 5, name: '저녁 (6-9시) 정리 정돈 및 내일 준비', times: Array(7).fill('') }
+    ];
+
+    // Set the current habit's status
+    for (const habit of defaultHabits) {
+      if (habit.name === habit_name) {
+        habit.times[day_index] = status;
+        break;
       }
-      habit.times[day_index] = status;
-      break;
     }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('habit_tracker')
+      .insert({
+        user_id,
+        child_name,
+        week_start_date: adjustedDateStr,
+        week_period: weekPeriod,
+        habits: defaultHabits,
+        theme: null,
+        reflection: null,
+        reward: null
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw new Error(`Failed to auto-create old record: ${insertError.message}`);
+    }
+
+    oldRecord = inserted;
+    console.log(`✅ Old schema: Auto-created record ${oldRecord.id}`);
+  } else {
+    // OLD RECORD EXISTS - Update it
+    // Update habits JSONB array
+    const habits = existingOldRecord.habits || [];
+    let habitFound = false;
+
+    for (const habit of habits) {
+      if (habit.name === habit_name) {
+        habitFound = true;
+        if (!habit.times) {
+          habit.times = Array(7).fill('');
+        }
+        habit.times[day_index] = status;
+        break;
+      }
+    }
+
+    if (!habitFound) {
+      // Habit not found in existing habits - add it
+      console.log(`⚠️ Habit '${habit_name}' not found in old schema. Adding it...`);
+      const newHabit = {
+        id: habits.length + 1,
+        name: habit_name,
+        times: Array(7).fill('')
+      };
+      newHabit.times[day_index] = status;
+      habits.push(newHabit);
+    }
+
+    const { error: oldUpdateError } = await supabase
+      .from('habit_tracker')
+      .update({ habits })
+      .eq('id', existingOldRecord.id);
+
+    if (oldUpdateError) {
+      throw new Error(`Old schema update failed: ${oldUpdateError.message}`);
+    }
+
+    oldRecord = existingOldRecord;
+    console.log(`✅ Old schema: Updated habit_tracker ${oldRecord.id}`);
   }
-
-  if (!habitFound) {
-    throw new Error(`Habit '${habit_name}' not found in old schema`);
-  }
-
-  const { error: oldUpdateError } = await supabase
-    .from('habit_tracker')
-    .update({ habits })
-    .eq('id', oldRecord.id);
-
-  if (oldUpdateError) {
-    throw new Error(`Old schema update failed: ${oldUpdateError.message}`);
-  }
-
-  console.log(`✅ Old schema: Updated habit_tracker ${oldRecord.id}`);
 
   // Step 2: Update NEW SCHEMA (habit_records table)
   try {
