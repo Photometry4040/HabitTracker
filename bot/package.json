@@ -1,0 +1,28 @@
+{
+  "name": "habit-tracker-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Kids Habit Tracker - Query and view habit progress",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "register": "node register-commands.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "habit-tracker",
+    "supabase"
+  ],
+  "author": "Claude Code",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
