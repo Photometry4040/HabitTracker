@@ -267,10 +267,11 @@ function App() {
         const reloadedData = await loadChildData(selectedChild, weekStartDateForCheck)
         if (reloadedData) {
           console.log('저장된 데이터를 성공적으로 불러왔습니다!')
-          // 상태 업데이트 (필요한 경우)
-          // setHabits(reloadedData.habits)
-          // setTheme(reloadedData.theme)
-          // etc...
+          // 상태 업데이트 - UI에 즉시 반영
+          setHabits(reloadedData.habits)
+          setReflection(reloadedData.reflection || '')
+          setReward(reloadedData.reward || '')
+          setTheme(reloadedData.theme || 'default')
         }
       } catch (reloadError) {
         console.warn('데이터 재조회 실패 (저장은 성공):', reloadError)
