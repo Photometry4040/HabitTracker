@@ -88,7 +88,12 @@ export const getTemplates = async (childId = null) => {
 
     // Filter by child_id if provided (null matches NULL in database)
     if (childId !== undefined) {
-      query = query.eq('child_id', childId)
+      if (childId === null) {
+        // Use .is() for NULL checks in PostgreSQL
+        query = query.is('child_id', null)
+      } else {
+        query = query.eq('child_id', childId)
+      }
     }
 
     const { data, error } = await query
@@ -242,13 +247,20 @@ export const getDefaultTemplate = async (childId = null) => {
       throw new Error('인증되지 않은 사용자입니다.')
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('habit_templates')
       .select('*')
       .eq('user_id', user.id)
-      .eq('child_id', childId)
       .eq('is_default', true)
-      .single()
+
+    // Handle null child_id with .is() instead of .eq()
+    if (childId === null) {
+      query = query.is('child_id', null)
+    } else {
+      query = query.eq('child_id', childId)
+    }
+
+    const { data, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') {
