@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import { Auth } from '@/components/Auth.jsx'
+import { TemplateManager } from '@/components/TemplateManager.jsx'
 import { saveChildData, deleteChildData } from '@/lib/database.js'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
@@ -42,6 +43,11 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(false)
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
   const [pendingSaveData, setPendingSaveData] = useState(null)
+
+  // ============================================================
+  // TEMPLATE SECTION (Agent 3 소유)
+  // ============================================================
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -441,6 +447,27 @@ function App() {
     return habits.length * 7
   }
 
+  // ============================================================
+  // TEMPLATE HANDLERS (Agent 3 소유)
+  // ============================================================
+  const handleApplyTemplate = (templateHabits) => {
+    // Confirm if there's existing data
+    const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
+                          theme || reflection.bestDay || reflection.easiestHabit ||
+                          reflection.nextWeekGoal || reward
+
+    if (hasCurrentData) {
+      const confirmApply = window.confirm(
+        '현재 입력 중인 데이터가 있습니다. 템플릿을 적용하면 습관 목록이 변경됩니다. 계속하시겠습니까?'
+      )
+      if (!confirmApply) return
+    }
+
+    // Apply template habits
+    setHabits(templateHabits)
+    console.log('Template applied:', templateHabits)
+  }
+
   // 로딩 중 표시
   if (loading) {
     return (
@@ -558,7 +585,23 @@ function App() {
                     )}
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => setShowDashboard(!showDashboard)}
+                        onClick={() => {
+                          setShowTemplateManager(!showTemplateManager)
+                          setShowDashboard(false)
+                        }}
+                        size="sm"
+                        variant={showTemplateManager ? "default" : "outline"}
+                        className={showTemplateManager ? "bg-orange-600 hover:bg-orange-700" : ""}
+                      >
+                        <BookTemplate className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">템플릿</span>
+                        <span className="sm:hidden">템플릿</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowDashboard(!showDashboard)
+                          setShowTemplateManager(false)
+                        }}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700"
                       >
@@ -633,13 +676,23 @@ function App() {
               </CardContent>
             </Card>
 
-            {/* 대시보드 또는 습관 추적 */}
-            {showDashboard ? (
-              <Dashboard 
+            {/* ============================================================ */}
+            {/* TEMPLATE MANAGER SECTION (Agent 3 소유) */}
+            {/* ============================================================ */}
+            {showTemplateManager ? (
+              <TemplateManager
+                onApplyTemplate={handleApplyTemplate}
+                currentHabits={habits}
+                childName={childName}
+                onClose={() => setShowTemplateManager(false)}
+              />
+            ) : showDashboard ? (
+              <Dashboard
                 habits={habits}
                 childName={childName}
                 weekPeriod={weekPeriod}
                 theme={theme}
+                weekStartDate={weekStartDate}
               />
             ) : (
               <>
