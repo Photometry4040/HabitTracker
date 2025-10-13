@@ -1,0 +1,29 @@
+{
+  "name": "habit-tracker-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot for Habit Tracker - Interactive commands and automated reports for kids habit tracking",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "habit-tracker",
+    "discord.js",
+    "supabase"
+  ],
+  "author": "Agent 1 - Discord Bot Developer",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "14.14.1",
+    "@supabase/supabase-js": "2.38.4",
+    "dotenv": "16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
