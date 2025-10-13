@@ -34,7 +34,8 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
 
   // Get ALL templates for current user (don't filter by childId)
   // This allows showing both child-specific and shared templates
-  const { templates, loading, error, refetch } = useTemplates(undefined)
+  // Pass 'ALL' as special value to skip childId filtering
+  const { templates, loading, error, refetch } = useTemplates('ALL')
   const { create, update, remove, saveAsTemplate, creating, updating, deleting } = useTemplateMutations()
   const applyTemplate = useApplyTemplate()
 

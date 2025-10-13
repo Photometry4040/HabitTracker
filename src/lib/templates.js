@@ -92,7 +92,8 @@ export const getTemplates = async (childId = null) => {
       .order('created_at', { ascending: false })
 
     // Filter by child_id if provided (null matches NULL in database)
-    if (childId !== undefined) {
+    // Special value 'ALL' means no filtering
+    if (childId !== undefined && childId !== 'ALL') {
       console.log('🔍 [getTemplates] Filtering by childId:', childId)
       if (childId === null) {
         // Use .is() for NULL checks in PostgreSQL
@@ -101,7 +102,7 @@ export const getTemplates = async (childId = null) => {
         query = query.eq('child_id', childId)
       }
     } else {
-      console.log('🔍 [getTemplates] No childId filter (showing all templates)')
+      console.log('🔍 [getTemplates] No childId filter (showing all templates for user)')
     }
 
     const { data, error } = await query
