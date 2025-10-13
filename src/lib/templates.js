@@ -305,8 +305,9 @@ export const applyTemplate = (template) => {
   )
 
   // Transform to app format with empty times array
+  // Use sequential IDs starting from 1 (safe for PostgreSQL integer column)
   return sortedHabits.map((habit, index) => ({
-    id: Date.now() + index, // Generate unique ID
+    id: index + 1, // Sequential ID (1, 2, 3, ...) instead of timestamp
     name: habit.name,
     times: Array(7).fill('') // Empty 7-day array
   }))
