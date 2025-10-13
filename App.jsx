@@ -262,6 +262,21 @@ function App() {
       // 저장 성공 피드백 (부드러운 방식)
       console.log('데이터가 성공적으로 저장되었습니다! (Dual-write)', result)
 
+      // 저장 후 데이터 다시 불러오기 (즉시 반영)
+      try {
+        const reloadedData = await loadChildData(selectedChild, weekStartDateForCheck)
+        if (reloadedData) {
+          console.log('저장된 데이터를 성공적으로 불러왔습니다!')
+          // 상태 업데이트 (필요한 경우)
+          // setHabits(reloadedData.habits)
+          // setTheme(reloadedData.theme)
+          // etc...
+        }
+      } catch (reloadError) {
+        console.warn('데이터 재조회 실패 (저장은 성공):', reloadError)
+        // 재조회 실패해도 저장은 성공했으므로 계속 진행
+      }
+
       // Discord 알림 전송 (비동기, 실패해도 무시)
       // 1. 주간 저장 알림
       notifyWeekSave(selectedChild, data.weekPeriod, data.habits.length).catch(err => {
