@@ -8,7 +8,9 @@
       "Bash(git cherry-pick:*)",
       "Bash(awk:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
