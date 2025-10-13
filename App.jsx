@@ -424,8 +424,13 @@ function App() {
   }
 
   const addHabit = () => {
+    // 기존 습관들의 최대 id를 찾아서 +1 (순차 번호 방식)
+    const maxId = habits.length > 0
+      ? Math.max(...habits.map(h => h.id || 0))
+      : 0
+
     const newHabit = {
-      id: Date.now(),
+      id: maxId + 1,  // timestamp 대신 순차 번호 사용 (integer 범위 내)
       name: '새로운 습관을 입력하세요',
       times: Array(7).fill('')
     }
