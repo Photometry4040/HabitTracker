@@ -67,10 +67,15 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
       .select('*')
       .eq('child_id', child.id)
       .eq('week_start_date', adjustedDateStr) // Use adjusted date
-      .single()
+      .maybeSingle() // Use maybeSingle() to avoid 406 error when no data exists
 
-    if (weekError || !week) {
-      console.log('Week not found in new schema:', weekStartDate)
+    if (weekError) {
+      console.error('Error querying week:', weekError)
+      return null
+    }
+
+    if (!week) {
+      console.log('Week not found in new schema:', adjustedDateStr)
       return null
     }
 
