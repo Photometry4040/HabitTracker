@@ -1,7 +1,7 @@
 # 📚 프로젝트 문서 색인
 
-**업데이트**: 2025-10-12
-**구조**: 체계적 정리 완료
+**업데이트**: 2025-10-13
+**구조**: 체계적 정리 완료 + API 문서 추가
 
 ---
 
@@ -19,16 +19,24 @@ docs/
 │   ├── issues/          # 해결된 이슈들
 │   └── setup/           # 설정 완료 문서
 ├── 05-reviews/           # 주간 리뷰 및 계획
-└── 06-future/            # 미래 개발 계획
+├── 06-future/            # 미래 개발 계획
+├── api/                  # 🆕 API 문서 (Agent 개발)
+│   ├── README.md        # API 문서 색인
+│   ├── templates-api.md # Template CRUD API
+│   ├── statistics-api.md # Statistics API
+│   └── discord-api.md   # Discord Bot API
+├── AGENT_PROGRESS.md     # 🆕 Agent 개발 진행 상황
+└── GIT_BRANCH_STATUS.md  # 🆕 Git 브랜치 상태 보고
 ```
 
 ---
 
-## 🎯 현재 작업 (Phase 2)
+## 🎯 현재 작업
 
+### Phase 2: 쓰기 작업 전환
 **상태**: Day 2 완료, Day 3~5 대기 중
 
-### 핵심 문서
+**핵심 문서**:
 1. **[PHASE_2_PLAN.md](02-active/PHASE_2_PLAN.md)** ⭐
    - Phase 2 전체 계획 (Day 1~5)
    - 상세 구현 가이드
@@ -51,6 +59,21 @@ docs/
 5. **[MANUAL_DEPLOYMENT_REQUIRED.md](02-active/MANUAL_DEPLOYMENT_REQUIRED.md)** ⚠️
    - 수동 배포 필요 사항
    - Migration 013 완료 ✅
+
+### 🤖 Parallel Agent Development (NEW)
+**상태**: Day 2 진행 중
+**기간**: 2025-10-14 ~ 2025-10-18 (5일)
+
+**핵심 문서**:
+1. **[AGENT_PROGRESS.md](AGENT_PROGRESS.md)** 📊 - 전체 진행 상황 추적
+2. **[GIT_BRANCH_STATUS.md](GIT_BRANCH_STATUS.md)** 🌿 - Git 브랜치 상태 보고
+3. **[api/README.md](api/README.md)** 📚 - API 문서 색인
+
+**개발 중인 기능**:
+- 🤖 Agent 1: Discord Bot (MVP)
+- 📊 Agent 2: Statistics & Analytics
+- 🎨 Agent 3: Template System
+- 📝 Agent 4: Documentation & Testing
 
 ---
 
@@ -106,9 +129,19 @@ docs/
 - [ ] **Day 4**: RLS 활성화
 - [ ] **Day 5**: 최종 검증 및 문서화
 
-### Phase 3: 추가 기능 ⏳ 대기 중
-**예상 기간**: 3~4주
-**계획**: [TECH_SPEC.md](00-overview/TECH_SPEC.md) 참고
+### Phase 3: 추가 기능 🔄 진행 중 (Agent 병렬 개발)
+**예상 기간**: 5일 (2025-10-14 ~ 2025-10-18)
+**계획**: Parallel Agent Development
+
+**진행 상황**:
+- [x] Agent 1 Day 1: Discord Bot 초기 설정 ✅
+- [x] Agent 2 Day 1-2: Statistics Library 완성 ✅
+- [x] Agent 3 Day 1: Template CRUD 완성 ✅
+- [x] Agent 4 Day 1: Test & Doc 구조 ✅
+- [ ] Agent 1 Day 2: Slash Commands 구현 (진행 중)
+- [ ] Agent 4 Day 2: API 문서 작성 (진행 중)
+
+**상세 진행 상황**: [AGENT_PROGRESS.md](AGENT_PROGRESS.md)
 
 ---
 
@@ -121,6 +154,13 @@ docs/
 - **Realtime**: [REALTIME_STRATEGY.md](01-architecture/REALTIME_STRATEGY.md)
 - **배포**: [docs/03-deployment/](03-deployment/)
 - **이슈 해결**: [docs/04-completed/issues/](04-completed/issues/)
+
+### 🆕 Agent 개발 관련
+- **전체 진행 상황**: [AGENT_PROGRESS.md](AGENT_PROGRESS.md)
+- **Git 브랜치 상태**: [GIT_BRANCH_STATUS.md](GIT_BRANCH_STATUS.md)
+- **Templates API**: [api/templates-api.md](api/templates-api.md)
+- **Statistics API**: [api/statistics-api.md](api/statistics-api.md)
+- **Discord Bot API**: [api/discord-api.md](api/discord-api.md)
 
 ### 작업 이력 보기
 - **Phase 0**: [docs/04-completed/phase0/](04-completed/phase0/)

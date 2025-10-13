@@ -1,242 +1,153 @@
 /**
  * Habit Tracker Discord Bot
  *
- * Main entry point for the Discord bot that provides interactive commands
- * and automated reports for the Habit Tracker application.
+ * Main entry point for the Discord bot.
+ * Handles slash command interactions and queries habit data from Supabase.
  *
- * @author Agent 1 - Discord Bot Developer
- * @version 1.0.0
+ * Features:
+ * - /습관조회 - Query weekly habit data for children
+ * - Beautiful Discord embeds with progress visualization
+ * - Integration with Supabase database (new schema)
+ *
+ * @author Claude Code (Agent 1: Discord Bot Developer)
+ * @version 1.0.0 - Day 2 Implementation
  */
 
-import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { createClient } from '@supabase/supabase-js';
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
-// ============================================================
-// CONFIGURATION
-// ============================================================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const {
-  DISCORD_BOT_TOKEN,
-  DISCORD_APPLICATION_ID,
-  DISCORD_GUILD_ID,
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-  NODE_ENV = 'development'
-} = process.env;
+// Validate environment variables
+const requiredEnvVars = ['DISCORD_TOKEN', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
-// ============================================================
-// ENVIRONMENT VALIDATION
-// ============================================================
-
-/**
- * Validates required environment variables
- * Exits process if any required variables are missing
- */
-function validateEnvironment() {
-  const required = [
-    'DISCORD_BOT_TOKEN',
-    'DISCORD_APPLICATION_ID',
-    'SUPABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY'
-  ];
-
-  const missing = required.filter(key => !process.env[key]);
-
-  if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:');
-    missing.forEach(key => console.error(`   - ${key}`));
-    console.error('\nPlease check your .env file.');
-    process.exit(1);
-  }
-
-  console.log('✅ Environment variables validated');
-}
-
-// ============================================================
-// DISCORD CLIENT SETUP
-// ============================================================
-
-/**
- * Initialize Discord client with required intents
- *
- * Intents used:
- * - Guilds: Basic server information
- * - GuildMessages: Read messages in servers
- * - MessageContent: Access message content (required for commands)
- */
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
-
-// ============================================================
-// SUPABASE CLIENT SETUP
-// ============================================================
-
-/**
- * Initialize Supabase client
- * Uses service role key for full database access
- */
-let supabase;
-
-try {
-  supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  console.log('✅ Supabase client initialized');
-} catch (error) {
-  console.error('❌ Failed to initialize Supabase client:', error.message);
+if (missingVars.length > 0) {
+  console.error('❌ Error: Missing required environment variables:');
+  missingVars.forEach(varName => console.error(`  - ${varName}`));
+  console.error('\nPlease create a .env file with these variables.');
+  console.error('See .env.example for reference.');
   process.exit(1);
 }
 
-// ============================================================
-// EVENT HANDLERS
-// ============================================================
-
-/**
- * Event: Bot is ready and connected to Discord
- *
- * This event fires once when the bot successfully connects to Discord.
- * Use this to perform initialization tasks.
- */
-client.once(Events.ClientReady, async (readyClient) => {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`✅ Discord Bot is ready!`);
-  console.log(`🤖 Logged in as: ${readyClient.user.tag}`);
-  console.log(`📊 Serving ${readyClient.guilds.cache.size} server(s)`);
-  console.log(`🌍 Environment: ${NODE_ENV}`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-  // Test Supabase connection
-  await testSupabaseConnection();
+// Create Discord client
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages
+  ]
 });
 
-/**
- * Event: Slash command interaction received
- *
- * This event fires when a user executes a slash command.
- * Currently a placeholder - will be implemented in Day 2.
- */
-client.on(Events.InteractionCreate, async (interaction) => {
+// Initialize command collection
+client.commands = new Collection();
+
+// Load commands from commands/ directory
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+console.log('📦 Loading commands...');
+
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = await import(`file://${filePath}`);
+
+  if ('data' in command && 'execute' in command) {
+    client.commands.set(command.data.name, command);
+    console.log(`  ✓ Loaded: ${command.data.name}`);
+  } else {
+    console.warn(`  ⚠ Warning: ${file} is missing required "data" or "execute" export`);
+  }
+}
+
+console.log(`✅ Loaded ${client.commands.size} command(s)\n`);
+
+// Event: Bot ready
+client.once('ready', () => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🤖 Habit Tracker Discord Bot');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`✅ Logged in as: ${client.user.tag}`);
+  console.log(`📊 Serving ${client.guilds.cache.size} guild(s)`);
+  console.log(`🎯 Commands loaded: ${client.commands.size}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log('✨ Bot is ready and listening for commands!\n');
+
+  // Set bot activity status
+  client.user.setActivity('습관 트래커', { type: 'WATCHING' });
+});
+
+// Event: Slash command interaction
+client.on('interactionCreate', async interaction => {
   // Only handle slash commands
   if (!interaction.isChatInputCommand()) return;
 
-  console.log(`📝 Command received: /${interaction.commandName} from ${interaction.user.tag}`);
+  const command = client.commands.get(interaction.commandName);
 
-  // TODO: Day 2 - Implement command handlers
-  // Example structure:
-  // - commands/lookup.js - /습관조회
-  // - commands/update.js - /습관수정
-  // - commands/stats.js - /통계
-  // - commands/settings.js - /알림설정
+  if (!command) {
+    console.warn(`⚠ Unknown command: ${interaction.commandName}`);
+    return;
+  }
 
   try {
-    // Placeholder response
-    await interaction.reply({
-      content: '⚠️ 명령어 핸들러가 아직 구현되지 않았습니다.\n이 기능은 Day 2에 추가될 예정입니다.',
-      ephemeral: true // Only visible to the user who ran the command
-    });
+    console.log(`📨 Command received: /${interaction.commandName} from ${interaction.user.tag}`);
+    await command.execute(interaction);
+    console.log(`✅ Command executed successfully: /${interaction.commandName}`);
   } catch (error) {
-    console.error('❌ Error handling interaction:', error);
+    console.error(`❌ Error executing command: /${interaction.commandName}`);
+    console.error(error);
+
+    const errorMessage = {
+      content: '❌ 명령어 실행 중 오류가 발생했어요. 나중에 다시 시도해주세요.',
+      ephemeral: true
+    };
+
+    // Try to reply or follow up depending on interaction state
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    } catch (replyError) {
+      console.error('❌ Failed to send error message to user:', replyError);
+    }
   }
 });
 
-/**
- * Event: Error occurred
- *
- * Global error handler for the Discord client
- */
-client.on(Events.Error, (error) => {
+// Event: Error handling
+client.on('error', error => {
   console.error('❌ Discord client error:', error);
 });
 
-// ============================================================
-// SUPABASE CONNECTION TEST
-// ============================================================
+process.on('unhandledRejection', error => {
+  console.error('❌ Unhandled promise rejection:', error);
+});
 
-/**
- * Tests Supabase database connection
- *
- * Attempts to query the habit_data table to verify:
- * 1. Database connection is working
- * 2. Credentials are correct
- * 3. Table exists and is accessible
- */
-async function testSupabaseConnection() {
-  console.log('🔍 Testing Supabase connection...');
+process.on('uncaughtException', error => {
+  console.error('❌ Uncaught exception:', error);
+  process.exit(1);
+});
 
-  try {
-    // Simple query to test connection
-    // Query the habit_data table (limit 1 to minimize data transfer)
-    const { data, error } = await supabase
-      .from('habit_data')
-      .select('id')
-      .limit(1);
-
-    if (error) {
-      console.error('❌ Supabase connection test failed:', error.message);
-      return;
-    }
-
-    console.log('✅ Supabase connection successful');
-    console.log(`📊 Database is accessible (found ${data?.length || 0} sample record(s))`);
-  } catch (error) {
-    console.error('❌ Unexpected error during Supabase test:', error.message);
-  }
-}
-
-// ============================================================
-// GRACEFUL SHUTDOWN
-// ============================================================
-
-/**
- * Handle graceful shutdown on process termination
- *
- * Ensures the bot properly disconnects from Discord
- * before the process exits.
- */
-process.on('SIGINT', async () => {
-  console.log('\n⚠️  Received SIGINT, shutting down gracefully...');
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n🛑 Received SIGINT, shutting down gracefully...');
   client.destroy();
-  console.log('👋 Bot disconnected. Goodbye!');
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
-  console.log('\n⚠️  Received SIGTERM, shutting down gracefully...');
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
   client.destroy();
-  console.log('👋 Bot disconnected. Goodbye!');
   process.exit(0);
 });
 
-// ============================================================
-// START BOT
-// ============================================================
-
-/**
- * Main function - starts the bot
- *
- * Validates environment and logs in to Discord
- */
-async function main() {
-  console.log('🚀 Starting Habit Tracker Discord Bot...\n');
-
-  // Validate environment variables
-  validateEnvironment();
-
-  // Login to Discord
-  try {
-    await client.login(DISCORD_BOT_TOKEN);
-  } catch (error) {
-    console.error('❌ Failed to login to Discord:', error.message);
-    process.exit(1);
-  }
-}
-
-// Run the bot
-main();
+// Login to Discord
+console.log('🚀 Starting bot...\n');
+client.login(process.env.DISCORD_TOKEN);

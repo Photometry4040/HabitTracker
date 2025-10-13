@@ -1,88 +1,79 @@
 /**
- * Templates Library
- * CRUD operations for habit_templates table
+ * Template System - Database Operations
+ * Manages habit templates for quick week creation
  * Agent 3: Template System Developer
  */
 
 import { supabase } from './supabase.js'
 
 /**
- * Get Supabase configuration for Edge Function calls
- */
-function getSupabaseConfig() {
-  const url = import.meta.env.VITE_SUPABASE_URL
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase configuration not found')
-  }
-
-  return { url, anonKey }
-}
-
-/**
  * Create a new habit template
- *
- * @param {Object} templateData - Template data
- * @param {string} templateData.child_id - Child ID (UUID)
- * @param {string} templateData.name - Template name
- * @param {string} templateData.description - Template description (optional)
- * @param {Array} templateData.habits - Array of habit objects [{name, time_period, display_order}]
- * @param {boolean} templateData.is_default - Whether this is the default template
- * @returns {Object} Created template
+ * @param {string} name - Template name (e.g., "학기 중 루틴")
+ * @param {Array} habits - Array of habit objects [{id, name, times}, ...]
+ * @param {string|null} childId - Optional child ID (null = shared template)
+ * @param {string} description - Optional description
+ * @param {boolean} isDefault - Whether this is the default template
+ * @returns {Object|null} Created template
  */
-export async function createTemplate(templateData) {
+export const createTemplate = async (name, habits, childId = null, description = '', isDefault = false) => {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       throw new Error('인증되지 않은 사용자입니다.')
     }
 
-    // Validate required fields
-    if (!templateData.name) {
-      throw new Error('템플릿 이름은 필수입니다.')
+    // Transform habits to template format (remove times, keep only name)
+    const templateHabits = habits.map((habit, index) => ({
+      name: habit.name,
+      display_order: index
+    }))
+
+    // If setting as default, unset other defaults first
+    if (isDefault) {
+      const { error: updateError } = await supabase
+        .from('habit_templates')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .eq('child_id', childId)
+
+      if (updateError) {
+        console.warn('Failed to unset other defaults:', updateError)
+      }
     }
 
-    if (!Array.isArray(templateData.habits)) {
-      throw new Error('습관 데이터는 배열이어야 합니다.')
-    }
-
-    // Insert template
+    // Insert new template
     const { data, error } = await supabase
       .from('habit_templates')
       .insert({
         user_id: user.id,
-        child_id: templateData.child_id || null,
-        name: templateData.name,
-        description: templateData.description || null,
-        habits: templateData.habits,
-        is_default: templateData.is_default || false
+        child_id: childId,
+        name,
+        description,
+        habits: templateHabits,
+        is_default: isDefault
       })
       .select()
       .single()
 
     if (error) {
-      console.error('템플릿 생성 오류:', error)
+      console.error('Error creating template:', error)
       throw error
     }
 
-    console.log('템플릿 생성 성공:', data)
+    console.log('Template created:', data)
     return data
   } catch (error) {
-    console.error('createTemplate 오류:', error)
+    console.error('Failed to create template:', error)
     throw error
   }
 }
 
 /**
- * Load habit templates with optional filters
- *
- * @param {Object} filters - Filter options
- * @param {string} filters.child_id - Filter by child ID (optional)
- * @param {boolean} filters.is_default - Filter by default templates only (optional)
+ * Get all templates for current user
+ * @param {string|null} childId - Optional filter by child ID
  * @returns {Array} Array of templates
  */
-export async function loadTemplates(filters = {}) {
+export const getTemplates = async (childId = null) => {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
@@ -91,41 +82,35 @@ export async function loadTemplates(filters = {}) {
 
     let query = supabase
       .from('habit_templates')
-      .select('*, children(id, name)')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
-    // Apply filters
-    if (filters.child_id) {
-      query = query.eq('child_id', filters.child_id)
-    }
-
-    if (filters.is_default !== undefined) {
-      query = query.eq('is_default', filters.is_default)
+    // Filter by child_id if provided (null matches NULL in database)
+    if (childId !== undefined) {
+      query = query.eq('child_id', childId)
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error('템플릿 조회 오류:', error)
+      console.error('Error fetching templates:', error)
       throw error
     }
 
-    console.log(`템플릿 ${data?.length || 0}개 조회 완료`)
     return data || []
   } catch (error) {
-    console.error('loadTemplates 오류:', error)
-    throw error
+    console.error('Failed to fetch templates:', error)
+    return []
   }
 }
 
 /**
- * Load a single template by ID
- *
- * @param {string} templateId - Template ID (UUID)
- * @returns {Object|null} Template data
+ * Get a specific template by ID
+ * @param {string} templateId - Template UUID
+ * @returns {Object|null} Template object
  */
-export async function loadTemplate(templateId) {
+export const getTemplate = async (templateId) => {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
@@ -134,77 +119,92 @@ export async function loadTemplate(templateId) {
 
     const { data, error } = await supabase
       .from('habit_templates')
-      .select('*, children(id, name)')
+      .select('*')
       .eq('id', templateId)
       .eq('user_id', user.id)
       .single()
 
     if (error) {
-      console.error('템플릿 단일 조회 오류:', error)
-      return null
+      console.error('Error fetching template:', error)
+      throw error
     }
 
     return data
   } catch (error) {
-    console.error('loadTemplate 오류:', error)
+    console.error('Failed to fetch template:', error)
     return null
   }
 }
 
 /**
  * Update an existing template
- *
- * @param {string} templateId - Template ID (UUID)
- * @param {Object} updates - Fields to update
- * @returns {Object} Updated template
+ * @param {string} templateId - Template UUID
+ * @param {Object} updates - Fields to update {name, description, habits, isDefault}
+ * @returns {Object|null} Updated template
  */
-export async function updateTemplate(templateId, updates) {
+export const updateTemplate = async (templateId, updates) => {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       throw new Error('인증되지 않은 사용자입니다.')
     }
 
-    // Ensure we only update allowed fields
-    const allowedFields = ['name', 'description', 'habits', 'is_default']
-    const filteredUpdates = {}
+    // Get current template to check child_id for default handling
+    const currentTemplate = await getTemplate(templateId)
+    if (!currentTemplate) {
+      throw new Error('Template not found')
+    }
 
-    Object.keys(updates).forEach(key => {
-      if (allowedFields.includes(key)) {
-        filteredUpdates[key] = updates[key]
+    // If setting as default, unset other defaults first
+    if (updates.is_default) {
+      const { error: updateError } = await supabase
+        .from('habit_templates')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .eq('child_id', currentTemplate.child_id)
+        .neq('id', templateId)
+
+      if (updateError) {
+        console.warn('Failed to unset other defaults:', updateError)
       }
-    })
+    }
 
-    filteredUpdates.updated_at = new Date().toISOString()
+    // Transform habits if provided
+    const updateData = { ...updates }
+    if (updates.habits) {
+      updateData.habits = updates.habits.map((habit, index) => ({
+        name: habit.name,
+        display_order: habit.display_order !== undefined ? habit.display_order : index
+      }))
+    }
 
     const { data, error } = await supabase
       .from('habit_templates')
-      .update(filteredUpdates)
+      .update(updateData)
       .eq('id', templateId)
       .eq('user_id', user.id)
       .select()
       .single()
 
     if (error) {
-      console.error('템플릿 업데이트 오류:', error)
+      console.error('Error updating template:', error)
       throw error
     }
 
-    console.log('템플릿 업데이트 성공:', data)
+    console.log('Template updated:', data)
     return data
   } catch (error) {
-    console.error('updateTemplate 오류:', error)
+    console.error('Failed to update template:', error)
     throw error
   }
 }
 
 /**
  * Delete a template
- *
- * @param {string} templateId - Template ID (UUID)
+ * @param {string} templateId - Template UUID
  * @returns {boolean} Success status
  */
-export async function deleteTemplate(templateId) {
+export const deleteTemplate = async (templateId) => {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
@@ -218,96 +218,113 @@ export async function deleteTemplate(templateId) {
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('템플릿 삭제 오류:', error)
+      console.error('Error deleting template:', error)
       throw error
     }
 
-    console.log('템플릿 삭제 성공:', templateId)
+    console.log('Template deleted:', templateId)
     return true
   } catch (error) {
-    console.error('deleteTemplate 오류:', error)
+    console.error('Failed to delete template:', error)
     throw error
   }
 }
 
 /**
- * Create a new week from a template using Edge Function
- *
- * @param {string} templateId - Template ID (UUID)
- * @param {string} childName - Child name
- * @param {string} weekStartDate - Week start date (YYYY-MM-DD)
- * @returns {Object} Created week data
+ * Get the default template for user (optionally filtered by child)
+ * @param {string|null} childId - Optional child ID
+ * @returns {Object|null} Default template
  */
-export async function createWeekFromTemplate(templateId, childName, weekStartDate) {
+export const getDefaultTemplate = async (childId = null) => {
   try {
-    // Load template
-    const template = await loadTemplate(templateId)
-    if (!template) {
-      throw new Error('템플릿을 찾을 수 없습니다.')
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('인증되지 않은 사용자입니다.')
     }
 
-    // Get Supabase config
-    const { url, anonKey } = getSupabaseConfig()
+    const { data, error } = await supabase
+      .from('habit_templates')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('child_id', childId)
+      .eq('is_default', true)
+      .single()
 
-    // Call Edge Function (dual-write-habit)
-    const weekData = {
-      childName: childName,
-      weekStartDate: weekStartDate,
-      theme: template.description || '',
-      habits: template.habits
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No default template found (not an error)
+        return null
+      }
+      console.error('Error fetching default template:', error)
+      throw error
     }
 
-    const response = await fetch(`${url}/functions/v1/dual-write-habit`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': `template_${templateId}_${weekStartDate}`
-      },
-      body: JSON.stringify({
-        action: 'create_week',
-        data: weekData
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('주차 생성 실패:', errorText)
-      throw new Error(`주차 생성 실패: ${response.status}`)
-    }
-
-    const result = await response.json()
-    console.log('템플릿으로 주차 생성 성공:', result)
-    return result
+    return data
   } catch (error) {
-    console.error('createWeekFromTemplate 오류:', error)
-    throw error
+    console.error('Failed to fetch default template:', error)
+    return null
   }
 }
 
 /**
- * Convert current week habits to template format
- * Useful for saving current week as a template
- *
- * @param {Array} habits - Array of habit objects from week data
- * @returns {Array} Template-compatible habits array
+ * Apply a template to create habits array for a new week
+ * Transforms template habits to the app's habit format
+ * @param {Object} template - Template object
+ * @returns {Array} Array of habits [{id, name, times: Array(7)}, ...]
  */
-export function convertHabitsToTemplate(habits) {
-  return habits.map((habit, index) => ({
+export const applyTemplate = (template) => {
+  if (!template || !template.habits) {
+    return []
+  }
+
+  // Sort habits by display_order
+  const sortedHabits = [...template.habits].sort((a, b) =>
+    (a.display_order || 0) - (b.display_order || 0)
+  )
+
+  // Transform to app format with empty times array
+  return sortedHabits.map((habit, index) => ({
+    id: Date.now() + index, // Generate unique ID
     name: habit.name,
-    time_period: extractTimePeriod(habit.name),
-    display_order: index
+    times: Array(7).fill('') // Empty 7-day array
   }))
 }
 
 /**
- * Extract time period from habit name
- * Example: "아침 (6-9시) 스스로 일어나기" -> "아침 (6-9시)"
- *
- * @param {string} habitName - Full habit name
- * @returns {string} Time period or empty string
+ * Save current week as a template
+ * Convenience function that combines current state into a template
+ * @param {string} name - Template name
+ * @param {Array} habits - Current habits array
+ * @param {string|null} childName - Child name (for finding child_id)
+ * @param {string} description - Optional description
+ * @param {boolean} isDefault - Whether this is the default template
+ * @returns {Object|null} Created template
  */
-function extractTimePeriod(habitName) {
-  const match = habitName.match(/^(.+?\([^)]+\))/)
-  return match ? match[1] : ''
+export const saveWeekAsTemplate = async (name, habits, childName = null, description = '', isDefault = false) => {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('인증되지 않은 사용자입니다.')
+    }
+
+    // Find child_id if childName provided
+    let childId = null
+    if (childName) {
+      const { data: child, error: childError } = await supabase
+        .from('children')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', childName)
+        .single()
+
+      if (!childError && child) {
+        childId = child.id
+      }
+    }
+
+    return await createTemplate(name, habits, childId, description, isDefault)
+  } catch (error) {
+    console.error('Failed to save week as template:', error)
+    throw error
+  }
 }

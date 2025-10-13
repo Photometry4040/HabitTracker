@@ -1,124 +1,224 @@
 /**
- * Template Hooks
- * React Query hooks for habit template operations
+ * Template System - React Hooks
+ * Custom hooks for template management
  * Agent 3: Template System Developer
+ *
+ * Note: Uses standard React hooks (no React Query dependency)
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect, useCallback } from 'react'
 import {
-  loadTemplates,
-  loadTemplate,
+  getTemplates,
+  getTemplate,
   createTemplate,
   updateTemplate,
   deleteTemplate,
-  createWeekFromTemplate
-} from '@/lib/templates'
+  getDefaultTemplate,
+  applyTemplate,
+  saveWeekAsTemplate
+} from '@/lib/templates.js'
 
 /**
- * Query hook to load all templates with optional filters
- *
- * @param {Object} filters - Filter options
- * @param {string} filters.child_id - Filter by child ID
- * @param {boolean} filters.is_default - Filter by default templates only
- * @returns {Object} React Query result
+ * Hook to fetch and manage templates list
+ * @param {string|null} childId - Optional filter by child ID
+ * @returns {Object} { templates, loading, error, refetch }
  */
-export function useTemplates(filters = {}) {
-  return useQuery({
-    queryKey: ['templates', filters],
-    queryFn: () => loadTemplates(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1
-  })
-}
+export const useTemplates = (childId = null) => {
+  const [templates, setTemplates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-/**
- * Query hook to load a single template by ID
- *
- * @param {string} templateId - Template ID
- * @returns {Object} React Query result
- */
-export function useTemplate(templateId) {
-  return useQuery({
-    queryKey: ['template', templateId],
-    queryFn: () => loadTemplate(templateId),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!templateId,
-    retry: 1
-  })
-}
-
-/**
- * Mutation hook to create a new template
- *
- * @returns {Object} React Query mutation result
- */
-export function useCreateTemplate() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: createTemplate,
-    onSuccess: () => {
-      // Invalidate all template queries to refetch
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
-    },
-    onError: (error) => {
-      console.error('템플릿 생성 실패:', error)
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getTemplates(childId)
+      setTemplates(data)
+    } catch (err) {
+      setError(err)
+      console.error('Error fetching templates:', err)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [childId])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
+
+  return {
+    templates,
+    loading,
+    error,
+    refetch: fetchTemplates
+  }
 }
 
 /**
- * Mutation hook to update an existing template
- *
- * @returns {Object} React Query mutation result
+ * Hook to fetch a single template
+ * @param {string} templateId - Template UUID
+ * @returns {Object} { template, loading, error, refetch }
  */
-export function useUpdateTemplate() {
-  const queryClient = useQueryClient()
+export const useTemplate = (templateId) => {
+  const [template, setTemplate] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  return useMutation({
-    mutationFn: ({ id, updates }) => updateTemplate(id, updates),
-    onSuccess: (data) => {
-      // Invalidate queries for this specific template and all templates
-      queryClient.invalidateQueries({ queryKey: ['template', data.id] })
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
-    },
-    onError: (error) => {
-      console.error('템플릿 업데이트 실패:', error)
+  const fetchTemplate = useCallback(async () => {
+    if (!templateId) {
+      setLoading(false)
+      return
     }
-  })
+
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getTemplate(templateId)
+      setTemplate(data)
+    } catch (err) {
+      setError(err)
+      console.error('Error fetching template:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [templateId])
+
+  useEffect(() => {
+    fetchTemplate()
+  }, [fetchTemplate])
+
+  return {
+    template,
+    loading,
+    error,
+    refetch: fetchTemplate
+  }
 }
 
 /**
- * Mutation hook to delete a template
- *
- * @returns {Object} React Query mutation result
+ * Hook to manage template mutations (create, update, delete)
+ * @returns {Object} Mutation functions and states
  */
-export function useDeleteTemplate() {
-  const queryClient = useQueryClient()
+export const useTemplateMutations = () => {
+  const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState(null)
 
-  return useMutation({
-    mutationFn: deleteTemplate,
-    onSuccess: () => {
-      // Invalidate all template queries to refetch
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
-    },
-    onError: (error) => {
-      console.error('템플릿 삭제 실패:', error)
+  const create = useCallback(async (name, habits, childId = null, description = '', isDefault = false) => {
+    try {
+      setCreating(true)
+      setError(null)
+      const result = await createTemplate(name, habits, childId, description, isDefault)
+      return result
+    } catch (err) {
+      setError(err)
+      console.error('Error creating template:', err)
+      throw err
+    } finally {
+      setCreating(false)
     }
-  })
+  }, [])
+
+  const update = useCallback(async (templateId, updates) => {
+    try {
+      setUpdating(true)
+      setError(null)
+      const result = await updateTemplate(templateId, updates)
+      return result
+    } catch (err) {
+      setError(err)
+      console.error('Error updating template:', err)
+      throw err
+    } finally {
+      setUpdating(false)
+    }
+  }, [])
+
+  const remove = useCallback(async (templateId) => {
+    try {
+      setDeleting(true)
+      setError(null)
+      const result = await deleteTemplate(templateId)
+      return result
+    } catch (err) {
+      setError(err)
+      console.error('Error deleting template:', err)
+      throw err
+    } finally {
+      setDeleting(false)
+    }
+  }, [])
+
+  const saveAsTemplate = useCallback(async (name, habits, childName = null, description = '', isDefault = false) => {
+    try {
+      setCreating(true)
+      setError(null)
+      const result = await saveWeekAsTemplate(name, habits, childName, description, isDefault)
+      return result
+    } catch (err) {
+      setError(err)
+      console.error('Error saving as template:', err)
+      throw err
+    } finally {
+      setCreating(false)
+    }
+  }, [])
+
+  return {
+    create,
+    update,
+    remove,
+    saveAsTemplate,
+    creating,
+    updating,
+    deleting,
+    error
+  }
 }
 
 /**
- * Mutation hook to create a week from a template
- *
- * @returns {Object} React Query mutation result
+ * Hook to get default template
+ * @param {string|null} childId - Optional child ID
+ * @returns {Object} { defaultTemplate, loading, error, refetch }
  */
-export function useCreateWeekFromTemplate() {
-  return useMutation({
-    mutationFn: ({ templateId, childName, weekStartDate }) =>
-      createWeekFromTemplate(templateId, childName, weekStartDate),
-    onError: (error) => {
-      console.error('템플릿으로 주차 생성 실패:', error)
+export const useDefaultTemplate = (childId = null) => {
+  const [defaultTemplate, setDefaultTemplate] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchDefault = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getDefaultTemplate(childId)
+      setDefaultTemplate(data)
+    } catch (err) {
+      setError(err)
+      console.error('Error fetching default template:', err)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [childId])
+
+  useEffect(() => {
+    fetchDefault()
+  }, [fetchDefault])
+
+  return {
+    defaultTemplate,
+    loading,
+    error,
+    refetch: fetchDefault
+  }
+}
+
+/**
+ * Hook to apply a template (utility)
+ * @returns {Function} Function to apply template and return habits array
+ */
+export const useApplyTemplate = () => {
+  return useCallback((template) => {
+    return applyTemplate(template)
+  }, [])
 }

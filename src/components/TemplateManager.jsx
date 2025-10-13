@@ -1,117 +1,165 @@
 /**
  * Template Manager Component
- * UI for managing habit templates (create, view, edit, delete, apply)
+ * UI for managing habit templates
  * Agent 3: Template System Developer
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { BookTemplate, Plus, Trash2, Edit2, Calendar, Check } from 'lucide-react'
-import {
-  useTemplates,
-  useCreateTemplate,
-  useUpdateTemplate,
-  useDeleteTemplate,
-  useCreateWeekFromTemplate
-} from '@/hooks/useTemplate'
-import { convertHabitsToTemplate } from '@/lib/templates'
+import { BookTemplate, Plus, Trash2, Edit, Check, X, Star, StarOff } from 'lucide-react'
+import { useTemplates, useTemplateMutations, useApplyTemplate } from '@/hooks/useTemplate.js'
 
-export function TemplateManager({
-  currentChildName,
-  currentHabits,
-  onWeekCreated,
-  onClose
-}) {
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showApplyModal, setShowApplyModal] = useState(false)
+/**
+ * TemplateManager Component
+ * @param {Object} props
+ * @param {Function} props.onApplyTemplate - Callback when template is applied (receives habits array)
+ * @param {Array} props.currentHabits - Current habits to save as template
+ * @param {string} props.childName - Current child name
+ * @param {Function} props.onClose - Optional callback to close template manager
+ */
+export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName = '', onClose }) => {
+  const [view, setView] = useState('list') // 'list', 'create', 'edit'
   const [selectedTemplate, setSelectedTemplate] = useState(null)
-  const [editingTemplate, setEditingTemplate] = useState(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    isDefault: false
+  })
+  const [notification, setNotification] = useState(null)
 
-  // React Query hooks
-  const { data: templates, isLoading } = useTemplates()
-  const createMutation = useCreateTemplate()
-  const updateMutation = useUpdateTemplate()
-  const deleteMutation = useDeleteTemplate()
-  const applyMutation = useCreateWeekFromTemplate()
+  const { templates, loading, error, refetch } = useTemplates()
+  const { create, update, remove, saveAsTemplate, creating, updating, deleting } = useTemplateMutations()
+  const applyTemplate = useApplyTemplate()
 
-  const handleSaveAsTemplate = () => {
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type })
+  }
+
+  const handleSaveCurrentAsTemplate = async () => {
+    if (!formData.name.trim()) {
+      showNotification('템플릿 이름을 입력해주세요', 'error')
+      return
+    }
+
     if (!currentHabits || currentHabits.length === 0) {
-      alert('저장할 습관이 없습니다.')
-      return
-    }
-    setShowCreateModal(true)
-  }
-
-  const handleCreateTemplate = async (templateData) => {
-    try {
-      const templateHabits = convertHabitsToTemplate(currentHabits)
-      await createMutation.mutateAsync({
-        ...templateData,
-        habits: templateHabits
-      })
-      setShowCreateModal(false)
-      alert('템플릿이 생성되었습니다!')
-    } catch (error) {
-      alert('템플릿 생성 실패: ' + error.message)
-    }
-  }
-
-  const handleUpdateTemplate = async (templateId, updates) => {
-    try {
-      await updateMutation.mutateAsync({ id: templateId, updates })
-      setEditingTemplate(null)
-      alert('템플릿이 수정되었습니다!')
-    } catch (error) {
-      alert('템플릿 수정 실패: ' + error.message)
-    }
-  }
-
-  const handleDeleteTemplate = async (templateId, templateName) => {
-    if (!confirm(`"${templateName}" 템플릿을 삭제하시겠습니까?`)) return
-
-    try {
-      await deleteMutation.mutateAsync(templateId)
-      alert('템플릿이 삭제되었습니다.')
-    } catch (error) {
-      alert('템플릿 삭제 실패: ' + error.message)
-    }
-  }
-
-  const handleApplyTemplate = async (weekStartDate) => {
-    if (!selectedTemplate || !currentChildName) {
-      alert('템플릿 또는 아이 정보가 없습니다.')
+      showNotification('저장할 습관이 없습니다', 'error')
       return
     }
 
     try {
-      const result = await applyMutation.mutateAsync({
-        templateId: selectedTemplate.id,
-        childName: currentChildName,
-        weekStartDate: weekStartDate
-      })
+      await saveAsTemplate(
+        formData.name,
+        currentHabits,
+        childName || null,
+        formData.description,
+        formData.isDefault
+      )
+      showNotification('템플릿이 저장되었습니다!')
+      setFormData({ name: '', description: '', isDefault: false })
+      setView('list')
+      refetch()
+    } catch (err) {
+      showNotification('템플릿 저장 실패: ' + err.message, 'error')
+    }
+  }
 
-      setShowApplyModal(false)
+  const handleEditTemplate = async () => {
+    if (!selectedTemplate) return
+
+    if (!formData.name.trim()) {
+      showNotification('템플릿 이름을 입력해주세요', 'error')
+      return
+    }
+
+    try {
+      await update(selectedTemplate.id, {
+        name: formData.name,
+        description: formData.description,
+        is_default: formData.isDefault
+      })
+      showNotification('템플릿이 수정되었습니다!')
+      setFormData({ name: '', description: '', isDefault: false })
       setSelectedTemplate(null)
-      alert('주차가 생성되었습니다!')
-
-      if (onWeekCreated) {
-        onWeekCreated(weekStartDate)
-      }
-    } catch (error) {
-      alert('주차 생성 실패: ' + error.message)
+      setView('list')
+      refetch()
+    } catch (err) {
+      showNotification('템플릿 수정 실패: ' + err.message, 'error')
     }
   }
 
-  if (isLoading) {
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm('정말 이 템플릿을 삭제하시겠습니까?')) {
+      return
+    }
+
+    try {
+      await remove(templateId)
+      showNotification('템플릿이 삭제되었습니다!')
+      refetch()
+    } catch (err) {
+      showNotification('템플릿 삭제 실패: ' + err.message, 'error')
+    }
+  }
+
+  const handleApplyTemplate = (template) => {
+    if (!template) return
+
+    const habits = applyTemplate(template)
+    if (onApplyTemplate) {
+      onApplyTemplate(habits)
+    }
+    showNotification(`"${template.name}" 템플릿을 적용했습니다!`)
+
+    // Close template manager after applying
+    if (onClose) {
+      setTimeout(() => onClose(), 1000)
+    }
+  }
+
+  const startEdit = (template) => {
+    setSelectedTemplate(template)
+    setFormData({
+      name: template.name,
+      description: template.description || '',
+      isDefault: template.is_default || false
+    })
+    setView('edit')
+  }
+
+  const cancelEdit = () => {
+    setSelectedTemplate(null)
+    setFormData({ name: '', description: '', isDefault: false })
+    setView('list')
+  }
+
+  if (loading) {
     return (
       <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
         <CardContent className="pt-6">
-          <div className="text-center">템플릿 로딩 중...</div>
+          <div className="text-center text-gray-600">템플릿 로딩 중...</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">템플릿 로딩 실패: {error.message}</div>
         </CardContent>
       </Card>
     )
@@ -119,376 +167,291 @@ export function TemplateManager({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-                <BookTemplate className="w-6 h-6" />
-                습관 템플릿
-              </CardTitle>
-              <CardDescription className="mt-2">
-                자주 사용하는 습관 세트를 템플릿으로 저장하고 빠르게 재사용하세요
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSaveAsTemplate}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                현재 습관 저장
-              </Button>
-              {onClose && (
-                <Button onClick={onClose} variant="outline">
-                  닫기
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Notification */}
+      {notification && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+            notification.type === 'error'
+              ? 'bg-red-500 text-white'
+              : 'bg-green-500 text-white'
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
 
-      {/* Template List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates && templates.length > 0 ? (
-          templates.map((template) => (
-            <Card key={template.id} className="bg-white/80 backdrop-blur-sm shadow hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      {template.name}
-                      {template.is_default && (
-                        <Badge className="bg-yellow-500">기본</Badge>
-                      )}
+      {/* List View */}
+      {view === 'list' && (
+        <>
+          {/* Header */}
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookTemplate className="w-6 h-6 text-purple-600" />
+                  <div>
+                    <CardTitle className="text-xl font-bold text-purple-800">
+                      템플릿 관리
                     </CardTitle>
-                    {template.description && (
-                      <CardDescription className="mt-1 text-sm">
-                        {template.description}
-                      </CardDescription>
-                    )}
+                    <CardDescription className="text-sm text-gray-600 mt-1">
+                      자주 사용하는 습관 패턴을 템플릿으로 저장하고 빠르게 적용하세요
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-gray-600">
-                  <p className="font-semibold">습관 개수: {template.habits?.length || 0}개</p>
-                  {template.children && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      아이: {template.children.name}
-                    </p>
-                  )}
-                </div>
+                <Button
+                  onClick={() => setView('create')}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">현재 주간 저장</span>
+                  <span className="sm:hidden">저장</span>
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
 
-                {/* Habit List Preview */}
-                <div className="text-xs text-gray-500 max-h-20 overflow-y-auto">
-                  {template.habits?.slice(0, 3).map((habit, idx) => (
-                    <div key={idx} className="truncate">• {habit.name}</div>
+          {/* Templates List */}
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+            <CardContent className="pt-6">
+              {templates.length === 0 ? (
+                <div className="text-center py-8 text-gray-600">
+                  <BookTemplate className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                  <p>저장된 템플릿이 없습니다</p>
+                  <p className="text-sm mt-1">현재 주간을 템플릿으로 저장해보세요!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {templates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {template.name}
+                            </h3>
+                            {template.is_default && (
+                              <Badge variant="default" className="bg-yellow-500">
+                                <Star className="w-3 h-3 mr-1" />
+                                기본
+                              </Badge>
+                            )}
+                          </div>
+                          {template.description && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              {template.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Badge variant="outline">
+                              {template.habits?.length || 0}개 습관
+                            </Badge>
+                            <span>
+                              {new Date(template.created_at).toLocaleDateString('ko-KR')}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            onClick={() => handleApplyTemplate(template)}
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            적용
+                          </Button>
+                          <Button
+                            onClick={() => startEdit(template)}
+                            size="sm"
+                            variant="outline"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteTemplate(template.id)}
+                            size="sm"
+                            variant="destructive"
+                            disabled={deleting}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Habits Preview */}
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="text-xs text-gray-500 mb-1">포함된 습관:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {template.habits?.slice(0, 5).map((habit, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {habit.name}
+                            </Badge>
+                          ))}
+                          {template.habits?.length > 5 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{template.habits.length - 5}개 더
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                  {template.habits?.length > 3 && (
-                    <div className="text-gray-400">...외 {template.habits.length - 3}개</div>
-                  )}
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedTemplate(template)
-                      setShowApplyModal(true)
-                    }}
-                    className="bg-green-600 hover:bg-green-700 flex-1"
-                  >
-                    <Calendar className="w-3 h-3 mr-1" />
-                    사용
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingTemplate(template)}
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteTemplate(template.id, template.name)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="col-span-full bg-white/80 backdrop-blur-sm">
-            <CardContent className="py-8 text-center text-gray-500">
-              <BookTemplate className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>저장된 템플릿이 없습니다.</p>
-              <p className="text-sm mt-1">현재 습관을 저장하여 첫 번째 템플릿을 만들어보세요!</p>
+              )}
             </CardContent>
           </Card>
-        )}
-      </div>
-
-      {/* Create Template Modal */}
-      {showCreateModal && (
-        <CreateTemplateModal
-          onSave={handleCreateTemplate}
-          onClose={() => setShowCreateModal(false)}
-          isSaving={createMutation.isPending}
-        />
+        </>
       )}
 
-      {/* Apply Template Modal */}
-      {showApplyModal && selectedTemplate && (
-        <ApplyTemplateModal
-          template={selectedTemplate}
-          childName={currentChildName}
-          onApply={handleApplyTemplate}
-          onClose={() => {
-            setShowApplyModal(false)
-            setSelectedTemplate(null)
-          }}
-          isApplying={applyMutation.isPending}
-        />
-      )}
-
-      {/* Edit Template Modal */}
-      {editingTemplate && (
-        <EditTemplateModal
-          template={editingTemplate}
-          onSave={handleUpdateTemplate}
-          onClose={() => setEditingTemplate(null)}
-          isSaving={updateMutation.isPending}
-        />
-      )}
-    </div>
-  )
-}
-
-/**
- * Modal for creating a new template
- */
-function CreateTemplateModal({ onSave, onClose, isSaving }) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!name.trim()) {
-      alert('템플릿 이름을 입력해주세요.')
-      return
-    }
-    onSave({ name: name.trim(), description: description.trim(), is_default: isDefault })
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-white">
-        <CardHeader>
-          <CardTitle>새 템플릿 저장</CardTitle>
-          <CardDescription>현재 습관을 템플릿으로 저장합니다</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Create View */}
+      {view === 'create' && (
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-purple-800">
+              현재 주간을 템플릿으로 저장
+            </CardTitle>
+            <CardDescription className="text-sm text-gray-600 mt-1">
+              현재 설정된 {currentHabits.length}개 습관이 템플릿으로 저장됩니다
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="templateName">템플릿 이름 *</Label>
+              <Label htmlFor="template-name">템플릿 이름 *</Label>
               <Input
-                id="templateName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="template-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="예: 학기 중 루틴, 방학 루틴"
-                required
+                className="mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="templateDescription">설명 (선택)</Label>
+              <Label htmlFor="template-description">설명 (선택)</Label>
               <Textarea
-                id="templateDescription"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="템플릿에 대한 간단한 설명"
-                rows={3}
+                id="template-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="이 템플릿에 대한 간단한 설명을 입력하세요"
+                className="mt-1 min-h-[80px]"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="isDefault"
-                checked={isDefault}
-                onChange={(e) => setIsDefault(e.target.checked)}
-                className="w-4 h-4"
+                id="is-default"
+                checked={formData.isDefault}
+                onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
               />
-              <Label htmlFor="isDefault" className="cursor-pointer">
+              <Label htmlFor="is-default" className="cursor-pointer">
                 기본 템플릿으로 설정
               </Label>
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={isSaving} className="flex-1">
-                {isSaving ? '저장 중...' : '저장'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                취소
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-/**
- * Modal for applying a template to create a new week
- */
-function ApplyTemplateModal({ template, childName, onApply, onClose, isApplying }) {
-  const [weekStartDate, setWeekStartDate] = useState(() => {
-    // Default to next Monday
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek
-    const nextMonday = new Date(today)
-    nextMonday.setDate(today.getDate() + daysUntilMonday)
-    return nextMonday.toISOString().split('T')[0]
-  })
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    onApply(weekStartDate)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-white">
-        <CardHeader>
-          <CardTitle>템플릿 적용</CardTitle>
-          <CardDescription>"{template.name}" 템플릿으로 새 주차를 생성합니다</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>아이 이름</Label>
-              <Input value={childName} disabled className="bg-gray-100" />
-            </div>
-
-            <div>
-              <Label htmlFor="weekStartDate">주차 시작일 (월요일) *</Label>
-              <Input
-                id="weekStartDate"
-                type="date"
-                value={weekStartDate}
-                onChange={(e) => setWeekStartDate(e.target.value)}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                자동으로 월요일로 조정됩니다
-              </p>
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900">생성될 습관</p>
-              <ul className="text-xs text-blue-800 mt-2 space-y-1">
-                {template.habits?.slice(0, 5).map((habit, idx) => (
-                  <li key={idx}>• {habit.name}</li>
+            {/* Habits Preview */}
+            <div className="border-t pt-4">
+              <div className="text-sm font-medium text-gray-700 mb-2">
+                저장될 습관 ({currentHabits.length}개):
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {currentHabits.map((habit, idx) => (
+                  <div key={habit.id} className="text-sm text-gray-600 flex items-center gap-2">
+                    <span className="text-gray-400">{idx + 1}.</span>
+                    <span>{habit.name}</span>
+                  </div>
                 ))}
-                {template.habits?.length > 5 && (
-                  <li className="text-blue-600">...외 {template.habits.length - 5}개</li>
-                )}
-              </ul>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={isApplying} className="flex-1 bg-green-600 hover:bg-green-700">
-                {isApplying ? '생성 중...' : '주차 생성'}
+              <Button
+                onClick={handleSaveCurrentAsTemplate}
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+                disabled={creating}
+              >
+                {creating ? '저장 중...' : '저장'}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button
+                onClick={cancelEdit}
+                variant="outline"
+                className="flex-1"
+              >
                 취소
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+          </CardContent>
+        </Card>
+      )}
 
-/**
- * Modal for editing an existing template
- */
-function EditTemplateModal({ template, onSave, onClose, isSaving }) {
-  const [name, setName] = useState(template.name)
-  const [description, setDescription] = useState(template.description || '')
-  const [isDefault, setIsDefault] = useState(template.is_default)
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!name.trim()) {
-      alert('템플릿 이름을 입력해주세요.')
-      return
-    }
-    onSave(template.id, { name: name.trim(), description: description.trim(), is_default: isDefault })
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-white">
-        <CardHeader>
-          <CardTitle>템플릿 수정</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Edit View */}
+      {view === 'edit' && selectedTemplate && (
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-purple-800">
+              템플릿 수정
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="editName">템플릿 이름 *</Label>
+              <Label htmlFor="edit-template-name">템플릿 이름 *</Label>
               <Input
-                id="editName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                id="edit-template-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="템플릿 이름"
+                className="mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="editDescription">설명 (선택)</Label>
+              <Label htmlFor="edit-template-description">설명 (선택)</Label>
               <Textarea
-                id="editDescription"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                id="edit-template-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="템플릿 설명"
+                className="mt-1 min-h-[80px]"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="editIsDefault"
-                checked={isDefault}
-                onChange={(e) => setIsDefault(e.target.checked)}
-                className="w-4 h-4"
+                id="edit-is-default"
+                checked={formData.isDefault}
+                onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
               />
-              <Label htmlFor="editIsDefault" className="cursor-pointer">
+              <Label htmlFor="edit-is-default" className="cursor-pointer">
                 기본 템플릿으로 설정
               </Label>
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={isSaving} className="flex-1">
-                {isSaving ? '저장 중...' : '저장'}
+              <Button
+                onClick={handleEditTemplate}
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+                disabled={updating}
+              >
+                {updating ? '수정 중...' : '수정 완료'}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button
+                onClick={cancelEdit}
+                variant="outline"
+                className="flex-1"
+              >
                 취소
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
