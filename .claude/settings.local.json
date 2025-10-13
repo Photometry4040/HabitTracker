@@ -4,7 +4,11 @@
       "Bash(git mv:*)",
       "Bash(cd:*)",
       "Bash(git rm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(awk:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Button } from '@/components/ui/button.jsx'
-import { 
+import {
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts'
-import { 
-  Trophy, Star, Target, TrendingUp, Calendar, 
+import {
+  Trophy, Star, Target, TrendingUp, Calendar,
   Award, Zap, Heart, Smile, Flame, Crown, Gift,
   CalendarDays, BarChart3
 } from 'lucide-react'
 import { loadChildMultipleWeeks } from '@/lib/database.js'
+import { WeeklyBarChart } from '@/components/charts/WeeklyBarChart.jsx'
+import { SuccessRateDonut } from '@/components/charts/SuccessRateDonut.jsx'
+import { useWeekStats } from '@/hooks/useStatistics.js'
 
-export function Dashboard({ habits, childName, weekPeriod, theme }) {
+export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate }) {
   const [currentLevel, setCurrentLevel] = useState(1)
   const [streak, setStreak] = useState(0)
   const [badges, setBadges] = useState([])
@@ -23,6 +26,15 @@ export function Dashboard({ habits, childName, weekPeriod, theme }) {
   const [loading, setLoading] = useState(false)
 
   const days = ['월', '화', '수', '목', '금', '토', '일']
+
+  // Fetch weekly statistics using the hook
+  const {
+    data: weekStats,
+    isLoading: weekStatsLoading,
+    error: weekStatsError
+  } = useWeekStats(childName, weekStartDate, {
+    enabled: !!childName && !!weekStartDate // Only fetch when we have both
+  })
 
   // 주간/월간 데이터 로드
   const loadHistoricalData = async () => {
@@ -239,6 +251,104 @@ export function Dashboard({ habits, childName, weekPeriod, theme }) {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 주간 통계 섹션 (NEW - Agent 2) */}
+      {weekStats && weekStats.exists && (
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              주간 통계
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 일일 완료 현황 - Bar Chart */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">일일 완료 현황</h3>
+                {weekStatsLoading ? (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : weekStatsError ? (
+                  <div className="flex items-center justify-center h-[300px] text-red-500">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">⚠️</div>
+                      <div className="text-sm">데이터를 불러올 수 없습니다</div>
+                    </div>
+                  </div>
+                ) : (
+                  <WeeklyBarChart dailyStats={weekStats.dailyStats} />
+                )}
+              </div>
+
+              {/* 성과 분포 - Donut Chart */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">성과 분포</h3>
+                {weekStatsLoading ? (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : weekStatsError ? (
+                  <div className="flex items-center justify-center h-[300px] text-red-500">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">⚠️</div>
+                      <div className="text-sm">데이터를 불러올 수 없습니다</div>
+                    </div>
+                  </div>
+                ) : (
+                  <SuccessRateDonut
+                    distribution={weekStats.distribution}
+                    successRate={weekStats.successRate}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* 주간 통계 요약 */}
+            {weekStats && !weekStatsLoading && !weekStatsError && (
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 text-center">
+                  <div className="text-xs text-gray-600 mb-1">최고의 날</div>
+                  <div className="text-lg font-bold text-green-700">
+                    {weekStats.bestDay?.dayOfWeek || '-'}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {weekStats.bestDay?.successRate || 0}%
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center">
+                  <div className="text-xs text-gray-600 mb-1">연속 달성</div>
+                  <div className="text-lg font-bold text-blue-700">
+                    {weekStats.streak}일
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    70% 이상
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center">
+                  <div className="text-xs text-gray-600 mb-1">총 습관 수</div>
+                  <div className="text-lg font-bold text-purple-700">
+                    {weekStats.totalHabits}개
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    이번 주
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 text-center">
+                  <div className="text-xs text-gray-600 mb-1">총 기록 수</div>
+                  <div className="text-lg font-bold text-orange-700">
+                    {weekStats.totalRecords}개
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    완료/체크
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
