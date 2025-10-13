@@ -32,7 +32,9 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
   })
   const [notification, setNotification] = useState(null)
 
-  const { templates, loading, error, refetch } = useTemplates()
+  // Get ALL templates for current user (don't filter by childId)
+  // This allows showing both child-specific and shared templates
+  const { templates, loading, error, refetch } = useTemplates(undefined)
   const { create, update, remove, saveAsTemplate, creating, updating, deleting } = useTemplateMutations()
   const applyTemplate = useApplyTemplate()
 
