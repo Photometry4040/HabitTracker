@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { BookTemplate, Plus, Trash2, Edit, Check, X, Star, StarOff } from 'lucide-react'
+import { BookTemplate, Plus, Trash2, Edit, Check, X, Star, StarOff, Eye } from 'lucide-react'
 import { useTemplates, useTemplateMutations, useApplyTemplate } from '@/hooks/useTemplate.js'
+import { TemplatePreview } from '@/components/TemplatePreview.jsx'
 
 /**
  * TemplateManager Component
@@ -25,6 +26,7 @@ import { useTemplates, useTemplateMutations, useApplyTemplate } from '@/hooks/us
 export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName = '', onClose }) => {
   const [view, setView] = useState('list') // 'list', 'create', 'edit'
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [previewTemplate, setPreviewTemplate] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -259,6 +261,15 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                         </div>
                         <div className="flex items-center gap-2 ml-4">
                           <Button
+                            onClick={() => setPreviewTemplate(template)}
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            미리보기
+                          </Button>
+                          <Button
                             onClick={() => handleApplyTemplate(template)}
                             size="sm"
                             variant="outline"
@@ -454,6 +465,15 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Template Preview Modal */}
+      {previewTemplate && (
+        <TemplatePreview
+          template={previewTemplate}
+          onApply={handleApplyTemplate}
+          onClose={() => setPreviewTemplate(null)}
+        />
       )}
     </div>
   )
