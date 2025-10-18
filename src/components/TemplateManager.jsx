@@ -148,11 +148,7 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
     setView('list')
   }
 
-  // Debug logging
-  console.log('🎨 [TemplateManager] Render state:', { loading, error, templatesCount: templates?.length || 0, templates })
-
   if (loading) {
-    console.log('🎨 [TemplateManager] Showing loading state')
     return (
       <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
         <CardContent className="pt-6">
@@ -163,7 +159,6 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
   }
 
   if (error) {
-    console.log('🎨 [TemplateManager] Showing error state:', error)
     return (
       <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
         <CardContent className="pt-6">
@@ -172,8 +167,6 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
       </Card>
     )
   }
-
-  console.log('🎨 [TemplateManager] Showing template list, count:', templates?.length || 0)
 
   return (
     <div className="space-y-4">

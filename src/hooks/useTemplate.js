@@ -30,15 +30,13 @@ export const useTemplates = (childId = null) => {
 
   const fetchTemplates = useCallback(async () => {
     try {
-      console.log('📋 [useTemplates] Fetching templates with childId:', childId)
       setLoading(true)
       setError(null)
       const data = await getTemplates(childId)
-      console.log('📋 [useTemplates] Received templates:', data?.length || 0, data)
       setTemplates(data)
     } catch (err) {
       setError(err)
-      console.error('📋 [useTemplates] Error fetching templates:', err)
+      console.error('Error fetching templates:', err)
     } finally {
       setLoading(false)
     }

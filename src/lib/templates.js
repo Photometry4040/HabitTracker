@@ -75,15 +75,10 @@ export const createTemplate = async (name, habits, childId = null, description =
  */
 export const getTemplates = async (childId = null) => {
   try {
-    console.log('🔍 [getTemplates] Starting with childId:', childId)
-
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
-      console.error('🔍 [getTemplates] Auth error:', userError)
       throw new Error('인증되지 않은 사용자입니다.')
     }
-
-    console.log('🔍 [getTemplates] User authenticated:', user.id)
 
     let query = supabase
       .from('habit_templates')
@@ -94,28 +89,24 @@ export const getTemplates = async (childId = null) => {
     // Filter by child_id if provided (null matches NULL in database)
     // Special value 'ALL' means no filtering
     if (childId !== undefined && childId !== 'ALL') {
-      console.log('🔍 [getTemplates] Filtering by childId:', childId)
       if (childId === null) {
         // Use .is() for NULL checks in PostgreSQL
         query = query.is('child_id', null)
       } else {
         query = query.eq('child_id', childId)
       }
-    } else {
-      console.log('🔍 [getTemplates] No childId filter (showing all templates for user)')
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error('🔍 [getTemplates] Query error:', error)
+      console.error('Error fetching templates:', error)
       throw error
     }
 
-    console.log('🔍 [getTemplates] Found templates:', data?.length || 0, data)
     return data || []
   } catch (error) {
-    console.error('🔍 [getTemplates] Failed to fetch templates:', error)
+    console.error('Failed to fetch templates:', error)
     return []
   }
 }
