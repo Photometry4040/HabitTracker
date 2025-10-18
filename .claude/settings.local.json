@@ -7,7 +7,9 @@
       "mcp__supabase__list_edge_functions",
       "Read(//Users/jueunlee/project/**)",
       "Bash(cd /Users/jueunlee/project/\"Habit Tracker Template for Kids with Visual Goals\")",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(awk:*)",
+      "Bash(git add -A)"
     ],
     "deny": [],
     "ask": []
