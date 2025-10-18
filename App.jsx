@@ -10,11 +10,13 @@ import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import { Auth } from '@/components/Auth.jsx'
 import { TemplateManager } from '@/components/TemplateManager.jsx'
+import { BadgeNotification } from '@/components/badges/BadgeNotification.jsx'
 import { saveChildData, deleteChildData } from '@/lib/database.js'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
+import { checkAllBadges, calculateConsecutiveDays } from '@/lib/badges.js'
 import './App.css'
 
 function App() {
@@ -48,6 +50,11 @@ function App() {
   // TEMPLATE SECTION (Agent 3 소유)
   // ============================================================
   const [showTemplateManager, setShowTemplateManager] = useState(false)
+
+  // ============================================================
+  // BADGE SECTION (Agent 3 소유)
+  // ============================================================
+  const [newBadge, setNewBadge] = useState(null)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -290,6 +297,20 @@ function App() {
         notifyWeekComplete(selectedChild, data.weekPeriod, stats).catch(err => {
           console.log('Discord week complete notification skipped:', err)
         })
+      }
+
+      // 3. 배지 시스템 체크
+      try {
+        const consecutiveDays = calculateConsecutiveDays(data.habits)
+        const newBadges = checkAllBadges(selectedChild, data.habits, consecutiveDays)
+
+        if (newBadges && newBadges.length > 0) {
+          // 첫 번째 새 배지만 표시 (여러 개면 순차적으로 표시하도록 개선 가능)
+          setNewBadge(newBadges[0])
+          console.log('🏆 새로운 배지 획득!', newBadges)
+        }
+      } catch (badgeError) {
+        console.warn('배지 체크 실패 (저장은 성공):', badgeError)
       }
     } catch (error) {
       console.error('저장 실패:', error)
@@ -997,6 +1018,14 @@ function App() {
               </div>
             )}
           </>
+        )}
+
+        {/* Badge Notification Modal */}
+        {newBadge && (
+          <BadgeNotification
+            badge={newBadge}
+            onClose={() => setNewBadge(null)}
+          />
         )}
       </div>
     </div>

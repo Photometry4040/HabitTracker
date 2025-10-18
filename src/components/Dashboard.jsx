@@ -16,6 +16,7 @@ import { loadChildMultipleWeeks } from '@/lib/database.js'
 import { WeeklyBarChart } from '@/components/charts/WeeklyBarChart.jsx'
 import { SuccessRateDonut } from '@/components/charts/SuccessRateDonut.jsx'
 import { MonthlyStats } from '@/components/MonthlyStats.jsx'
+import { BadgeDisplay } from '@/components/badges/BadgeDisplay.jsx'
 import { useWeekStats } from '@/hooks/useStatistics.js'
 
 export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate }) {
@@ -602,6 +603,9 @@ export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate 
           </div>
         </CardContent>
       </Card>
+
+      {/* Badge Display Section */}
+      <BadgeDisplay childName={childName} />
     </div>
   )
 } 

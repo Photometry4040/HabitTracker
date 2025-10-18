@@ -5,6 +5,42 @@
  */
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Calculate consecutive days from habits
+ * Returns the number of consecutive days with at least one green habit
+ */
+export const calculateConsecutiveDays = (habits) => {
+  if (!habits || habits.length === 0) return 0
+
+  let consecutiveDays = 0
+  const daysCount = habits[0]?.times?.length || 7
+
+  // Check each day from the most recent backwards
+  for (let dayIndex = daysCount - 1; dayIndex >= 0; dayIndex--) {
+    let hasGreen = false
+
+    // Check if any habit is green on this day
+    for (const habit of habits) {
+      if (habit.times && habit.times[dayIndex] === 'green') {
+        hasGreen = true
+        break
+      }
+    }
+
+    if (hasGreen) {
+      consecutiveDays++
+    } else {
+      break // Stop counting when we hit a day without green
+    }
+  }
+
+  return consecutiveDays
+}
+
+// ============================================================================
 // Badge Definitions
 // ============================================================================
 
