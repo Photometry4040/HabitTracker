@@ -9,10 +9,109 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 **Key Features:**
 - User authentication with Supabase Auth
 - Multi-child habit tracking with weekly periods
-- Color-coded habit evaluation system
+- Color-coded habit evaluation system (green/yellow/red)
 - Data visualization dashboard with Recharts
 - Cloud storage with Supabase PostgreSQL
 - PWA support with app icons for all platforms
+- Discord notifications for habit tracking events
+- Achievement badge system
+
+**Project Status:** 🎉 **Phase 3 Complete** - Database migration to NEW SCHEMA finished!
+
+## Current Architecture (Phase 3 Complete - 2025-10-18)
+
+### Database Schema (NEW SCHEMA)
+
+**Active Tables:**
+- `children` - Child profiles (user_id, name, theme)
+- `weeks` - Weekly tracking periods (child_id, week_start_date, reflection, reward)
+- `habits` - Individual habits (week_id, name, display_order)
+- `habit_records` - Daily habit status (habit_id, record_date, status)
+
+**Archived Tables:**
+- `habit_tracker_old` - Old denormalized schema (READ-ONLY, archived 2025-10-18)
+
+**Key Constraints:**
+- Week start date MUST be Monday (CHECK constraint enforced)
+- Foreign keys ensure referential integrity
+- RLS policies enforce user_id isolation
+
+### Data Flow Architecture
+
+```
+Frontend (React)
+    ↓
+Read: database-new.js → Supabase (NEW SCHEMA)
+    ↓
+Write: dual-write.js → Edge Function → Supabase (NEW SCHEMA only)
+    ↓
+Idempotency: idempotency_log table
+```
+
+**Critical Files:**
+1. **Authentication Layer** (`src/lib/auth.js`):
+   - Handles Supabase Auth (login, signup, logout)
+   - Manages user session state
+   - All database operations require authenticated user
+
+2. **Database Layer - Read** (`src/lib/database-new.js`):
+   - `loadWeekDataNew()` - Loads specific week data for a child
+   - `loadAllChildrenNew()` - Lists all children with date ranges
+   - `loadChildWeeksNew()` - Gets all weeks for a child
+   - `loadChildMultipleWeeksNew()` - Dashboard multi-week data
+
+3. **Database Layer - Write** (`src/lib/dual-write.js`):
+   - `createWeekDualWrite()` - Creates/updates week via Edge Function
+   - `updateHabitRecordDualWrite()` - Updates single habit record
+   - `deleteWeekDualWrite()` - Deletes week data
+
+4. **Edge Function** (`supabase/functions/dual-write-habit/index.ts`):
+   - Handles ALL write operations
+   - Mode: `new_only` (writes to NEW SCHEMA only)
+   - Idempotency via `idempotency_log` table
+   - Operations: create_week, update_habit_record, delete_week
+
+5. **State Management** (`App.jsx`):
+   - Main app state lives in `App.jsx` (no external state management)
+   - Key state: `habits`, `reflection`, `reward`, `selectedChild`, `weekPeriod`
+   - **Manual save model**: User must click save button (no auto-save)
+
+6. **Component Architecture**:
+   - `App.jsx` - Main component, handles all state and data operations
+   - `Auth.jsx` - Login/signup UI
+   - `ChildSelector.jsx` - Child selection interface (uses Edge Function for delete)
+   - `Dashboard.jsx` - Data visualization with Recharts
+
+## Migration History
+
+### Phase 0: Schema Design (Completed)
+- ✅ NEW SCHEMA tables created (children, weeks, habits, habit_records)
+- ✅ Migration scripts developed
+- ✅ Initial backfill completed
+
+### Phase 1: Edge Function (Completed)
+- ✅ Dual-write Edge Function developed
+- ✅ Idempotency system implemented
+- ✅ Error handling and logging
+
+### Phase 2: Frontend Migration (Completed)
+- ✅ Read operations migrated to database-new.js
+- ✅ Write operations migrated to dual-write.js
+- ✅ Dual-write mode validated
+- ✅ Discord notifications integrated
+
+### Phase 3: OLD SCHEMA Removal (Completed 2025-10-18)
+- ✅ Drift analysis completed (26.5% acceptable drift)
+- ✅ Edge Function simplified to `new_only` mode
+- ✅ OLD SCHEMA renamed to `habit_tracker_old`
+- ✅ Backup created (70.62 KB, 34 records)
+- ✅ Monitoring view created (`v_old_schema_status`)
+- ✅ Frontend 100% using NEW SCHEMA
+
+**Current Status:**
+- OLD SCHEMA: Archived, monitoring for 1 week
+- NEW SCHEMA: Primary, fully operational
+- Edge Function: new_only mode (640 lines, -35% from dual-write)
 
 ## Development Commands
 
@@ -34,6 +133,21 @@ npm preview
 npm run lint
 ```
 
+### Database Commands
+```bash
+# Analyze drift between schemas
+node scripts/analyze-drift-details.js
+
+# Check latest save operation
+node scripts/check-latest-save.js
+
+# Verify NEW SCHEMA only mode
+node scripts/verify-new-schema-only.js
+
+# Verify table rename
+node scripts/verify-table-rename.js
+```
+
 ### Environment Setup
 1. Copy `.env.example` to `.env`
 2. Add your Supabase credentials:
@@ -42,63 +156,59 @@ npm run lint
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-### Database Setup
-Run these SQL files in Supabase SQL Editor in order:
-1. `supabase-schema.sql` - Creates base tables
-2. `supabase-security-policy.sql` - Sets up RLS policies
+### Database Setup (NEW SCHEMA)
 
-## Architecture
+**Initial Setup:**
+1. Run migrations in `supabase/migrations/` folder in order
+2. Latest migration: `014_rename_old_schema.sql` (Phase 3 complete)
 
-### Core Data Flow
-1. **Authentication Layer** (`src/lib/auth.js`):
-   - Handles Supabase Auth (login, signup, logout)
-   - Manages user session state
-   - All database operations require authenticated user
+**Key Migrations:**
+- `001-011`: Initial NEW SCHEMA setup
+- `012`: Enable RLS policies
+- `013`: Create indexes for performance
+- `014`: Rename OLD SCHEMA to habit_tracker_old
 
-2. **Database Layer** (`src/lib/database.js`):
-   - All CRUD operations for habit data
-   - Key functions:
-     - `saveChildData()` - Saves/overwrites weekly habit data
-     - `loadChildData()` - Loads specific week data for a child
-     - `loadAllChildren()` - Lists all children with date ranges
-     - `loadChildWeeks()` - Gets all weeks for a child
+## Key Design Patterns
 
-3. **State Management** (`App.jsx`):
-   - Main app state lives in `App.jsx` (no external state management)
-   - Key state: `habits`, `reflection`, `reward`, `selectedChild`, `weekPeriod`
-   - **Manual save model**: User must click save button (no auto-save)
+### Weekly Data Structure (NEW SCHEMA)
 
-4. **Component Architecture**:
-   - `App.jsx` - Main component, handles all state and data operations
-   - `Auth.jsx` - Login/signup UI
-   - `ChildSelector.jsx` - Child selection interface
-   - `Dashboard.jsx` - Data visualization with Recharts
-   - `src/components/ui/*` - Reusable UI components (shadcn-style)
+**Normalized Structure:**
+```
+children (id, user_id, name, theme)
+  ↓ has many
+weeks (id, child_id, week_start_date, reflection, reward)
+  ↓ has many
+habits (id, week_id, name, display_order)
+  ↓ has many
+habit_records (id, habit_id, record_date, status)
+```
 
-### Key Design Patterns
-
-**Weekly Data Structure:**
-- Each record is identified by `child_name` + `week_period`
-- `week_period` format: "2025년 7월 21일 ~ 2025년 7월 27일"
-- `week_start_date` stores ISO date for calculation
-- Habits are stored as JSONB array with structure:
-  ```javascript
-  {
-    id: number,
-    name: string,
-    times: Array(7) // 7-day array of 'green'/'yellow'/'red'/''
-  }
-  ```
-
-**Overwrite Confirmation:**
-- When saving to existing week, shows confirmation modal
-- Uses `pendingSaveData` state and `showOverwriteConfirm` flag
-- Force save with `saveData(true)` bypasses confirmation
+**Monday Constraint:**
+- All `week_start_date` MUST be Monday
+- Frontend auto-adjusts to nearest Monday
+- Edge Function enforces Monday constraint
 
 **Date Handling:**
-- `weekStartDate` (input) → auto-calculates `weekPeriod` (display)
+- `weekStartDate` (input) → auto-adjusts to Monday → stored as `week_start_date`
+- `week_period` calculated for display: "2025년 7월 21일 ~ 2025년 7월 27일"
 - UseEffect watches `weekStartDate` changes to auto-load week data
-- Week period is Monday-Sunday (7 days)
+
+### Edge Function Pattern
+
+**Idempotency:**
+- Every request has unique `X-Idempotency-Key` header
+- Logged in `idempotency_log` table
+- Prevents duplicate operations
+
+**Error Handling:**
+- All operations wrapped in try/catch
+- Detailed error logging
+- HTTP status codes: 200 (success), 400 (bad request), 500 (server error)
+
+### Overwrite Confirmation
+- When saving to existing week, shows confirmation modal
+- Uses `pendingSaveData` state and `showOverwriteConfirm` flag
+- Dashboard mode bypasses confirmations for cleaner UX
 
 ## Important Implementation Notes
 
@@ -111,7 +221,13 @@ Run these SQL files in Supabase SQL Editor in order:
 - When changing `weekStartDate`, app automatically loads that week's data
 - Shows confirmation if current unsaved data exists (only in tracker mode, not dashboard)
 - If no data exists for week, resets to default habits (preserves date)
-- Dashboard mode bypasses overwrite confirmations for cleaner UX
+- All reads go through `database-new.js`
+
+### Write Operations
+- ALL writes go through Edge Function via `dual-write.js`
+- No direct database writes from frontend
+- Idempotency ensures safe retries
+- Mode: `new_only` (NEW SCHEMA only)
 
 ### Authentication Flow
 - All database operations check user authentication first
@@ -124,24 +240,32 @@ Run these SQL files in Supabase SQL Editor in order:
 - Desktop: Table layout with traffic light buttons
 - Breakpoint: `md` (768px) - use Tailwind's `hidden md:block` pattern
 
-### Database Schema Notes
-- **Current state**: `user_id` field exists but is commented out in code (temporary)
-- RLS policies are permissive during development ("Allow all operations")
-- Production should enable proper user_id filtering and stricter RLS
-- Table uses JSONB for flexible habit storage (supports dynamic habit lists)
+### RLS Policies
+- **Status**: Enabled (Phase 2 Day 4)
+- **User Isolation**: All tables filter by `user_id`
+- **Policies**: SELECT, INSERT, UPDATE, DELETE for authenticated users only
+- **Security**: Each user can only access their own data
 
 ## Common Development Patterns
 
 ### Adding New Habit Fields
-1. Update default habit structure in `resetData()` functions
-2. Modify habit rendering in both mobile and desktop layouts
-3. Update `saveChildData()` in database.js if persisting new fields
+1. Update database schema (create migration)
+2. Update Edge Function to handle new field
+3. Update `database-new.js` read functions
+4. Modify habit rendering in components
+5. Test with idempotency
 
 ### Working with Supabase
-- Always use helper functions in `src/lib/database.js` and `src/lib/auth.js`
+- Always use helper functions in `src/lib/database-new.js`, `src/lib/dual-write.js`, and `src/lib/auth.js`
 - Never directly import supabase client in components
 - All operations are async - use try/catch blocks
 - Error messages go to console, user-facing errors use alerts
+
+### Working with Edge Functions
+- Deploy: Use Supabase CLI or dashboard
+- Test: Check `idempotency_log` table for operation logs
+- Debug: Check Edge Function logs in Supabase dashboard
+- Current version: new_only mode (640 lines)
 
 ### Styling Approach
 - Tailwind CSS with custom CSS variables for theming
@@ -162,42 +286,119 @@ Run these SQL files in Supabase SQL Editor in order:
 4. Environment variables: Set in Netlify dashboard (NOT in netlify.toml)
 5. Supabase authentication settings must include Netlify URL in redirect URLs
 
+### Edge Function Deployment
+1. Use Supabase CLI: `supabase functions deploy dual-write-habit`
+2. Or deploy via Supabase dashboard
+3. Verify deployment in Edge Function logs
+4. Test with `scripts/check-edge-function-request.js`
+
 ### GitHub Pages Deployment
 - Requires GitHub Actions workflow (see README.md)
 - Base path configured in vite.config.js based on `GITHUB_PAGES` env var
 - Secrets must be set in GitHub repository settings
 
 ## Tech Stack
+
 - **Frontend**: React 18 + Vite 4
 - **Styling**: Tailwind CSS 3.3 with custom design system
 - **Icons**: Lucide React
 - **Charts**: Recharts 3.1
-- **Database**: Supabase (PostgreSQL + Auth)
-- **State**: React Hooks (useState, useEffect)
+- **Database**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **State**: React Hooks (useState, useEffect), React Query for statistics
 - **Data Export**: XLSX library for Excel exports (from Dashboard)
+- **Notifications**: Discord webhook integration
+- **Edge Runtime**: Deno (Supabase Edge Functions)
 
-## File Structure Highlights
+## File Structure
+
 ```
 src/
 ├── lib/
-│   ├── supabase.js      # Supabase client initialization
-│   ├── auth.js          # Authentication helpers
-│   ├── database.js      # Database CRUD operations
-│   ├── security.js      # Security utilities
-│   └── utils.js         # General utilities (clsx, tailwind-merge)
+│   ├── supabase.js       # Supabase client initialization
+│   ├── auth.js           # Authentication helpers
+│   ├── database-new.js   # NEW SCHEMA read operations ⭐
+│   ├── dual-write.js     # Edge Function write wrapper ⭐
+│   ├── discord.js        # Discord webhook notifications
+│   ├── security.js       # Security utilities
+│   └── utils.js          # General utilities (clsx, tailwind-merge)
 ├── components/
-│   ├── ui/              # Reusable UI components (shadcn-style)
-│   ├── Auth.jsx         # Login/signup component
+│   ├── ui/               # Reusable UI components (shadcn-style)
+│   ├── charts/           # Chart components (Recharts)
+│   ├── badges/           # Achievement badge system
+│   ├── Auth.jsx          # Login/signup component
 │   ├── ChildSelector.jsx # Child selection UI
-│   └── Dashboard.jsx    # Data visualization
-├── main.jsx             # React entry point
-└── App.jsx              # Main application component (800+ lines)
+│   ├── Dashboard.jsx     # Data visualization
+│   └── MonthlyStats.jsx  # Monthly statistics
+├── hooks/
+│   └── useStatistics.js  # React Query hooks for stats
+├── main.jsx              # React entry point
+└── App.jsx               # Main application component (800+ lines)
 
-public/                  # Static assets and app icons
-supabase-*.sql           # Database schema and migration files
+supabase/
+├── functions/
+│   ├── dual-write-habit/ # Edge Function (new_only mode) ⭐
+│   └── send-discord-notification/ # Discord notification Edge Function
+└── migrations/
+    └── 001-014_*.sql     # Database migrations
+
+scripts/                  # Analysis and verification scripts
+├── analyze-drift-details.js
+├── check-latest-save.js
+├── verify-new-schema-only.js
+└── verify-table-rename.js
+
+docs/                     # Comprehensive documentation
+├── 00-overview/          # Project overview and plans
+├── 01-architecture/      # Architecture docs
+├── 02-active/            # Active phase documentation
+├── 03-deployment/        # Deployment guides
+├── 04-completed/         # Completed phase docs
+├── 05-reviews/           # Weekly reviews
+└── 06-future/            # Future roadmap
+
+backups/                  # Database backups
+└── habit_tracker_backup_*.json
 ```
 
-## Known Issues & Workarounds
-- `user_id` filtering temporarily disabled in database operations (commented out)
-- RLS policies are permissive for development (needs tightening for production)
-- Week period format is Korean text (may need i18n for internationalization)
+## Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+- **Quick Start**: See `docs/INDEX.md` for navigation
+- **Current Status**: See `docs/00-overview/PROJECT_STATUS.md`
+- **Architecture**: See `docs/01-architecture/CURRENT_ARCHITECTURE.md`
+- **Migration History**: See `docs/02-active/PHASE_3_FINAL_COMPLETE.md`
+- **Deployment**: See `docs/03-deployment/` folder
+
+## Known Issues & Considerations
+
+### Monitoring Period (Until 2025-10-25)
+- OLD SCHEMA (`habit_tracker_old`) is being monitored for 1 week
+- Verify no unexpected changes via `v_old_schema_status` view
+- After 1 week, can safely drop `habit_tracker_old` if desired
+
+### Future Enhancements
+- Real-time updates with Supabase Realtime
+- Habit templates system
+- Advanced statistics and analytics
+- Multi-language support (i18n)
+- Mobile app (React Native)
+
+### Performance Notes
+- Bundle size: 759.18 KB (consider code splitting)
+- Database queries optimized with indexes
+- Edge Function response time: ~200-500ms
+
+## Support & Resources
+
+- **Documentation**: See `docs/` folder
+- **Issues**: Check GitHub Issues
+- **Migration Plan**: `docs/00-overview/DB_MIGRATION_PLAN_V2.md`
+- **Tech Spec**: `docs/00-overview/TECH_SPEC.md`
+
+---
+
+**Last Updated**: 2025-10-18
+**Phase**: Phase 3 Complete ✅
+**Schema Version**: NEW SCHEMA (v2)
+**Edge Function Mode**: new_only
