@@ -34,7 +34,13 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 **Key Constraints:**
 - Week start date MUST be Monday (CHECK constraint enforced)
 - Foreign keys ensure referential integrity
-- RLS policies enforce user_id isolation
+- **RLS (Row-Level Security) ENABLED** ✅ - User_id isolation enforced at DB level
+
+**Security Status (Phase 3 Security Update - 2025-10-18):**
+- ✅ RLS enabled on all core tables (children, weeks, habits, habit_records)
+- ✅ RLS enabled on idempotency_log (user_id based isolation)
+- ✅ Edge Function extracts user_id from JWT and logs operations
+- ✅ Multi-tenant isolation now enforced at database level
 
 ### Data Flow Architecture
 
@@ -241,10 +247,23 @@ habit_records (id, habit_id, record_date, status)
 - Breakpoint: `md` (768px) - use Tailwind's `hidden md:block` pattern
 
 ### RLS Policies
-- **Status**: Enabled (Phase 2 Day 4)
-- **User Isolation**: All tables filter by `user_id`
+- **Status**: ✅ **ENABLED** (Phase 3 Security Update - 2025-10-18)
+- **User Isolation**: All tables enforce `user_id` filtering at database level
 - **Policies**: SELECT, INSERT, UPDATE, DELETE for authenticated users only
-- **Security**: Each user can only access their own data
+- **Security**: Each user can only access their own data (enforced by Supabase RLS)
+- **idempotency_log**: User-scoped operations logging with RLS protection
+
+**Verification:**
+```bash
+# Check RLS status for all core tables
+node scripts/verify-rls-status.js
+
+# Or manually in Supabase SQL Editor:
+SELECT tablename, rowsecurity FROM pg_tables
+WHERE tablename IN ('children', 'weeks', 'habits', 'habit_records', 'idempotency_log')
+AND schemaname = 'public';
+# Expected: All should show rowsecurity = true
+```
 
 ## Common Development Patterns
 

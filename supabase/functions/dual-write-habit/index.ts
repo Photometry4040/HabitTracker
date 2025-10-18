@@ -25,6 +25,13 @@ serve(async (req) => {
       }
     );
 
+    // Extract user_id from Authorization header (JWT token)
+    const authHeader = req.headers.get('Authorization');
+    const userId = extractUserIdFromJWT(authHeader);
+    if (!userId) {
+      throw new Error('Invalid or missing Authorization header - user_id required');
+    }
+
     // Parse request
     const { operation, data } = await req.json();
 
@@ -102,7 +109,8 @@ serve(async (req) => {
           operation: operation,
           request_data: data,
           response_data: responseData,
-          status: 'success'
+          status: 'success',
+          user_id: userId
         });
 
       return new Response(
@@ -131,7 +139,8 @@ serve(async (req) => {
           operation: operation,
           request_data: data,
           response_data: errorResponse,
-          status: 'failed'
+          status: 'failed',
+          user_id: userId
         });
 
       return new Response(
@@ -620,6 +629,42 @@ async function verifyNewSchema(supabase: any) {
     schema_version: 'new_only',
     timestamp: new Date().toISOString()
   };
+}
+
+/**
+ * Extract user_id from JWT Authorization header
+ * Format: "Bearer <jwt_token>"
+ */
+function extractUserIdFromJWT(authHeader: string | null): string | null {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  try {
+    const token = authHeader.substring(7); // Remove "Bearer "
+
+    // Decode JWT (without verification - verification is done by Supabase)
+    // JWT format: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    // Decode payload (base64url)
+    const payload = JSON.parse(
+      new TextDecoder().decode(
+        Uint8Array.from(
+          atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
+          (c) => c.charCodeAt(0)
+        )
+      )
+    );
+
+    return payload.sub || null; // JWT 'sub' claim contains user_id
+  } catch (error) {
+    console.error('Failed to extract user_id from JWT:', error);
+    return null;
+  }
 }
 
 /**

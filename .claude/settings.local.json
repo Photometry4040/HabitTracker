@@ -1,16 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git mv:*)",
-      "Bash(cd:*)",
-      "Bash(git rm:*)",
-      "Bash(find:*)",
-      "Bash(npm run dev)",
-      "Bash(node:*)",
+      "Bash(git commit:*)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_edge_functions",
       "Read(//Users/jueunlee/project/**)",
-      "Bash(git stash:*)",
-      "Bash(git checkout:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\n🎉 Phase 2 Day 3: Dual-Write 시스템 완성 및 UX 개선\n\n## ✅ 주요 성과\n\n### 1. Dual-Write 시스템 완전 작동\n- ✅ 새 주차 생성 시 양쪽 스키마에 정상 저장\n- ✅ 습관 색상 변경 즉시 반영 (Optimistic UI)\n- ✅ OLD SCHEMA: 4개 습관 저장\n- ✅ NEW SCHEMA: 4개 습관 저장\n- ✅ source_version: dual_write 확인\n\n### 2. 버그 수정: Edge Function Habit Insert\n- 🐛 문제: NEW SCHEMA에 habits: 0개로 저장됨\n- 🔍 원인: display_order에 timestamp 사용\n- ✅ 해결: habitsCreated 카운터로 변경\n- ✅ 로깅 강화 (에러 상세 정보 출력)\n\n### 3. UX 개선: 토글 방식 체크 해제\n- 🎨 이전: 4개 버튼 (시인성 저하, 500 에러)\n- ✅ 개선: 토글 방식 (같은 색 클릭 시 해제)\n- ✅ 3개 버튼만 표시 (깔끔한 UI)\n- ✅ 에러 처리 + 자동 롤백\n\n## 📁 변경된 파일\n\n### 코어 기능\n- App.jsx: updateHabitColor() 토글 로직 추가\n- supabase/functions/dual-write-habit/index.ts: \n  - display_order 로직 수정\n  - 로깅 강화\n\n### 문서\n- docs/02-active/PHASE_2_DAY_3_COMPLETE.md (신규)\n- docs/02-active/PHASE_2_SUMMARY.md (업데이트)\n- README.md (상태 업데이트)\n\n### 분석 스크립트 (신규)\n- scripts/analyze-drift-details.js\n- scripts/check-edge-function-request.js\n- scripts/check-latest-save.js\n- scripts/check-rls-status.js\n- scripts/test-habit-insert.js\n\n## 🧪 테스트 결과\n\n✅ Manual QA: 10/10 시나리오 통과\n✅ Dual-write 검증 완료\n✅ Idempotency: 267+ 작업 로그\n✅ Discord 알림 통합\n\n## 📊 데이터 상태\n\n- OLD SCHEMA: 32 weeks\n- NEW SCHEMA: 23 weeks  \n- Drift: 28.1% (9개 차이)\n  - 5개: 일요일 시작 (예상됨)\n  - 4개: 백필 누락\n- Dual-write 레코드: 5개 확인\n\n## 🎯 다음 단계\n\n- Day 4: RLS 활성화 (2시간)\n- Day 5: 최종 검증 및 문서화 (2시간)\n\n---\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(cd /Users/jueunlee/project/\"Habit Tracker Template for Kids with Visual Goals\")",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
