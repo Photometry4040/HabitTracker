@@ -395,11 +395,16 @@ function App() {
   // 자동 저장 제거 - 수동 저장 방식으로 변경
 
   const updateHabitColor = async (habitId, dayIndex, color) => {
+    // Toggle functionality: if same color is clicked again, unset it
+    const currentHabit = habits.find(h => h.id === habitId)
+    const currentColor = currentHabit?.times[dayIndex]
+    const newColor = currentColor === color ? '' : color
+
     // Optimistic UI update
     setHabits(prev => prev.map(habit =>
       habit.id === habitId
         ? { ...habit, times: habit.times.map((time, index) =>
-            index === dayIndex ? color : time
+            index === dayIndex ? newColor : time
           )}
         : habit
     ))
@@ -424,16 +429,16 @@ function App() {
         weekStartDate,
         habit.name,
         dayIndex,
-        color
+        newColor
       )
 
-      console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${color}`)
+      console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${newColor}`)
 
       // Discord 알림 전송 (비동기, 실패해도 무시)
-      if (color) { // 색상이 있을 때만 (빈 문자열이 아닐 때)
+      if (newColor) { // 색상이 있을 때만 (빈 문자열이 아닐 때)
         const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
         const dayOfWeek = dayNames[dayIndex] || `${dayIndex + 1}일차`
-        notifyHabitCheck(selectedChild, habit.name, color, dayOfWeek).catch(err => {
+        notifyHabitCheck(selectedChild, habit.name, newColor, dayOfWeek).catch(err => {
           console.log('Discord notification skipped:', err)
         })
       }
