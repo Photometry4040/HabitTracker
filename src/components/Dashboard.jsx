@@ -15,6 +15,7 @@ import {
 import { loadChildMultipleWeeks } from '@/lib/database.js'
 import { WeeklyBarChart } from '@/components/charts/WeeklyBarChart.jsx'
 import { SuccessRateDonut } from '@/components/charts/SuccessRateDonut.jsx'
+import { MonthlyStats } from '@/components/MonthlyStats.jsx'
 import { useWeekStats } from '@/hooks/useStatistics.js'
 
 export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate }) {
@@ -389,7 +390,16 @@ export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate 
         </CardContent>
       </Card>
 
+      {/* 월간 통계 (New Component) */}
+      {viewMode === 'monthly' && weekStartDate && (
+        <MonthlyStats
+          childName={childName}
+          month={weekStartDate.substring(0, 7)} // YYYY-MM format
+        />
+      )}
+
       {/* 주간 성과 차트 */}
+      {viewMode === 'weekly' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
           <CardHeader>
@@ -451,9 +461,10 @@ export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate 
           </CardContent>
         </Card>
       </div>
+      )}
 
-      {/* 월간 조회 시 주간별 성과 요약 */}
-      {viewMode === 'monthly' && weeklyPerformanceData.length > 0 && (
+      {/* 월간 조회 시 주간별 성과 요약 - 기존 구현 (숨김) */}
+      {false && viewMode === 'monthly' && weeklyPerformanceData.length > 0 && (
         <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
