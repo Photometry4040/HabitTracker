@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { User, Plus, Trash2, Calendar } from 'lucide-react'
-import { loadAllChildren, deleteChildData } from '@/lib/database.js'
+import { loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
+import { deleteWeekDualWrite } from '@/lib/dual-write.js'
 
 export function ChildSelector({ onChildSelect, onNewChild }) {
   const [children, setChildren] = useState([])
@@ -29,14 +30,30 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
   }
 
   const handleDeleteChild = async (childName) => {
-    if (!confirm(`${childName}의 데이터를 삭제하시겠습니까?`)) return
-    
+    if (!confirm(`${childName}의 모든 데이터를 삭제하시겠습니까?`)) return
+
     try {
-      await deleteChildData(childName)
+      // Load all weeks for this child
+      const weeks = await loadChildWeeks(childName)
+
+      if (!weeks || weeks.length === 0) {
+        alert('삭제할 데이터가 없습니다.')
+        await loadChildren()
+        return
+      }
+
+      // Delete all weeks using Edge Function
+      console.log(`Deleting ${weeks.length} weeks for ${childName}...`)
+
+      for (const week of weeks) {
+        await deleteWeekDualWrite(childName, week.week_start_date)
+      }
+
+      console.log(`Successfully deleted all data for ${childName}`)
       await loadChildren()
     } catch (error) {
       console.error('삭제 실패:', error)
-      alert('삭제 중 오류가 발생했습니다.')
+      alert('삭제 중 오류가 발생했습니다: ' + error.message)
     }
   }
 

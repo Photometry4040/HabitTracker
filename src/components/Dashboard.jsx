@@ -12,7 +12,7 @@ import {
   Award, Zap, Heart, Smile, Flame, Crown, Gift,
   CalendarDays, BarChart3
 } from 'lucide-react'
-import { loadChildMultipleWeeks } from '@/lib/database.js'
+import { loadChildMultipleWeeksNew as loadChildMultipleWeeks } from '@/lib/database-new.js'
 import { WeeklyBarChart } from '@/components/charts/WeeklyBarChart.jsx'
 import { SuccessRateDonut } from '@/components/charts/SuccessRateDonut.jsx'
 import { MonthlyStats } from '@/components/MonthlyStats.jsx'

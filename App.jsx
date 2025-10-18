@@ -9,7 +9,6 @@ import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarCh
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import { Auth } from '@/components/Auth.jsx'
-import { saveChildData, deleteChildData } from '@/lib/database.js'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'

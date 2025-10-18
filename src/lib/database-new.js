@@ -301,3 +301,128 @@ export const loadChildWeeksNew = async (childName) => {
     return []
   }
 }
+
+/**
+ * Load multiple weeks for a child (for dashboard)
+ * Replaces: loadChildMultipleWeeks(childName, weeks)
+ *
+ * @param {string} childName - Name of the child
+ * @param {number} weeksCount - Number of recent weeks to load
+ * @returns {Array} Array of week data with habits
+ */
+export const loadChildMultipleWeeksNew = async (childName, weeksCount = 4) => {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('인증되지 않은 사용자입니다.')
+    }
+
+    // Find child
+    const { data: child, error: childError } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .single()
+
+    if (childError || !child) {
+      console.log('Child not found:', childName)
+      return []
+    }
+
+    // Load recent weeks for this child
+    const { data: weeks, error: weeksError } = await supabase
+      .from('weeks')
+      .select('*')
+      .eq('child_id', child.id)
+      .order('week_start_date', { ascending: false })
+      .limit(weeksCount)
+
+    if (weeksError) {
+      console.error('Error loading multiple weeks:', weeksError)
+      return []
+    }
+
+    if (!weeks || weeks.length === 0) {
+      return []
+    }
+
+    // Load habits and records for each week
+    const weeksWithHabits = await Promise.all(
+      weeks.map(async (week) => {
+        // Load habits for this week
+        const { data: habits, error: habitsError } = await supabase
+          .from('habits')
+          .select('*')
+          .eq('week_id', week.id)
+          .order('display_order')
+
+        if (habitsError) {
+          console.error('Error loading habits for week:', habitsError)
+          return null
+        }
+
+        // Load habit_records for each habit
+        const habitsWithRecords = await Promise.all(
+          habits.map(async (habit) => {
+            const { data: records } = await supabase
+              .from('habit_records')
+              .select('record_date, status')
+              .eq('habit_id', habit.id)
+              .order('record_date')
+
+            // Convert records to times array format (7 days)
+            const times = Array(7).fill('')
+            if (records) {
+              records.forEach(record => {
+                const recordDate = new Date(record.record_date)
+                const weekStart = new Date(week.week_start_date)
+                const dayIndex = Math.floor((recordDate - weekStart) / (1000 * 60 * 60 * 24))
+
+                if (dayIndex >= 0 && dayIndex < 7) {
+                  times[dayIndex] = record.status
+                }
+              })
+            }
+
+            return {
+              id: habit.display_order,
+              name: habit.name,
+              times
+            }
+          })
+        )
+
+        // Format week_period for compatibility
+        const weekStart = new Date(week.week_start_date)
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekEnd.getDate() + 6)
+
+        const formatDate = (date) => {
+          const year = date.getFullYear()
+          const month = date.getMonth() + 1
+          const day = date.getDate()
+          return `${year}년 ${month}월 ${day}일`
+        }
+
+        const week_period = `${formatDate(weekStart)} ~ ${formatDate(weekEnd)}`
+
+        return {
+          child_name: childName,
+          week_period,
+          week_start_date: week.week_start_date,
+          theme: week.theme || '',
+          reflection: week.reflection || {},
+          reward: week.reward || '',
+          habits: habitsWithRecords,
+          updated_at: week.updated_at
+        }
+      })
+    )
+
+    return weeksWithHabits.filter(w => w !== null)
+  } catch (error) {
+    console.error('여러 주간 데이터 로드 오류 (new schema):', error)
+    return []
+  }
+}
