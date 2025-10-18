@@ -352,16 +352,21 @@ async function createWeekDualWrite(supabase: any, data: any) {
           .insert({
             week_id: week.id,
             name: habit.name,
-            display_order: habit.id || habitsCreated,
+            display_order: habitsCreated,  // Use counter instead of habit.id
             source_version: 'dual_write'
           })
           .select()
           .single();
 
         if (habitError) {
-          console.error(`Failed to create habit ${habit.name}:`, habitError);
-          continue;
+          console.error(`❌ Failed to create habit "${habit.name}":`, habitError);
+          console.error(`   Week ID: ${week.id}`);
+          console.error(`   Display order: ${habitsCreated}`);
+          console.error(`   Error details:`, JSON.stringify(habitError, null, 2));
+          continue;  // Continue to next habit even if this one fails
         }
+
+        console.log(`✅ Created habit: ${habit.name} (id: ${habitRow.id})`);
 
         habitsCreated++;
 

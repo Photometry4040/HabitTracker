@@ -5,12 +5,11 @@
       "Bash(cd:*)",
       "Bash(git rm:*)",
       "Bash(find:*)",
-      "Bash(git cherry-pick:*)",
-      "Bash(awk:*)",
-      "Bash(npm install:*)",
-      "Bash(npm run build)",
-      "Bash(git tag:*)",
-      "Bash(git push:*)"
+      "Bash(npm run dev)",
+      "Bash(node:*)",
+      "Read(//Users/jueunlee/project/**)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
