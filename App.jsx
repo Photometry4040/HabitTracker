@@ -5,18 +5,15 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import { Auth } from '@/components/Auth.jsx'
-import { TemplateManager } from '@/components/TemplateManager.jsx'
-import { BadgeNotification } from '@/components/badges/BadgeNotification.jsx'
 import { saveChildData, deleteChildData } from '@/lib/database.js'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
-import { checkAllBadges, calculateConsecutiveDays } from '@/lib/badges.js'
 import './App.css'
 
 function App() {
@@ -45,16 +42,6 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(false)
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
   const [pendingSaveData, setPendingSaveData] = useState(null)
-
-  // ============================================================
-  // TEMPLATE SECTION (Agent 3 소유)
-  // ============================================================
-  const [showTemplateManager, setShowTemplateManager] = useState(false)
-
-  // ============================================================
-  // BADGE SECTION (Agent 3 소유)
-  // ============================================================
-  const [newBadge, setNewBadge] = useState(null)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -269,22 +256,6 @@ function App() {
       // 저장 성공 피드백 (부드러운 방식)
       console.log('데이터가 성공적으로 저장되었습니다! (Dual-write)', result)
 
-      // 저장 후 데이터 다시 불러오기 (즉시 반영)
-      try {
-        const reloadedData = await loadChildData(selectedChild, weekStartDateForCheck)
-        if (reloadedData) {
-          console.log('저장된 데이터를 성공적으로 불러왔습니다!')
-          // 상태 업데이트 - UI에 즉시 반영
-          setHabits(reloadedData.habits)
-          setReflection(reloadedData.reflection || '')
-          setReward(reloadedData.reward || '')
-          setTheme(reloadedData.theme || 'default')
-        }
-      } catch (reloadError) {
-        console.warn('데이터 재조회 실패 (저장은 성공):', reloadError)
-        // 재조회 실패해도 저장은 성공했으므로 계속 진행
-      }
-
       // Discord 알림 전송 (비동기, 실패해도 무시)
       // 1. 주간 저장 알림
       notifyWeekSave(selectedChild, data.weekPeriod, data.habits.length).catch(err => {
@@ -297,20 +268,6 @@ function App() {
         notifyWeekComplete(selectedChild, data.weekPeriod, stats).catch(err => {
           console.log('Discord week complete notification skipped:', err)
         })
-      }
-
-      // 3. 배지 시스템 체크
-      try {
-        const consecutiveDays = calculateConsecutiveDays(data.habits)
-        const newBadges = checkAllBadges(selectedChild, data.habits, consecutiveDays)
-
-        if (newBadges && newBadges.length > 0) {
-          // 첫 번째 새 배지만 표시 (여러 개면 순차적으로 표시하도록 개선 가능)
-          setNewBadge(newBadges[0])
-          console.log('🏆 새로운 배지 획득!', newBadges)
-        }
-      } catch (badgeError) {
-        console.warn('배지 체크 실패 (저장은 성공):', badgeError)
       }
     } catch (error) {
       console.error('저장 실패:', error)
@@ -395,18 +352,25 @@ function App() {
   // 자동 저장 제거 - 수동 저장 방식으로 변경
 
   const updateHabitColor = async (habitId, dayIndex, color) => {
-    // Toggle functionality: if same color is clicked again, unset it
-    const currentHabit = habits.find(h => h.id === habitId)
-    const currentColor = currentHabit?.times[dayIndex]
+    // Find current habit to check current color
+    const habit = habits.find(h => h.id === habitId)
+    if (!habit) {
+      console.error('Habit not found:', habitId)
+      return
+    }
+
+    const currentColor = habit.times[dayIndex]
+
+    // Toggle: If clicking the same color, clear it (set to empty string)
     const newColor = currentColor === color ? '' : color
 
     // Optimistic UI update
-    setHabits(prev => prev.map(habit =>
-      habit.id === habitId
-        ? { ...habit, times: habit.times.map((time, index) =>
+    setHabits(prev => prev.map(h =>
+      h.id === habitId
+        ? { ...h, times: h.times.map((time, index) =>
             index === dayIndex ? newColor : time
           )}
-        : habit
+        : h
     ))
 
     // Persist to database via Edge Function (Phase 2)
@@ -416,10 +380,11 @@ function App() {
     }
 
     try {
-      // Find habit name
-      const habit = habits.find(h => h.id === habitId)
-      if (!habit) {
-        console.error('Habit not found:', habitId)
+      // Only call Edge Function if newColor is not empty
+      // Empty string means "delete the record" - skip for now
+      if (newColor === '') {
+        console.log(`Habit record cleared (UI only): ${habit.name} day ${dayIndex}`)
+        // TODO: Implement delete operation in Edge Function
         return
       }
 
@@ -435,28 +400,28 @@ function App() {
       console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${newColor}`)
 
       // Discord 알림 전송 (비동기, 실패해도 무시)
-      if (newColor) { // 색상이 있을 때만 (빈 문자열이 아닐 때)
-        const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
-        const dayOfWeek = dayNames[dayIndex] || `${dayIndex + 1}일차`
-        notifyHabitCheck(selectedChild, habit.name, newColor, dayOfWeek).catch(err => {
-          console.log('Discord notification skipped:', err)
-        })
-      }
+      const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+      const dayOfWeek = dayNames[dayIndex] || `${dayIndex + 1}일차`
+      notifyHabitCheck(selectedChild, habit.name, newColor, dayOfWeek).catch(err => {
+        console.log('Discord notification skipped:', err)
+      })
     } catch (error) {
       console.error('Failed to update habit record:', error)
-      // TODO: Revert UI change on error
+      // Revert UI change on error
+      setHabits(prev => prev.map(h =>
+        h.id === habitId
+          ? { ...h, times: h.times.map((time, index) =>
+              index === dayIndex ? currentColor : time
+            )}
+          : h
+      ))
       alert('습관 기록 저장 중 오류가 발생했습니다.')
     }
   }
 
   const addHabit = () => {
-    // 기존 습관들의 최대 id를 찾아서 +1 (순차 번호 방식)
-    const maxId = habits.length > 0
-      ? Math.max(...habits.map(h => h.id || 0))
-      : 0
-
     const newHabit = {
-      id: maxId + 1,  // timestamp 대신 순차 번호 사용 (integer 범위 내)
+      id: Date.now(),
       name: '새로운 습관을 입력하세요',
       times: Array(7).fill('')
     }
@@ -492,27 +457,6 @@ function App() {
 
   const getMaxScore = () => {
     return habits.length * 7
-  }
-
-  // ============================================================
-  // TEMPLATE HANDLERS (Agent 3 소유)
-  // ============================================================
-  const handleApplyTemplate = (templateHabits) => {
-    // Confirm if there's existing data
-    const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
-                          theme || reflection.bestDay || reflection.easiestHabit ||
-                          reflection.nextWeekGoal || reward
-
-    if (hasCurrentData) {
-      const confirmApply = window.confirm(
-        '현재 입력 중인 데이터가 있습니다. 템플릿을 적용하면 습관 목록이 변경됩니다. 계속하시겠습니까?'
-      )
-      if (!confirmApply) return
-    }
-
-    // Apply template habits
-    setHabits(templateHabits)
-    console.log('Template applied:', templateHabits)
   }
 
   // 로딩 중 표시
@@ -632,23 +576,7 @@ function App() {
                     )}
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => {
-                          setShowTemplateManager(!showTemplateManager)
-                          setShowDashboard(false)
-                        }}
-                        size="sm"
-                        variant={showTemplateManager ? "default" : "outline"}
-                        className={showTemplateManager ? "bg-orange-600 hover:bg-orange-700" : ""}
-                      >
-                        <BookTemplate className="w-4 h-4 sm:mr-1" />
-                        <span className="hidden sm:inline">템플릿</span>
-                        <span className="sm:hidden">템플릿</span>
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowDashboard(!showDashboard)
-                          setShowTemplateManager(false)
-                        }}
+                        onClick={() => setShowDashboard(!showDashboard)}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700"
                       >
@@ -723,23 +651,13 @@ function App() {
               </CardContent>
             </Card>
 
-            {/* ============================================================ */}
-            {/* TEMPLATE MANAGER SECTION (Agent 3 소유) */}
-            {/* ============================================================ */}
-            {showTemplateManager ? (
-              <TemplateManager
-                onApplyTemplate={handleApplyTemplate}
-                currentHabits={habits}
-                childName={childName}
-                onClose={() => setShowTemplateManager(false)}
-              />
-            ) : showDashboard ? (
-              <Dashboard
+            {/* 대시보드 또는 습관 추적 */}
+            {showDashboard ? (
+              <Dashboard 
                 habits={habits}
                 childName={childName}
                 weekPeriod={weekPeriod}
                 theme={theme}
-                weekStartDate={weekStartDate}
               />
             ) : (
               <>
@@ -1023,14 +941,6 @@ function App() {
               </div>
             )}
           </>
-        )}
-
-        {/* Badge Notification Modal */}
-        {newBadge && (
-          <BadgeNotification
-            badge={newBadge}
-            onClose={() => setNewBadge(null)}
-          />
         )}
       </div>
     </div>

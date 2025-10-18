@@ -10,12 +10,14 @@
 
 **Duration**: 5 days (17 hours total)
 
-**Current State** (Phase 1 Complete):
+**Current State** (Phase 2 Day 3 Complete):
 - ✅ Edge Function deployed (4 operations)
 - ✅ Dual-write API ready (src/lib/dual-write.js)
 - ✅ Backfill complete (75% - 18/24 weeks)
-- ⚠️ Web app still using database.js (old schema)
-- ⚠️ RLS policies disabled
+- ✅ Web app reads from new schema (database-new.js)
+- ✅ Web app writes via Edge Function (dual-write)
+- ✅ Optimistic UI + Toggle UX
+- ⚠️ RLS policies disabled (Day 4 작업)
 
 **Target State** (Phase 2 Complete):
 - ✅ Web app reads from new schema

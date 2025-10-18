@@ -1,7 +1,7 @@
 ---
 name: db-security-reviewer
 description: Use this agent when database-related code has been written or modified and needs security and performance review. This agent should be called immediately after database schema changes, query modifications, or when a DB Architect agent completes their work. Examples:\n\n<example>\nContext: User has just created new database queries or modified existing ones.\nuser: "I've added a new query to fetch user habits with filtering"\nassistant: "Let me review that code for security and performance issues."\n<uses Task tool to launch db-security-reviewer agent>\nassistant: "I'm now using the db-security-reviewer agent to check for SQL injection vulnerabilities, verify indexing strategy, and predict potential performance bottlenecks."\n</example>\n\n<example>\nContext: DB Architect agent has completed schema modifications.\nuser: "Please add a new table for tracking habit streaks"\ndb-architect-agent: "I've created the new streak_tracking table with the following schema..."\n<db-architect completes work>\nassistant: "Now I'll use the db-security-reviewer agent to verify the security and performance of these database changes."\n<uses Task tool to launch db-security-reviewer agent>\n</example>\n\n<example>\nContext: User mentions database performance concerns.\nuser: "The habit loading seems slow when we have many children"\nassistant: "I'll use the db-security-reviewer agent to analyze the current queries and indexing strategy."\n<uses Task tool to launch db-security-reviewer agent>\n</example>
-model: sonnet
+model: haiku
 color: green
 ---
 
