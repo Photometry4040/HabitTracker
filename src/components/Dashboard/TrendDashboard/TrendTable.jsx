@@ -1,6 +1,7 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getISOWeekNumber } from '@/lib/weekNumber.js';
 
 /**
  * Trend Table Component
@@ -41,6 +42,16 @@ export default function TrendTable({ data }) {
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 6);
 
+            // ISO 8601 주차 계산
+            let weekLabel;
+            try {
+              const isoWeekNum = getISOWeekNumber(week.week_start_date);
+              weekLabel = `${isoWeekNum}주차`;
+            } catch (error) {
+              // 폴백: 역순 카운트
+              weekLabel = `${index + 1}주`;
+            }
+
             // 데이터 없는 경우
             if (week.has_data === false) {
               return (
@@ -49,7 +60,7 @@ export default function TrendTable({ data }) {
                   className="border-b border-gray-200 bg-gray-100 hover:bg-gray-150 transition-colors"
                 >
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    {index + 1}주
+                    {weekLabel}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
@@ -74,7 +85,7 @@ export default function TrendTable({ data }) {
                 className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                  {index + 1}주
+                  {weekLabel}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
                   {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
