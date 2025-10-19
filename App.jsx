@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import DashboardHub from '@/components/Dashboard/DashboardHub'
 import { Auth } from '@/components/Auth.jsx'
+import { TemplateManager } from '@/components/TemplateManager.jsx'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
@@ -42,6 +43,7 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(false)
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
   const [pendingSaveData, setPendingSaveData] = useState(null)
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -195,6 +197,26 @@ function App() {
     setChildName(childName)
     setShowChildSelector(false)
     resetData() // 데이터 초기화
+  }
+
+  // 템플릿 적용 핸들러
+  const handleApplyTemplate = (templateHabits) => {
+    if (!templateHabits || templateHabits.length === 0) {
+      alert('템플릿에 습관이 없습니다')
+      return
+    }
+
+    // 템플릿의 습관을 현재 습관 리스트에 적용
+    const newHabits = templateHabits.map((habit, index) => ({
+      id: index + 1,
+      name: habit.name,
+      times: Array(7).fill('') // 빈 상태로 시작
+    }))
+
+    setHabits(newHabits)
+    setShowTemplateManager(false)
+
+    alert(`템플릿이 적용되었습니다! ${templateHabits.length}개의 습관이 설정되었습니다.`)
   }
 
   // 데이터 저장 (Supabase)
@@ -576,6 +598,15 @@ function App() {
                     )}
                     <div className="flex gap-2">
                       <Button
+                        onClick={() => setShowTemplateManager(!showTemplateManager)}
+                        size="sm"
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        <BookTemplate className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">템플릿</span>
+                        <span className="sm:hidden">템플릿</span>
+                      </Button>
+                      <Button
                         onClick={() => setShowDashboard(!showDashboard)}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700"
@@ -651,8 +682,17 @@ function App() {
               </CardContent>
             </Card>
 
-            {/* 대시보드 또는 습관 추적 */}
-            {showDashboard ? (
+            {/* 템플릿 관리자, 대시보드 또는 습관 추적 */}
+            {showTemplateManager ? (
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <TemplateManager
+                  onApplyTemplate={handleApplyTemplate}
+                  currentHabits={habits}
+                  childName={childName}
+                  onClose={() => setShowTemplateManager(false)}
+                />
+              </div>
+            ) : showDashboard ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
                 <DashboardHub />
               </div>
