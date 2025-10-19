@@ -289,6 +289,121 @@ export function useTrendData(
 }
 
 /**
+ * 자기인식 분석 Mock 데이터 생성
+ */
+async function generateMockInsightsData(childId: string, weeksCount: number = 4) {
+  try {
+    console.log(`[Insights] Generating insights for child: ${childId}, weeks: ${weeksCount}`);
+
+    // 트렌드 데이터 가져오기 (같은 기간)
+    const trendData = await generateMockTrendData(childId, weeksCount);
+
+    if (!trendData || trendData.length === 0) {
+      console.warn('[Insights] No trend data available');
+      return null;
+    }
+
+    // 습관 데이터 샘플 (실제로는 DB에서 가져와야 함)
+    const habits = [
+      { id: 1, name: '아침에 일어나기', color: 'blue' },
+      { id: 2, name: '책 읽기', color: 'green' },
+      { id: 3, name: '숙제하기', color: 'purple' },
+      { id: 4, name: '운동하기', color: 'red' },
+      { id: 5, name: '손 씻기', color: 'yellow' },
+    ];
+
+    // 습관별 완료율 계산
+    const habitStats = habits.map((habit, idx) => {
+      const completionRates = [95, 85, 65, 75, 90];
+      const rate = completionRates[idx % completionRates.length];
+      const trend = Math.random() > 0.5 ? 'up' : 'down';
+
+      return {
+        habit_id: habit.id,
+        habit_name: habit.name,
+        completion_rate: rate,
+        trend,
+        trend_value: Math.floor(Math.random() * 15) + 5,
+        total_days: weeksCount * 7,
+        completed_days: Math.round((weeksCount * 7 * rate) / 100),
+      };
+    });
+
+    // 강점 (상위 3개)
+    const strengths = habitStats
+      .sort((a, b) => b.completion_rate - a.completion_rate)
+      .slice(0, 3)
+      .map((h, idx) => ({ ...h, rank: idx + 1 }));
+
+    // 약점 (하위 3개)
+    const weaknesses = habitStats
+      .sort((a, b) => a.completion_rate - b.completion_rate)
+      .slice(0, 3)
+      .map((h, idx) => ({ ...h, rank: idx + 1 }));
+
+    // 요일별 분석
+    const dayOfWeekStats = [
+      { day: '월요일', rate: 78, emoji: '📅' },
+      { day: '화요일', rate: 82, emoji: '📅' },
+      { day: '수요일', rate: 75, emoji: '📅' },
+      { day: '목요일', rate: 88, emoji: '📅' },
+      { day: '금요일', rate: 92, emoji: '🎉' },
+      { day: '토요일', rate: 85, emoji: '📅' },
+      { day: '일요일', rate: 72, emoji: '😴' },
+    ];
+
+    // 평균 완료율
+    const averageCompletion =
+      Math.round(
+        habitStats.reduce((sum, h) => sum + h.completion_rate, 0) /
+          habitStats.length
+      );
+
+    // 피드백 메시지
+    let feedbackMessage = '';
+    if (averageCompletion >= 85) {
+      feedbackMessage = '🌟 정말 멋있어요! 계속 이 조건을 유지해주세요.';
+    } else if (averageCompletion >= 70) {
+      feedbackMessage = '👍 잘하고 있어요! 조금만 더 노력하면 목표 달성!';
+    } else if (averageCompletion >= 50) {
+      feedbackMessage = '💪 열심히 하고 있네요. 더 집중해봅시다!';
+    } else {
+      feedbackMessage = '🎯 목표 달성을 위해 함께 노력해봅시다!';
+    }
+
+    console.log(`[Insights] Generated insights: ${strengths.length} strengths, ${weaknesses.length} weaknesses`);
+
+    return {
+      summary: {
+        average_completion: averageCompletion,
+        total_habits: habitStats.length,
+        feedback_message: feedbackMessage,
+        period: `최근 ${weeksCount}주`,
+      },
+      strengths,
+      weaknesses,
+      day_of_week_stats: dayOfWeekStats,
+      all_habit_stats: habitStats,
+      insights: {
+        best_day: dayOfWeekStats.reduce((prev, current) =>
+          prev.rate > current.rate ? prev : current
+        ),
+        worst_day: dayOfWeekStats.reduce((prev, current) =>
+          prev.rate < current.rate ? prev : current
+        ),
+        trend_summary:
+          strengths.filter((s) => s.trend === 'up').length > 1
+            ? 'improving'
+            : 'stable',
+      },
+    };
+  } catch (error) {
+    console.error('Error generating insights data:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch insights for a specific child
  */
 export function useInsights(
@@ -299,6 +414,12 @@ export function useInsights(
     queryKey: ['insights', childId, weeks],
     queryFn: async () => {
       if (!childId) return null;
+
+      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      if (import.meta.env.DEV) {
+        console.log('[Mock] Generating insights from actual data');
+        return await generateMockInsightsData(childId, weeks);
+      }
 
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
@@ -331,6 +452,92 @@ export function useInsights(
 }
 
 /**
+ * 월간 통계 Mock 데이터 생성
+ */
+async function generateMockMonthlyData(childId: string, year: number, month: number) {
+  try {
+    console.log(`[Monthly] Generating monthly stats for child: ${childId}, ${year}-${month}`);
+
+    // 월의 주 데이터 생성 (4~5주)
+    const monthDays = new Date(year, month, 0).getDate(); // 해당 월의 마지막 날
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month - 1, monthDays);
+
+    // 월간 주차 계산
+    const weeks = [];
+    const completionRates = [72, 68, 75, 82, 88, 95, 80];
+
+    for (let week = 1; week <= 5; week++) {
+      const weekStart = new Date(firstDay);
+      weekStart.setDate(firstDay.getDate() + (week - 1) * 7);
+
+      if (weekStart.getMonth() === month - 1) {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const rate = completionRates[week % completionRates.length];
+        weeks.push({
+          week,
+          week_start: weekStart.toISOString().split('T')[0],
+          week_end: weekEnd.toISOString().split('T')[0],
+          completion_rate: rate,
+          emoji: rate >= 80 ? '🟢' : rate >= 50 ? '🟡' : '🔴',
+        });
+      }
+    }
+
+    // 월간 통계
+    const monthlyStats = {
+      year,
+      month,
+      month_name: `${year}년 ${month}월`,
+      total_weeks: weeks.length,
+      average_completion: Math.round(
+        weeks.reduce((sum, w) => sum + w.completion_rate, 0) / weeks.length
+      ),
+      best_week: weeks.reduce((prev, current) =>
+        prev.completion_rate > current.completion_rate ? prev : current
+      ),
+      worst_week: weeks.reduce((prev, current) =>
+        prev.completion_rate < current.completion_rate ? prev : current
+      ),
+      weeks,
+    };
+
+    // 지난달 비교 데이터
+    const lastMonth = month === 1 ? 12 : month - 1;
+    const lastMonthYear = month === 1 ? year - 1 : year;
+    const lastMonthAvg = Math.floor(Math.random() * 50) + 40;
+
+    // 상위 5개월 성과 데이터
+    const topMonths = [
+      { month_name: '1월', rate: 75 },
+      { month_name: '2월', rate: 68 },
+      { month_name: '3월', rate: 82 },
+      { month_name: '4월', rate: 78 },
+      { month_name: '5월', rate: 88 },
+    ];
+
+    console.log(`[Monthly] Generated ${monthlyStats.total_weeks} weeks for ${month}월`);
+
+    return {
+      summary: monthlyStats,
+      comparison: {
+        current_month: monthlyStats.month_name,
+        current_avg: monthlyStats.average_completion,
+        last_month: `${lastMonthYear}년 ${lastMonth}월`,
+        last_month_avg: lastMonthAvg,
+        improvement: monthlyStats.average_completion - lastMonthAvg,
+      },
+      top_months: topMonths,
+    };
+  } catch (error) {
+    console.error('Error generating monthly stats:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch monthly statistics for a specific child
  */
 export function useMonthlyStats(
@@ -342,6 +549,12 @@ export function useMonthlyStats(
     queryKey: ['monthly', childId, year, month],
     queryFn: async () => {
       if (!childId) return null;
+
+      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      if (import.meta.env.DEV) {
+        console.log('[Mock] Generating monthly stats from actual data');
+        return await generateMockMonthlyData(childId, year, month);
+      }
 
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
