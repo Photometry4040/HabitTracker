@@ -9,7 +9,10 @@
       "Bash(cd /Users/jueunlee/project/\"Habit Tracker Template for Kids with Visual Goals\")",
       "Bash(curl:*)",
       "Bash(awk:*)",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(npm run build)",
+      "Bash(node:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
