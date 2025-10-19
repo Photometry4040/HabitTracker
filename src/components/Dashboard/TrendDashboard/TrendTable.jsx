@@ -52,35 +52,48 @@ export default function TrendTable({ data }) {
               weekLabel = `${sortedData.length - index}주 전`;
             }
 
+            // 빈 주차 체크
+            const hasData = week.has_data !== false;
+
             // 달성률에 따른 상태
             const rate = week.completion_rate;
-            const statusColor =
-              rate >= 80 ? 'bg-green-100' : rate >= 50 ? 'bg-yellow-100' : 'bg-red-100';
-            const statusText =
-              rate >= 80 ? '🟢 우수' : rate >= 50 ? '🟡 보통' : '🔴 미흡';
+            const statusColor = hasData
+              ? (rate >= 80 ? 'bg-green-100' : rate >= 50 ? 'bg-yellow-100' : 'bg-red-100')
+              : 'bg-gray-100';
+            const statusText = hasData
+              ? (rate >= 80 ? '🟢 우수' : rate >= 50 ? '🟡 보통' : '🔴 미흡')
+              : '⚪ 기록 없음';
 
-            // 모든 데이터가 실제 데이터이므로 has_data 체크 불필요
+            // 빈 주차는 시각적으로 구분
             return (
               <tr
-                key={week.week_id}
-                className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                key={week.week_id || `empty-${index}`}
+                className={`border-b border-gray-200 transition-colors ${
+                  hasData
+                    ? 'hover:bg-gray-50'
+                    : 'bg-gray-50 opacity-60 hover:opacity-80'
+                }`}
               >
-                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                <td className={`px-6 py-4 text-sm ${hasData ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
                   {weekLabel}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className={`px-6 py-4 text-sm ${hasData ? 'text-gray-700' : 'text-gray-400'}`}>
                   {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
                 </td>
-                <td className="px-6 py-4 text-sm text-right text-gray-900">
-                  {week.total_habits}
+                <td className={`px-6 py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {hasData ? week.total_habits : '-'}
                 </td>
-                <td className="px-6 py-4 text-sm text-right text-gray-900">
-                  {week.completed_habits}
+                <td className={`px-6 py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {hasData ? week.completed_habits : '-'}
                 </td>
                 <td className="px-6 py-4 text-sm text-right">
-                  <span className="font-bold text-lg text-blue-600">
-                    {Math.round(week.completion_rate)}%
-                  </span>
+                  {hasData ? (
+                    <span className="font-bold text-lg text-blue-600">
+                      {Math.round(week.completion_rate)}%
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-sm">기록 없음</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-sm text-center">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>

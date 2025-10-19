@@ -19,8 +19,9 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab }) {
   const [viewType, setViewType] = useState('grid'); // 'grid' or 'chart'
   const [showLastWeek, setShowLastWeek] = useState(true);
+  const [comparisonPeriod, setComparisonPeriod] = useState('current_week');
 
-  const { data, isLoading, error } = useComparisonData(userId);
+  const { data, isLoading, error } = useComparisonData(userId, comparisonPeriod);
 
   if (isLoading) {
     return (
@@ -53,14 +54,20 @@ export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">📊 우리 아이들의 습관 성적표</h2>
-          <p className="text-gray-600 mt-1">주: {data.week}</p>
-        </div>
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">📊 우리 아이들의 습관 성적표</h2>
+            <p className="text-gray-600 mt-1">
+              비교 기간: <span className="font-semibold text-blue-600">{data?.week || '이번 주'}</span>
+              {data?.target_week_start && (
+                <span className="text-sm text-gray-500 ml-2">
+                  ({data.target_week_start} 주차)
+                </span>
+              )}
+            </p>
+          </div>
 
-        {/* View Toggle & Filters */}
-        <div className="flex items-center space-x-4">
           {/* View Type Toggle */}
           <div className="flex items-center bg-gray-200 rounded-lg p-1">
             <button
@@ -86,6 +93,31 @@ export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab
               📈
             </button>
           </div>
+        </div>
+
+        {/* Period Selector & Filters */}
+        <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4">
+          <div className="flex items-center space-x-4">
+            {/* Period Selector */}
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">비교 기간:</label>
+              <select
+                value={comparisonPeriod}
+                onChange={(e) => setComparisonPeriod(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="current_week">이번 주</option>
+                <option value="last_week">지난 주</option>
+                <option value="this_month">이번 달</option>
+                <option value="last_month">지난 달</option>
+              </select>
+            </div>
+
+            {/* Period Info */}
+            <div className="hidden md:block text-sm text-gray-600 border-l pl-4">
+              💡 모든 아이가 <span className="font-semibold text-blue-600">동일한 기간</span>으로 비교됩니다
+            </div>
+          </div>
 
           {/* Last Week Comparison Toggle */}
           <label className="flex items-center space-x-2 cursor-pointer">
@@ -95,7 +127,7 @@ export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab
               onChange={(e) => setShowLastWeek(e.target.checked)}
               className="w-4 h-4 rounded border-gray-300"
             />
-            <span className="text-sm text-gray-700">지난주 비교</span>
+            <span className="text-sm text-gray-700">이전 주 비교</span>
           </label>
         </div>
       </div>
@@ -134,12 +166,12 @@ export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         <SummaryStat
           label="평균 달성률"
-          value={`${Math.round(children.reduce((sum, c) => sum + c.current_rate, 0) / children.length)}%`}
+          value={`${Math.round(children.filter(c => c.has_data !== false).reduce((sum, c) => sum + c.current_rate, 0) / children.filter(c => c.has_data !== false).length) || 0}%`}
           icon="📊"
         />
         <SummaryStat
           label="최고 달성률"
-          value={`${Math.max(...children.map((c) => c.current_rate))}%`}
+          value={`${Math.max(...children.filter(c => c.has_data !== false).map((c) => c.current_rate), 0)}%`}
           icon="🏆"
         />
         <SummaryStat
@@ -149,7 +181,7 @@ export default function ComparisonDashboard({ userId, onChildSelect, onSwitchTab
         />
         <SummaryStat
           label="추적 데이터"
-          value={children.reduce((sum, c) => sum + c.total_habits, 0)}
+          value={children.filter(c => c.has_data !== false).reduce((sum, c) => sum + c.total_habits, 0)}
           icon="📝"
         />
       </div>

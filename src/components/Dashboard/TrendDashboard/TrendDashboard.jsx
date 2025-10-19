@@ -86,11 +86,23 @@ export default function TrendDashboard({ childId, onChildSelect }) {
     missing_weeks: missingWeeks,
   };
 
+  // YTD (Year-to-Date) 주 수 계산
+  const calculateYTDWeeks = () => {
+    const today = new Date();
+    const yearStart = new Date(today.getFullYear(), 0, 1); // 1월 1일
+    const diffTime = Math.abs(today - yearStart);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffDays / 7); // 주 수로 변환
+  };
+
+  const ytdWeeks = calculateYTDWeeks();
+
   const periodOptions = [
     { value: 4, label: '4주' },
     { value: 8, label: '8주' },
     { value: 12, label: '12주' },
     { value: 26, label: '6개월' },
+    { value: ytdWeeks, label: `YTD (올해, ${ytdWeeks}주)` },
     { value: 52, label: '1년' },
   ];
 
@@ -111,14 +123,27 @@ export default function TrendDashboard({ childId, onChildSelect }) {
             <select
               value={weeks}
               onChange={(e) => setWeeks(parseInt(e.target.value))}
-              className="px-3 py-2 rounded border border-gray-300 bg-white text-gray-700 text-sm"
+              className={`px-3 py-2 rounded border text-sm font-medium ${
+                weeks === ytdWeeks
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-300 bg-white text-gray-700'
+              }`}
             >
               {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className={option.value === ytdWeeks ? 'bg-green-50 text-green-700' : ''}
+                >
                   {option.label}
                 </option>
               ))}
             </select>
+            {weeks === ytdWeeks && (
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
+                📅 올해 전체
+              </span>
+            )}
           </div>
 
           {/* View Type Toggle */}

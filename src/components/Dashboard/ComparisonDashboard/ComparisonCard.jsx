@@ -24,10 +24,16 @@ export default function ComparisonCard({ child, showLastWeek, onViewDetails }) {
     trend_value,
     total_habits,
     completed_habits,
+    has_data,
+    no_data_message,
   } = child;
+
+  // 데이터 없는 경우 특별한 스타일
+  const isNoData = has_data === false;
 
   // 색상 결정 (달성률에 따라)
   const getColorClass = () => {
+    if (isNoData) return 'bg-gray-50 border-gray-300 border-dashed';
     if (current_rate >= 80) return 'bg-green-100 border-green-200';
     if (current_rate >= 50) return 'bg-yellow-100 border-yellow-200';
     return 'bg-red-100 border-red-200';
@@ -68,6 +74,43 @@ export default function ComparisonCard({ child, showLastWeek, onViewDetails }) {
     }
   };
 
+  // 데이터 없는 경우 별도 렌더링
+  if (isNoData) {
+    return (
+      <div
+        className={`rounded-lg border-2 shadow hover:shadow-md transition-shadow duration-200 p-6 ${getColorClass()}`}
+      >
+        {/* Rank & Name */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <span className="text-3xl opacity-30">{rank_emoji}</span>
+            <div>
+              <h3 className="text-xl font-bold text-gray-600">{child_name}</h3>
+              <p className="text-sm text-gray-500">{rank}위</p>
+            </div>
+          </div>
+        </div>
+
+        {/* No Data Message */}
+        <div className="text-center py-8">
+          <div className="text-5xl mb-3 opacity-20">📭</div>
+          <p className="text-gray-600 font-medium mb-1">{no_data_message || '기록 없음'}</p>
+          <p className="text-sm text-gray-500">이 기간에 습관 기록이 없습니다</p>
+        </div>
+
+        {/* View Details Button */}
+        <button
+          onClick={() => onViewDetails()}
+          className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-3 rounded-lg border border-gray-300 transition-colors"
+        >
+          <span>자세히 보기</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  // 데이터 있는 경우 기존 렌더링
   return (
     <div
       className={`rounded-lg border-2 shadow hover:shadow-lg transition-shadow duration-200 p-6 cursor-pointer ${getColorClass()}`}
@@ -90,7 +133,7 @@ export default function ComparisonCard({ child, showLastWeek, onViewDetails }) {
           <span className={`text-4xl font-bold ${getTextColorClass()}`}>
             {Math.round(current_rate)}%
           </span>
-          {showLastWeek && (
+          {showLastWeek && last_week_rate !== null && (
             <div className={`flex items-center space-x-1 ${getTrendColor()}`}>
               {getTrendIcon()}
               <span className="text-sm font-semibold">
@@ -127,9 +170,9 @@ export default function ComparisonCard({ child, showLastWeek, onViewDetails }) {
       </div>
 
       {/* Last Week Comparison (if enabled) */}
-      {showLastWeek && (
+      {showLastWeek && last_week_rate !== null && (
         <div className="bg-white bg-opacity-50 rounded px-3 py-2 mb-4">
-          <p className="text-xs text-gray-600">지난주 달성률</p>
+          <p className="text-xs text-gray-600">이전 주 달성률</p>
           <p className="text-sm font-semibold text-gray-900">{Math.round(last_week_rate)}%</p>
         </div>
       )}

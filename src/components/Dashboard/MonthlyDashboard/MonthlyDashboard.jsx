@@ -23,6 +23,27 @@ export default function MonthlyDashboard({ childId, onChildSelect }) {
 
   const { data, isLoading, error } = useMonthlyStats(childId, year, month);
 
+  // 월 네비게이션 핸들러 (항상 사용 가능)
+  const handlePrevMonth = () => {
+    if (month === 1) {
+      setMonth(12);
+      setYear(year - 1);
+    } else {
+      setMonth(month - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (month === 12) {
+      setMonth(1);
+      setYear(year + 1);
+    } else {
+      setMonth(month + 1);
+    }
+  };
+
+  const monthName = `${year}년 ${month}월`;
+
   if (!childId) {
     return (
       <div className="space-y-6">
@@ -60,30 +81,46 @@ export default function MonthlyDashboard({ childId, onChildSelect }) {
 
   if (!data || !data.summary) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
-        <p className="text-gray-600 text-lg">아직 월간 데이터가 없습니다.</p>
-        <p className="text-gray-500 mt-2">습관을 기록한 후 확인해주세요.</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">📅 월간 상세 분석</h2>
+          <p className="text-gray-600 mt-1">과거 모든 달의 데이터를 조회합니다</p>
+        </div>
+
+        {/* Month Navigation - Always visible */}
+        <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+          <button
+            onClick={handlePrevMonth}
+            className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            ← 이전
+          </button>
+          <h3 className="text-xl font-bold text-gray-900">{monthName}</h3>
+          <button
+            onClick={handleNextMonth}
+            className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            다음 →
+          </button>
+        </div>
+
+        {/* Empty State */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-12 text-center">
+          <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-900 text-xl font-semibold mb-2">
+            {monthName} 데이터가 아직 없어요
+          </p>
+          <p className="text-gray-600">
+            습관을 기록하면 자동으로 통계가 생성됩니다
+          </p>
+          <div className="mt-6 text-sm text-gray-500">
+            💡 Tip: 이전/다음 버튼으로 다른 달을 확인해보세요
+          </div>
+        </div>
       </div>
     );
   }
-
-  const handlePrevMonth = () => {
-    if (month === 1) {
-      setMonth(12);
-      setYear(year - 1);
-    } else {
-      setMonth(month - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (month === 12) {
-      setMonth(1);
-      setYear(year + 1);
-    } else {
-      setMonth(month + 1);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -101,7 +138,7 @@ export default function MonthlyDashboard({ childId, onChildSelect }) {
         >
           ← 이전
         </button>
-        <h3 className="text-xl font-bold text-gray-900">{data.summary.month_name}</h3>
+        <h3 className="text-xl font-bold text-gray-900">{monthName}</h3>
         <button
           onClick={handleNextMonth}
           className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
