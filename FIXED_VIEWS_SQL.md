@@ -1,10 +1,13 @@
--- ============================================
--- Dashboard Aggregation Views
--- Phase 4: Create views for Edge Function queries
--- ============================================
+# 🔧 수정된 데이터베이스 뷰 생성 SQL
 
--- 1. v_weekly_completion: Weekly aggregation of habit completion rates
--- Returns completion rates grouped by week and child
+**문제 해결**: `ROUND(double precision, integer)` 타입 에러 수정
+**해결 방법**: `::float` → `::numeric` 타입 변환 사용
+
+---
+
+## ✅ 쿼리 1: v_weekly_completion (수정됨)
+
+```sql
 CREATE OR REPLACE VIEW v_weekly_completion AS
 SELECT
   w.id AS week_id,
@@ -12,7 +15,6 @@ SELECT
   c.name AS child_name,
   c.user_id,
   w.week_start_date,
-  -- Calculate completion rate as percentage
   CASE
     WHEN COUNT(DISTINCT hr.id) = 0 THEN 0
     ELSE ROUND(
@@ -30,16 +32,19 @@ LEFT JOIN habits h ON h.week_id = w.id
 LEFT JOIN habit_records hr ON hr.habit_id = h.id
 GROUP BY w.id, w.child_id, c.name, c.user_id, w.week_start_date
 ORDER BY w.week_start_date DESC;
+```
 
--- 2. v_daily_completion: Daily aggregation of habit completion rates
--- Returns daily completion rates for trend analysis
+---
+
+## ✅ 쿼리 2: v_daily_completion (수정됨)
+
+```sql
 CREATE OR REPLACE VIEW v_daily_completion AS
 SELECT
   c.id AS child_id,
   c.name AS child_name,
   c.user_id,
   hr.record_date,
-  -- Calculate daily completion rate
   CASE
     WHEN COUNT(DISTINCT hr.id) = 0 THEN 0
     ELSE ROUND(
@@ -57,18 +62,20 @@ LEFT JOIN habit_records hr ON hr.habit_id = h.id
 WHERE hr.record_date IS NOT NULL
 GROUP BY c.id, c.name, c.user_id, hr.record_date
 ORDER BY hr.record_date DESC;
+```
 
--- 3. v_habit_failure_patterns: Analyze habit patterns by day of week
--- Helps identify which habits are weak on which days
+---
+
+## ✅ 쿼리 3: v_habit_failure_patterns (수정됨)
+
+```sql
 CREATE OR REPLACE VIEW v_habit_failure_patterns AS
 SELECT
   c.id AS child_id,
   c.name AS child_name,
   c.user_id,
   h.name AS habit_name,
-  -- Day of week (1=Monday, 7=Sunday)
   TO_CHAR(hr.record_date, 'Day') AS day_name,
-  -- Calculate failure rate for this habit on this day
   CASE
     WHEN COUNT(DISTINCT hr.id) = 0 THEN 0
     ELSE ROUND(
@@ -77,7 +84,6 @@ SELECT
       1
     )
   END AS failure_rate,
-  -- Calculate success rate for this habit on this day
   CASE
     WHEN COUNT(DISTINCT hr.id) = 0 THEN 0
     ELSE ROUND(
@@ -93,28 +99,59 @@ LEFT JOIN habits h ON h.week_id = w.id
 LEFT JOIN habit_records hr ON hr.habit_id = h.id
 WHERE hr.record_date IS NOT NULL
 GROUP BY c.id, c.name, c.user_id, h.name, TO_CHAR(hr.record_date, 'Day')
-ORDER BY c.id, h.name, day_name;
+ORDER BY c.name, h.name, day_name;
+```
 
--- ============================================
--- Indexes for Performance Optimization
--- ============================================
+---
 
--- Index for weekly completion queries (commonly filtered by child_id and week_start_date)
-CREATE INDEX IF NOT EXISTS idx_weeks_child_date ON weeks(child_id, week_start_date DESC);
+## 🔍 변경 사항 요약
 
--- Index for habit records queries (commonly filtered by habit_id and record_date)
-CREATE INDEX IF NOT EXISTS idx_habit_records_habit_date ON habit_records(habit_id, record_date);
+**Before** (에러 발생):
+```sql
+::float / ... ::float
+```
 
--- Index for user-based queries (all views filter by user_id)
-CREATE INDEX IF NOT EXISTS idx_children_user_id ON children(user_id);
+**After** (수정됨):
+```sql
+::numeric / ... ::numeric
+```
 
--- Index for week-to-child relationship
-CREATE INDEX IF NOT EXISTS idx_habits_week_id ON habits(week_id);
+**이유**: PostgreSQL의 `ROUND()` 함수는 `numeric` 타입만 받습니다.
 
--- ============================================
--- Verify Views Created
--- ============================================
--- Run this query to verify all views were created successfully:
--- SELECT table_name FROM information_schema.tables
--- WHERE table_schema = 'public' AND table_type = 'VIEW'
--- AND table_name LIKE 'v_%';
+---
+
+## ✅ 실행 순서
+
+1. **Supabase SQL Editor** 열기
+2. 위 쿼리 1 → RUN
+3. 위 쿼리 2 → RUN
+4. 위 쿼리 3 → RUN
+
+모두 "Success. No rows returned" 메시지가 나오면 ✅ **완료!**
+
+---
+
+## 🧪 확인
+
+```sql
+-- 뷰 목록 확인
+SELECT table_name
+FROM information_schema.views
+WHERE table_schema = 'public'
+  AND table_name LIKE 'v_%'
+ORDER BY table_name;
+```
+
+**예상 결과**: 3개 뷰가 보여야 함
+
+```
+v_daily_completion
+v_habit_failure_patterns
+v_weekly_completion
+```
+
+---
+
+**작성일**: 2025-10-19
+**문제**: PostgreSQL ROUND() 타입 에러
+**해결**: ::float → ::numeric 변환
