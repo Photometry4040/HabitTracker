@@ -18,6 +18,10 @@ export default function TrendTable({ data }) {
   // 데이터 정렬 (최신순)
   const sortedData = [...data].reverse();
 
+  // 데이터 통계
+  const dataWithValues = sortedData.filter(d => d.has_data !== false);
+  const missingData = sortedData.filter(d => d.has_data === false);
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -36,6 +40,26 @@ export default function TrendTable({ data }) {
             const startDate = parseISO(week.week_start_date);
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 6);
+
+            // 데이터 없는 경우
+            if (week.has_data === false) {
+              return (
+                <tr
+                  key={`${week.week_start_date}-missing`}
+                  className="border-b border-gray-200 bg-gray-100 hover:bg-gray-150 transition-colors"
+                >
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    {index + 1}주
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
+                  </td>
+                  <td colSpan="4" className="px-6 py-4 text-sm text-center text-gray-500">
+                    📭 기록 없음
+                  </td>
+                </tr>
+              );
+            }
 
             // 달성률에 따른 상태
             const rate = week.completion_rate;
@@ -82,24 +106,24 @@ export default function TrendTable({ data }) {
         <div className="grid grid-cols-4 gap-6">
           <SummaryItem
             label="평균"
-            value={`${Math.round(
-              sortedData.reduce((sum, d) => sum + d.completion_rate, 0) / sortedData.length
-            )}%`}
+            value={dataWithValues.length > 0 ? `${Math.round(
+              dataWithValues.reduce((sum, d) => sum + d.completion_rate, 0) / dataWithValues.length
+            )}%` : '-'}
             icon="📊"
           />
           <SummaryItem
             label="최고"
-            value={`${Math.max(...sortedData.map((d) => d.completion_rate))}%`}
+            value={dataWithValues.length > 0 ? `${Math.max(...dataWithValues.map((d) => d.completion_rate))}%` : '-'}
             icon="🏆"
           />
           <SummaryItem
             label="최저"
-            value={`${Math.min(...sortedData.map((d) => d.completion_rate))}%`}
+            value={dataWithValues.length > 0 ? `${Math.min(...dataWithValues.map((d) => d.completion_rate))}%` : '-'}
             icon="📉"
           />
           <SummaryItem
             label="주차"
-            value={`${sortedData.length}주`}
+            value={`${dataWithValues.length}/${sortedData.length}주`}
             icon="📅"
           />
         </div>

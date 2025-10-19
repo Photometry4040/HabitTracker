@@ -55,7 +55,10 @@ export default function TrendDashboard({ childId, onChildSelect }) {
     );
   }
 
-  if (!data || !data.weeks || data.weeks.length === 0) {
+  // data is an array directly or has weeks property
+  const trendData = Array.isArray(data) ? data : data?.weeks;
+
+  if (!trendData || trendData.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
         <p className="text-gray-600 text-lg">아직 추적 데이터가 없습니다.</p>
@@ -63,6 +66,25 @@ export default function TrendDashboard({ childId, onChildSelect }) {
       </div>
     );
   }
+
+  // Calculate stats from trend data (누락된 주 제외)
+  const dataWithValues = trendData.filter(d => d.has_data !== false);
+  const missingWeeks = trendData.filter(d => d.has_data === false).length;
+
+  const stats = {
+    average: dataWithValues.length > 0 ?
+      dataWithValues.reduce((sum, d) => sum + d.completion_rate, 0) / dataWithValues.length : 0,
+    max: dataWithValues.length > 0 ? Math.max(...dataWithValues.map((d) => d.completion_rate)) : 0,
+    min: dataWithValues.length > 0 ? Math.min(...dataWithValues.map((d) => d.completion_rate)) : 0,
+    trend: dataWithValues.length > 1 ?
+      (dataWithValues[dataWithValues.length - 1].completion_rate > dataWithValues[0].completion_rate ? 'up' :
+       dataWithValues[dataWithValues.length - 1].completion_rate < dataWithValues[0].completion_rate ? 'down' : 'stable')
+      : 'stable',
+    trend_value: dataWithValues.length > 1 ?
+      Math.abs(dataWithValues[dataWithValues.length - 1].completion_rate - dataWithValues[0].completion_rate) : 0,
+    recorded_weeks: dataWithValues.length,
+    missing_weeks: missingWeeks,
+  };
 
   const periodOptions = [
     { value: 4, label: '4주' },
@@ -136,19 +158,19 @@ export default function TrendDashboard({ childId, onChildSelect }) {
       {/* Chart View */}
       {viewType === 'chart' && (
         <div className="bg-white rounded-lg shadow p-6">
-          <TrendChart data={data.weeks} />
+          <TrendChart data={trendData} />
         </div>
       )}
 
       {/* Table View */}
       {viewType === 'table' && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <TrendTable data={data.weeks} />
+          <TrendTable data={trendData} />
         </div>
       )}
 
       {/* Statistics */}
-      <TrendStats stats={data.stats} />
+      <TrendStats stats={stats} />
 
       {/* Tips */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">

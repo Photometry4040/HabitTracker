@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { User, Plus, Trash2, Calendar } from 'lucide-react'
+import { supabase } from '@/lib/supabase.js'
 import { loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { deleteWeekDualWrite } from '@/lib/dual-write.js'
 
@@ -33,24 +34,91 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
     if (!confirm(`${childName}의 모든 데이터를 삭제하시겠습니까?`)) return
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('인증되지 않은 사용자입니다.')
+      }
+
+      // Find child
+      const { data: child, error: childError } = await supabase
+        .from('children')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', childName)
+        .single()
+
+      if (childError || !child) {
+        alert('아이를 찾을 수 없습니다.')
+        return
+      }
+
       // Load all weeks for this child
       const weeks = await loadChildWeeks(childName)
 
       if (!weeks || weeks.length === 0) {
-        alert('삭제할 데이터가 없습니다.')
+        // 아이는 있지만 weeks가 없으면 아이만 삭제
+        console.log(`No weeks found for ${childName}, deleting child only...`)
+
+        const { error: deleteError } = await supabase
+          .from('children')
+          .delete()
+          .eq('id', child.id)
+
+        if (deleteError) {
+          throw deleteError
+        }
+
+        console.log(`Successfully deleted child: ${childName}`)
         await loadChildren()
+        alert('아이가 삭제되었습니다.')
         return
       }
 
-      // Delete all weeks using Edge Function
+      // Delete all habit_records -> habits -> weeks -> child (in reverse order)
       console.log(`Deleting ${weeks.length} weeks for ${childName}...`)
 
       for (const week of weeks) {
-        await deleteWeekDualWrite(childName, week.week_start_date)
+        // Delete habit_records first
+        const { data: habits } = await supabase
+          .from('habits')
+          .select('id')
+          .eq('week_id', week.id)
+
+        if (habits && habits.length > 0) {
+          const habitIds = habits.map(h => h.id)
+          await supabase
+            .from('habit_records')
+            .delete()
+            .in('habit_id', habitIds)
+
+          // Delete habits
+          await supabase
+            .from('habits')
+            .delete()
+            .in('id', habitIds)
+        }
+
+        // Delete week
+        await supabase
+          .from('weeks')
+          .delete()
+          .eq('id', week.id)
+      }
+
+      // Delete child
+      const { error: finalError } = await supabase
+        .from('children')
+        .delete()
+        .eq('id', child.id)
+
+      if (finalError) {
+        throw finalError
       }
 
       console.log(`Successfully deleted all data for ${childName}`)
       await loadChildren()
+      alert('아이와 모든 데이터가 삭제되었습니다.')
     } catch (error) {
       console.error('삭제 실패:', error)
       alert('삭제 중 오류가 발생했습니다: ' + error.message)

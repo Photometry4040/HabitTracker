@@ -33,9 +33,11 @@ export default function TrendChart({ data }) {
   // 차트 데이터 포맷팅
   const chartData = data.map((week, index) => ({
     week: `${index + 1}주`,
-    rate: week.completion_rate,
+    rate: week.has_data ? week.completion_rate : null,
     habits: week.total_habits,
     completed: week.completed_habits,
+    has_data: week.has_data !== false, // 데이터 존재 여부
+    date: week.week_start_date,
   }));
 
   // 커스텀 커서 렌더러
@@ -45,10 +47,17 @@ export default function TrendChart({ data }) {
       return (
         <div className="bg-white p-3 rounded shadow-lg border border-gray-300">
           <p className="font-semibold text-gray-900">{data.week}</p>
-          <p className="text-blue-600 font-medium">{Math.round(data.rate)}%</p>
-          <p className="text-xs text-gray-600">
-            {data.completed}/{data.habits} 완료
-          </p>
+          {data.has_data ? (
+            <>
+              <p className="text-blue-600 font-medium">{Math.round(data.rate)}%</p>
+              <p className="text-xs text-gray-600">
+                {data.completed}/{data.habits} 완료
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-500">데이터 없음</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">{data.date}</p>
         </div>
       );
     }
@@ -97,6 +106,7 @@ export default function TrendChart({ data }) {
             stroke="#3B82F6"
             strokeWidth={2}
             fill="url(#colorRate)"
+            connectNulls={false}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -134,13 +144,25 @@ function getTrendMessage(data) {
     return '데이터가 부족합니다.';
   }
 
-  const firstRate = data[0].rate;
-  const lastRate = data[data.length - 1].rate;
-  const avgRate = data.reduce((sum, d) => sum + d.rate, 0) / data.length;
-  const maxRate = Math.max(...data.map((d) => d.rate));
-  const minRate = Math.min(...data.map((d) => d.rate));
+  // 데이터가 있는 주만 필터링
+  const dataWithValues = data.filter(d => d.rate !== null && d.rate !== undefined);
+  const missingWeeks = data.filter(d => d.rate === null || d.rate === undefined).length;
 
-  let message = `평균 달성률은 ${Math.round(avgRate)}%입니다. `;
+  if (dataWithValues.length < 1) {
+    return '기록된 데이터가 없습니다.';
+  }
+
+  const firstRate = dataWithValues[0].rate;
+  const lastRate = dataWithValues[dataWithValues.length - 1].rate;
+  const avgRate = dataWithValues.reduce((sum, d) => sum + d.rate, 0) / dataWithValues.length;
+  const maxRate = Math.max(...dataWithValues.map((d) => d.rate));
+  const minRate = Math.min(...dataWithValues.map((d) => d.rate));
+
+  let message = `평균 달성률은 ${Math.round(avgRate)}%입니다 (기록된 주: ${dataWithValues.length}주). `;
+
+  if (missingWeeks > 0) {
+    message += `${missingWeeks}주 동안은 기록이 없습니다. `;
+  }
 
   if (lastRate > firstRate) {
     const improvement = Math.round((lastRate - firstRate) * 10) / 10;

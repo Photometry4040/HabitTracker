@@ -18,6 +18,7 @@ import { SuccessRateDonut } from '@/components/charts/SuccessRateDonut.jsx'
 import { MonthlyStats } from '@/components/MonthlyStats.jsx'
 import { BadgeDisplay } from '@/components/badges/BadgeDisplay.jsx'
 import { useWeekStats } from '@/hooks/useStatistics.js'
+import { getISOWeekNumber, formatWeekNumber } from '@/lib/weekNumber.js'
 
 export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate }) {
   const [currentLevel, setCurrentLevel] = useState(1)
@@ -69,25 +70,42 @@ export function Dashboard({ habits, childName, weekPeriod, theme, weekStartDate 
   // 주간별 성과 데이터 (히스토리용)
   const getWeeklyPerformanceData = () => {
     if (historicalData.length === 0) return []
-    
+
     return historicalData.map((weekData, index) => {
       const totalScore = weekData.habits?.reduce((total, habit) => {
         return total + habit.times.filter(time => time === 'green').length
       }, 0) || 0
-      
+
       const maxScore = weekData.habits?.length * 7 || 0
       const successRate = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0
-      
-      // 주간 기간에서 주차 추출
-      const weekNumber = historicalData.length - index
-      const weekLabel = viewMode === 'monthly' ? `${weekNumber}주 전` : weekData.week_period || `주간 ${weekNumber}`
-      
+
+      // ISO 8601 표준 주차 계산
+      // week_start_date를 사용하여 정확한 주차 번호 계산
+      let weekLabel
+      try {
+        if (weekData.week_start_date) {
+          // ISO 8601 주차 번호 사용
+          const isoWeekNumber = getISOWeekNumber(weekData.week_start_date)
+          weekLabel = `${isoWeekNumber}주차`
+        } else {
+          // 폴백: week_period 또는 역순 카운트
+          const weekNumber = historicalData.length - index
+          weekLabel = viewMode === 'monthly' ? `${weekNumber}주 전` : weekData.week_period || `주간 ${weekNumber}`
+        }
+      } catch (error) {
+        // 에러 발생 시 폴백
+        console.error('주차 계산 오류:', error)
+        const weekNumber = historicalData.length - index
+        weekLabel = `${weekNumber}주 전`
+      }
+
       return {
         week: weekLabel,
         score: totalScore,
         maxScore: maxScore,
         successRate: successRate,
-        theme: weekData.theme || '테마 없음'
+        theme: weekData.theme || '테마 없음',
+        week_start_date: weekData.week_start_date // 디버깅용
       }
     }).reverse() // 시간순으로 정렬
   }

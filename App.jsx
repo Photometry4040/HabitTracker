@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge.jsx'
 import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
+import DashboardHub from '@/components/Dashboard/DashboardHub'
 import { Auth } from '@/components/Auth.jsx'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
@@ -652,12 +653,9 @@ function App() {
 
             {/* 대시보드 또는 습관 추적 */}
             {showDashboard ? (
-              <Dashboard 
-                habits={habits}
-                childName={childName}
-                weekPeriod={weekPeriod}
-                theme={theme}
-              />
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <DashboardHub />
+              </div>
             ) : (
               <>
                 {/* 색상 코드 */}

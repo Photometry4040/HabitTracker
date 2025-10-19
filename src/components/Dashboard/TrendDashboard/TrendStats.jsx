@@ -41,47 +41,58 @@ export default function TrendStats({ stats }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      {/* Average */}
-      <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">평균 달성률</h3>
-          <span className="text-2xl">📊</span>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Average */}
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700">평균 달성률</h3>
+            <span className="text-2xl">📊</span>
+          </div>
+          <p className="text-3xl font-bold text-blue-600">{Math.round(average)}%</p>
+          <p className="text-xs text-gray-600 mt-2">전 기간 평균</p>
         </div>
-        <p className="text-3xl font-bold text-blue-600">{Math.round(average)}%</p>
-        <p className="text-xs text-gray-600 mt-2">전 기간 평균</p>
+
+        {/* Maximum */}
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700">최고 달성률</h3>
+            <span className="text-2xl">🏆</span>
+          </div>
+          <p className="text-3xl font-bold text-green-600">{Math.round(max)}%</p>
+          <p className="text-xs text-gray-600 mt-2">최고 기록</p>
+        </div>
+
+        {/* Minimum */}
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700">최저 달성률</h3>
+            <span className="text-2xl">📉</span>
+          </div>
+          <p className="text-3xl font-bold text-orange-600">{Math.round(min)}%</p>
+          <p className="text-xs text-gray-600 mt-2">최저 기록</p>
+        </div>
+
+        {/* Trend */}
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700">최근 추세</h3>
+            {getTrendIcon()}
+          </div>
+          <p className="text-sm font-semibold text-gray-900 mt-2">
+            {getTrendMessage()}
+          </p>
+        </div>
       </div>
 
-      {/* Maximum */}
-      <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">최고 달성률</h3>
-          <span className="text-2xl">🏆</span>
+      {/* Recording Info */}
+      {stats.missing_weeks > 0 && (
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-900">
+            <span className="font-semibold">📅 기록 정보:</span> {stats.recorded_weeks}주 기록, {stats.missing_weeks}주 누락
+          </p>
         </div>
-        <p className="text-3xl font-bold text-green-600">{Math.round(max)}%</p>
-        <p className="text-xs text-gray-600 mt-2">최고 기록</p>
-      </div>
-
-      {/* Minimum */}
-      <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">최저 달성률</h3>
-          <span className="text-2xl">📉</span>
-        </div>
-        <p className="text-3xl font-bold text-orange-600">{Math.round(min)}%</p>
-        <p className="text-xs text-gray-600 mt-2">최저 기록</p>
-      </div>
-
-      {/* Trend */}
-      <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">최근 추세</h3>
-          {getTrendIcon()}
-        </div>
-        <p className="text-sm font-semibold text-gray-900 mt-2">
-          {getTrendMessage()}
-        </p>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

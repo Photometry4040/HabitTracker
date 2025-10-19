@@ -281,21 +281,8 @@ export const loadChildWeeksNew = async (childName) => {
       return []
     }
 
-    // Convert to week_period format
-    return weeks.map(week => {
-      const weekStart = new Date(week.week_start_date)
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekEnd.getDate() + 6)
-      
-      const formatDate = (date) => {
-        const year = date.getFullYear()
-        const month = date.getMonth() + 1
-        const day = date.getDate()
-        return `${year}년 ${month}월 ${day}일`
-      }
-      
-      return `${formatDate(weekStart)} ~ ${formatDate(weekEnd)}`
-    })
+    // Return weeks with week_start_date (for deletion)
+    return weeks
   } catch (error) {
     console.error('아이별 주차 로드 오류 (new schema):', error)
     return []
