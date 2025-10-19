@@ -141,25 +141,26 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
       console.log(`  ${idx + 1}. ${w.week_start_date} (ID: ${w.id})`);
     });
 
-    // 첫 주의 시작 날짜부터 weeksCount만큼 뒤의 날짜까지 모든 월요일 생성
+    // 마지막 주의 시작 날짜부터 역순으로 weeksCount만큼의 주차 생성
+    // 실제 데이터의 마지막 주부터 과거로 거슬러 올라감
     // 타임존 이슈 해결: YYYY-MM-DD 문자열을 그대로 사용
-    const firstWeekDateStr = weeks[0].week_start_date;
-    const [firstYear, firstMonth, firstDay] = firstWeekDateStr.split('-').map(Number);
-    const firstWeekDate = new Date(firstYear, firstMonth - 1, firstDay);
+    const lastWeekDateStr = weeks[weeks.length - 1].week_start_date;
+    const [lastYear, lastMonth, lastDay] = lastWeekDateStr.split('-').map(Number);
+    const lastWeekDate = new Date(lastYear, lastMonth - 1, lastDay);
 
-    console.log(`[Trend] First week date string: ${firstWeekDateStr}`);
-    console.log(`[Trend] First week date parsed: ${firstWeekDate.toDateString()}`);
+    console.log(`[Trend] Last week date string: ${lastWeekDateStr}`);
+    console.log(`[Trend] Last week date parsed: ${lastWeekDate.toDateString()}`);
 
-    const lastWeekDate = new Date(firstWeekDate);
-    lastWeekDate.setDate(lastWeekDate.getDate() + (weeksCount - 1) * 7);
+    const firstWeekDate = new Date(lastWeekDate);
+    firstWeekDate.setDate(firstWeekDate.getDate() - (weeksCount - 1) * 7);
 
-    // 마지막 주 날짜도 YYYY-MM-DD 형식으로
-    const lastYear = lastWeekDate.getFullYear();
-    const lastMonth = String(lastWeekDate.getMonth() + 1).padStart(2, '0');
-    const lastDay = String(lastWeekDate.getDate()).padStart(2, '0');
-    const lastWeekDateStr = `${lastYear}-${lastMonth}-${lastDay}`;
+    // 첫 주 날짜도 YYYY-MM-DD 형식으로
+    const firstYear = firstWeekDate.getFullYear();
+    const firstMonth = String(firstWeekDate.getMonth() + 1).padStart(2, '0');
+    const firstDay = String(firstWeekDate.getDate()).padStart(2, '0');
+    const firstWeekDateStr = `${firstYear}-${firstMonth}-${firstDay}`;
 
-    console.log(`[Trend] Date range: ${firstWeekDateStr} to ${lastWeekDateStr}`);
+    console.log(`[Trend] Date range: ${firstWeekDateStr} to ${lastWeekDateStr} (${weeksCount} weeks)`);
 
     // weeksCount개의 연속 주 생성 (YYYY-MM-DD 형식 유지)
     const allWeeksInRange = [];
