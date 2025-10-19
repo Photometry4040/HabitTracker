@@ -129,8 +129,8 @@ export default function SelfAwarenessDashboard({ childId, onChildSelect }) {
             <h3 className="text-lg font-semibold text-gray-900">💪 강점 습관 TOP 3</h3>
           </div>
           <div className="space-y-3">
-            {data.strengths.map((habit) => (
-              <div key={habit.habit_id} className="bg-green-50 rounded-lg p-4">
+            {data.strengths.map((habit, index) => (
+              <div key={`strength-${habit.habit_name}-${index}`} className="bg-green-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-semibold text-gray-900">{habit.habit_name}</p>
                   <span className="text-2xl">
@@ -167,8 +167,8 @@ export default function SelfAwarenessDashboard({ childId, onChildSelect }) {
             <h3 className="text-lg font-semibold text-gray-900">⚠️ 약점 습관 TOP 3</h3>
           </div>
           <div className="space-y-3">
-            {data.weaknesses.map((habit) => (
-              <div key={habit.habit_id} className="bg-red-50 rounded-lg p-4">
+            {data.weaknesses.map((habit, index) => (
+              <div key={`weakness-${habit.habit_name}-${index}`} className="bg-red-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-semibold text-gray-900">{habit.habit_name}</p>
                   <span className="text-sm font-semibold text-red-600">
