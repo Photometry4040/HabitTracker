@@ -46,7 +46,7 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
         .select('id')
         .eq('user_id', user.id)
         .eq('name', childName)
-        .single()
+        .maybeSingle()
 
       if (childError || !child) {
         alert('아이를 찾을 수 없습니다.')
@@ -76,9 +76,11 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
       }
 
       // Delete all habit_records -> habits -> weeks -> child (in reverse order)
-      console.log(`Deleting ${weeks.length} weeks for ${childName}...`)
+      // Filter out weeks without valid IDs (from mock/trend data)
+      const validWeeks = weeks.filter(w => w.id && w.id !== null && w.id !== 'undefined');
+      console.log(`Deleting ${validWeeks.length} weeks for ${childName}... (${weeks.length - validWeeks.length} invalid entries skipped)`)
 
-      for (const week of weeks) {
+      for (const week of validWeeks) {
         // Delete habit_records first
         const { data: habits } = await supabase
           .from('habits')

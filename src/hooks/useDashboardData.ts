@@ -5,6 +5,168 @@ import { getISOWeekNumber } from '@/lib/weekNumber.js';
 const DASHBOARD_API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-aggregation`;
 
 /**
+ * 실제 데이터베이스에서 아이들 비교 데이터 조회
+ * @returns {Object|null} 실제 데이터 또는 null
+ */
+async function generateRealComparisonData(userId: string, period: string = 'current_week', customWeekStart?: string) {
+  try {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📊 [Comparison] Starting for user: ${userId}`);
+    console.log(`📅 Period: ${period}${customWeekStart ? ` (${customWeekStart})` : ''}`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    // Step 1: 비교 기준 주 결정
+    const targetWeekStart = customWeekStart || getComparisonWeekStart(period);
+    const periodLabel = formatComparisonPeriod(period, targetWeekStart);
+
+    console.log(`🎯 Target week: ${targetWeekStart} (${periodLabel})`);
+
+    // Step 2: 모든 children 조회
+    const { data: children, error: childrenError } = await supabase
+      .from('children')
+      .select('id, name')
+      .eq('user_id', userId);
+
+    if (childrenError || !children || children.length === 0) {
+      console.log('❌ No children found');
+      return null;
+    }
+
+    console.log(`✅ Found ${children.length} children\n`);
+
+    // Step 3: 각 아이의 해당 주차 완료율 계산 (동일 기간 비교)
+    const childrenData = await Promise.all(
+      children.map(async (child) => {
+        // 지정된 주차 조회
+        const { data: targetWeek } = await supabase
+          .from('weeks')
+          .select('id, week_start_date')
+          .eq('child_id', child.id)
+          .eq('week_start_date', targetWeekStart)
+          .maybeSingle();
+
+        // 지정 주차에 데이터가 없는 경우
+        if (!targetWeek) {
+          console.log(`  ⚪ ${child.name}: No data for ${targetWeekStart}`);
+          return {
+            child_id: child.id,
+            child_name: child.name,
+            current_rate: 0,
+            last_week_rate: null,
+            trend: 'stable',
+            trend_value: 0,
+            total_habits: 0,
+            completed_habits: 0,
+            has_data: false,
+            no_data_message: `${periodLabel}에 기록 없음`,
+          };
+        }
+
+        // 현재 주 완료율 계산
+        const { data: currentHabits } = await supabase
+          .from('habits')
+          .select(`
+            id,
+            habit_records (
+              status
+            )
+          `)
+          .eq('week_id', targetWeek.id);
+
+        const currentRecords = currentHabits?.flatMap(h => h.habit_records) || [];
+        const currentGreen = currentRecords.filter(r => r.status === 'green').length;
+        const currentTotal = currentRecords.length;
+        const currentRate = currentTotal > 0 ? Math.round((currentGreen / currentTotal) * 100) : 0;
+
+        // 이전 주 완료율 계산 (있으면)
+        const prevWeekStart = new Date(targetWeekStart);
+        prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+        const prevWeekStartStr = prevWeekStart.toISOString().split('T')[0];
+
+        const { data: prevWeek } = await supabase
+          .from('weeks')
+          .select('id')
+          .eq('child_id', child.id)
+          .eq('week_start_date', prevWeekStartStr)
+          .maybeSingle();
+
+        let lastWeekRate = null;
+        if (prevWeek) {
+          const { data: lastHabits } = await supabase
+            .from('habits')
+            .select(`
+              id,
+              habit_records (
+                status
+              )
+            `)
+            .eq('week_id', prevWeek.id);
+
+          const lastRecords = lastHabits?.flatMap(h => h.habit_records) || [];
+          const lastGreen = lastRecords.filter(r => r.status === 'green').length;
+          const lastTotal = lastRecords.length;
+          lastWeekRate = lastTotal > 0 ? Math.round((lastGreen / lastTotal) * 100) : 0;
+        }
+
+        const trend = lastWeekRate !== null
+          ? (currentRate > lastWeekRate ? 'up' : currentRate < lastWeekRate ? 'down' : 'stable')
+          : 'stable';
+
+        const statusIcon = currentTotal > 0 ? '✅' : '⚪';
+        console.log(`  ${statusIcon} ${child.name}: ${currentRate}% (prev: ${lastWeekRate ?? 'N/A'}%) ${trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️'}`);
+
+        return {
+          child_id: child.id,
+          child_name: child.name,
+          current_rate: currentRate,
+          last_week_rate: lastWeekRate,
+          trend,
+          trend_value: lastWeekRate !== null ? Math.abs(currentRate - lastWeekRate) : 0,
+          total_habits: currentHabits?.length || 0,
+          completed_habits: currentGreen,
+          has_data: currentTotal > 0,
+        };
+      })
+    );
+
+    // 모든 아이 포함 (데이터 없어도 표시)
+    const allChildren = childrenData.filter(c => c !== null);
+
+    if (allChildren.length === 0) {
+      console.log('\n❌ No children data');
+      return null;
+    }
+
+    // 완료율 기준 정렬 및 순위 매기기
+    allChildren.sort((a, b) => b.current_rate - a.current_rate);
+    const rankedData = allChildren.map((child, index) => ({
+      ...child,
+      rank: index + 1,
+      rank_emoji: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐',
+    }));
+
+    const dataCount = rankedData.filter(c => c.has_data).length;
+    const noDataCount = rankedData.filter(c => !c.has_data).length;
+
+    console.log(`\n📊 Summary:`);
+    console.log(`  • Total children: ${rankedData.length}`);
+    console.log(`  • With data: ${dataCount}`);
+    console.log(`  • No data: ${noDataCount}`);
+    console.log(`\n${'='.repeat(60)}\n`);
+
+    return {
+      children: rankedData,
+      week: periodLabel,
+      period,
+      target_week_start: targetWeekStart,
+    };
+  } catch (error) {
+    console.error('❌ [Comparison] Error:', error);
+    return null;
+  }
+}
+
+/**
  * 실제 데이터베이스 기반 Mock 데이터 생성
  */
 async function generateMockComparisonData(userId: string) {
@@ -77,6 +239,269 @@ function getDefaultMockComparisonData() {
 }
 
 /**
+ * Helper: 월요일로 날짜 조정
+ */
+function getMonday(date: Date): Date {
+  const monday = new Date(date);
+  const dayOfWeek = monday.getDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  monday.setDate(monday.getDate() + diffToMonday);
+  return monday;
+}
+
+/**
+ * Helper: 비교 기간에 따른 기준 주 시작일 계산
+ */
+function getComparisonWeekStart(period: string): string {
+  const today = new Date();
+  const currentMonday = getMonday(today);
+
+  switch (period) {
+    case 'current_week':
+      return currentMonday.toISOString().split('T')[0];
+
+    case 'last_week':
+      const lastWeek = new Date(currentMonday);
+      lastWeek.setDate(currentMonday.getDate() - 7);
+      return lastWeek.toISOString().split('T')[0];
+
+    case 'this_month':
+      // 이번 달 첫 주 월요일
+      const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return getMonday(thisMonth).toISOString().split('T')[0];
+
+    case 'last_month':
+      // 지난 달 첫 주 월요일
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      return getMonday(lastMonth).toISOString().split('T')[0];
+
+    default:
+      return currentMonday.toISOString().split('T')[0];
+  }
+}
+
+/**
+ * Helper: 기간 표시 텍스트 생성
+ */
+function formatComparisonPeriod(period: string, weekStart?: string): string {
+  const today = new Date();
+
+  switch (period) {
+    case 'current_week':
+      return '이번 주';
+    case 'last_week':
+      return '지난 주';
+    case 'this_month':
+      return `${today.getFullYear()}년 ${today.getMonth() + 1}월`;
+    case 'last_month':
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1);
+      return `${lastMonth.getFullYear()}년 ${lastMonth.getMonth() + 1}월`;
+    case 'custom':
+      if (weekStart) {
+        const date = new Date(weekStart);
+        return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 주`;
+      }
+      return '사용자 지정';
+    default:
+      return '이번 주';
+  }
+}
+
+/**
+ * Helper: 주차 데이터 객체 생성
+ */
+function createWeekObject(weekStart: Date, hasData = false) {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  return {
+    week_start_date: weekStart.toISOString().split('T')[0],
+    week_end_date: weekEnd.toISOString().split('T')[0],
+    has_data: hasData,
+    completion_rate: 0,
+    total_habits: 0,
+    completed_habits: 0,
+    week_id: null,
+  };
+}
+
+/**
+ * 실제 데이터베이스에서 Trend 데이터 조회
+ * ✨ 모든 주차를 연속적으로 표시 (빈 주차 포함)
+ *
+ * 로직:
+ * 1. DB에서 아이의 모든 주차 조회
+ * 2. 가장 오래된 주부터 현재까지 연속된 주차 생성
+ * 3. DB 데이터와 매칭하여 실제 데이터 채우기
+ * 4. 빈 주차는 "데이터 없음"으로 표시
+ *
+ * @param {string} childId - 아이 ID
+ * @param {number} weeksCount - 표시할 주차 수
+ * @returns {Array|null} 실제 데이터 또는 null (오류 시)
+ */
+async function generateRealTrendData(childId: string, weeksCount: number) {
+  try {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📊 [Trend Analysis] Starting for child: ${childId}`);
+    console.log(`📅 Requested weeks: ${weeksCount}`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    // Step 1: 현재 주(월요일 기준) 계산
+    const currentWeekMonday = getMonday(new Date());
+    console.log(`📍 Current week starts: ${currentWeekMonday.toISOString().split('T')[0]}`);
+
+    // Step 2: DB에서 아이의 모든 주차 범위 조회
+    const { data: dbWeekDates, error: dbError } = await supabase
+      .from('weeks')
+      .select('week_start_date')
+      .eq('child_id', childId)
+      .order('week_start_date', { ascending: true });
+
+    if (dbError) {
+      console.error('❌ Error fetching week dates:', dbError);
+    }
+
+    // Step 3: 시작일과 종료일 결정
+    let rangeStart: Date;
+    const rangeEnd: Date = currentWeekMonday;
+
+    if (dbWeekDates && dbWeekDates.length > 0) {
+      // DB에 데이터가 있는 경우
+      const dbOldestDate = new Date(dbWeekDates[0].week_start_date);
+      const dbNewestDate = new Date(dbWeekDates[dbWeekDates.length - 1].week_start_date);
+
+      // 요청된 주차 수만큼 거슬러 올라간 날짜 계산
+      const requestedStart = new Date(currentWeekMonday);
+      requestedStart.setDate(currentWeekMonday.getDate() - ((weeksCount - 1) * 7));
+
+      // DB의 가장 오래된 날짜와 계산된 날짜 중 더 이전 날짜 사용
+      // 이렇게 하면 DB에 있는 모든 데이터가 포함됨
+      rangeStart = dbOldestDate < requestedStart ? dbOldestDate : requestedStart;
+
+      console.log(`📚 DB data found: ${dbWeekDates.length} weeks`);
+      console.log(`  • Oldest DB week: ${dbWeekDates[0].week_start_date}`);
+      console.log(`  • Newest DB week: ${dbWeekDates[dbWeekDates.length - 1].week_start_date}`);
+      console.log(`  • Requested start: ${requestedStart.toISOString().split('T')[0]}`);
+      console.log(`  ✅ Using start: ${rangeStart.toISOString().split('T')[0]} (${dbOldestDate < requestedStart ? 'DB oldest' : 'requested'})`);
+    } else {
+      // DB에 데이터가 없는 경우
+      rangeStart = new Date(currentWeekMonday);
+      rangeStart.setDate(currentWeekMonday.getDate() - ((weeksCount - 1) * 7));
+      console.log(`📚 No DB data found`);
+      console.log(`  ✅ Using requested range: ${weeksCount} weeks from ${rangeStart.toISOString().split('T')[0]}`);
+    }
+
+    // Step 4: 연속된 모든 주차 생성
+    console.log(`\n🔧 Generating continuous weeks...`);
+    const allWeeks = [];
+    const iterDate = new Date(rangeStart);
+
+    while (iterDate <= rangeEnd) {
+      allWeeks.push(createWeekObject(new Date(iterDate)));
+      iterDate.setDate(iterDate.getDate() + 7);
+    }
+
+    console.log(`  ✅ Generated: ${allWeeks.length} continuous weeks`);
+    console.log(`  📆 Date range: ${allWeeks[0].week_start_date} to ${allWeeks[allWeeks.length - 1].week_start_date}`);
+
+    // Step 5: 생성된 범위 내의 실제 데이터 조회
+    console.log(`\n🔍 Fetching actual data from DB...`);
+    const { data: weeksWithData, error: fetchError } = await supabase
+      .from('weeks')
+      .select('id, week_start_date')
+      .eq('child_id', childId)
+      .gte('week_start_date', allWeeks[0].week_start_date)
+      .lte('week_start_date', allWeeks[allWeeks.length - 1].week_start_date)
+      .order('week_start_date', { ascending: true });
+
+    if (fetchError) {
+      console.error('❌ Error fetching weeks data:', fetchError);
+      return allWeeks; // 에러 발생해도 빈 주차 배열 반환
+    }
+
+    if (!weeksWithData || weeksWithData.length === 0) {
+      console.log(`  ℹ️ No data found in range - all weeks will show as empty`);
+      return allWeeks;
+    }
+
+    console.log(`  ✅ Found ${weeksWithData.length} weeks with data`);
+
+    // Step 6: 각 주차별 상세 데이터 조회 및 매칭
+    console.log(`\n📈 Processing weekly data...`);
+    for (const weekData of weeksWithData) {
+      const targetWeek = allWeeks.find(w => w.week_start_date === weekData.week_start_date);
+
+      if (!targetWeek) {
+        console.error(`  ❌ Unexpected: Week ${weekData.week_start_date} exists in DB but not in generated range`);
+        continue;
+      }
+
+      // 해당 주차의 습관 및 기록 조회
+      const { data: habitsData } = await supabase
+        .from('habits')
+        .select(`
+          id,
+          name,
+          habit_records (
+            status,
+            record_date
+          )
+        `)
+        .eq('week_id', weekData.id);
+
+      // 데이터 집계
+      const allRecords = habitsData?.flatMap(h => h.habit_records) || [];
+      const greenCount = allRecords.filter(r => r.status === 'green').length;
+      const totalRecordCount = allRecords.length;
+
+      // 주차 데이터 업데이트
+      targetWeek.week_id = weekData.id;
+      targetWeek.has_data = totalRecordCount > 0;
+      targetWeek.completion_rate = totalRecordCount > 0
+        ? Math.round((greenCount / totalRecordCount) * 100)
+        : 0;
+      targetWeek.total_habits = habitsData?.length || 0;
+      targetWeek.completed_habits = greenCount;
+
+      // 로깅
+      const statusIcon = targetWeek.has_data ? '✅' : '⚪';
+      const percentage = targetWeek.has_data ? `${targetWeek.completion_rate}%` : 'no records';
+      console.log(`  ${statusIcon} Week ${weekData.week_start_date}: ${percentage} (${greenCount}/${totalRecordCount} green)`);
+    }
+
+    // Step 7: 최종 통계 및 검증
+    const weeksWithRecords = allWeeks.filter(w => w.has_data).length;
+    const emptyWeeks = allWeeks.filter(w => !w.has_data).length;
+
+    console.log(`\n📊 Final Statistics:`);
+    console.log(`  • Total weeks: ${allWeeks.length}`);
+    console.log(`  • With data: ${weeksWithRecords} weeks`);
+    console.log(`  • Empty: ${emptyWeeks} weeks`);
+
+    // 상세 디버깅 (개발 모드에서만)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`\n🔍 Detailed week list:`);
+      allWeeks.forEach((week, index) => {
+        const isoWeek = getISOWeekNumber(week.week_start_date);
+        const status = week.has_data
+          ? `📊 ${week.completion_rate}%`
+          : '⚪ empty';
+        console.log(`  [${index.toString().padStart(2, '0')}] Week ${isoWeek} (${week.week_start_date}): ${status}`);
+      });
+    }
+
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`✅ [Trend Analysis] Complete`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    return allWeeks;
+  } catch (error) {
+    console.error('[Real Trend] Error:', error);
+    return null;
+  }
+}
+
+/**
  * 실제 데이터베이스 기반 Trend 데이터 생성 (빈 주차 제외)
  * 실제로 기록된 주차만 반환 (최신 weeksCount개)
  */
@@ -128,7 +553,7 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
         .from('children')
         .select('id, name, user_id')
         .eq('id', childId)
-        .single();
+        .maybeSingle();
 
       console.log('[Trend] Child info:', childCheck);
       return getDefaultMockTrendData();
@@ -197,16 +622,35 @@ function getDefaultMockTrendData() {
 /**
  * Fetch comparison data for all children
  */
-export function useComparisonData(userId: string): UseQueryResult<any> {
+export function useComparisonData(
+  userId: string,
+  period: string = 'current_week',
+  customWeekStart?: string
+): UseQueryResult<any> {
   return useQuery({
-    queryKey: ['comparison', userId],
+    queryKey: ['comparison', userId, period, customWeekStart],
     queryFn: async () => {
       if (!userId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      // 개발/테스트 환경에서는 실제 데이터 우선 조회
       if (import.meta.env.DEV) {
-        console.log('[Mock] Generating comparison data from actual children');
-        return await generateMockComparisonData(userId);
+        console.log('[Dev] Attempting to fetch real comparison data');
+        const realData = await generateRealComparisonData(userId, period, customWeekStart);
+
+        if (realData && realData.children && realData.children.length > 0) {
+          console.log('[Dev] ✅ Using real comparison data');
+          return realData;
+        }
+
+        // 실제 데이터가 없으면 null 반환 (Empty State 표시)
+        console.log('[Dev] ⚪ No real comparison data found, returning null');
+        return null;
+
+        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
+        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+        //   console.log('[Dev] Falling back to mock comparison data');
+        //   return await generateMockComparisonData(userId);
+        // }
       }
 
       const { data: session } = await supabase.auth.getSession();
@@ -252,10 +696,25 @@ export function useTrendData(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      // 개발/테스트 환경에서는 실제 데이터 우선 조회
       if (import.meta.env.DEV) {
-        console.log('[Mock] Generating trend data from actual weeks');
-        return await generateMockTrendData(childId, weeks);
+        console.log('[Dev] Attempting to fetch real trend data');
+        const realData = await generateRealTrendData(childId, weeks);
+
+        if (realData) {
+          console.log('[Dev] ✅ Using real trend data (continuous weeks)');
+          return realData; // ✅ 빈 배열도 유효한 데이터 (연속성 보장)
+        }
+
+        // 에러 발생 시에만 null 반환
+        console.log('[Dev] ❌ Error generating trend data, returning null');
+        return null;
+
+        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
+        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+        //   console.log('[Dev] Falling back to mock trend data');
+        //   return await generateMockTrendData(childId, weeks);
+        // }
       }
 
       const { data: session } = await supabase.auth.getSession();
@@ -415,9 +874,25 @@ export function useInsights(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      // 개발/테스트 환경에서는 실제 데이터 우선 조회
       if (import.meta.env.DEV) {
-        console.log('[Mock] Generating insights from actual data');
+        console.log('[Dev] Attempting to fetch real insights data');
+
+        // TODO: generateRealInsightsData() 구현 필요
+        // 현재는 간단하게 실제 weeks 존재 여부만 확인
+        const { data: weeksData } = await supabase
+          .from('weeks')
+          .select('id')
+          .eq('child_id', childId)
+          .limit(weeks);
+
+        if (!weeksData || weeksData.length === 0) {
+          console.log('[Dev] ⚪ No weeks found for insights, returning null');
+          return null;
+        }
+
+        // 임시: Mock 데이터 사용 (향후 실제 데이터로 교체 필요)
+        console.log('[Dev] ⚠️ Using mock insights (TODO: implement real insights)');
         return await generateMockInsightsData(childId, weeks);
       }
 
@@ -449,6 +924,132 @@ export function useInsights(
     staleTime: 10 * 60 * 1000, // 10분
     gcTime: 15 * 60 * 1000, // v5: cacheTime -> gcTime
   });
+}
+
+/**
+ * 실제 데이터베이스에서 월간 통계 조회
+ * @returns {Object|null} 실제 데이터 또는 null (데이터 없을 시)
+ */
+async function generateRealMonthlyData(childId: string, year: number, month: number) {
+  try {
+    console.log(`[Real] Fetching real monthly data: ${childId}, ${year}-${month}`);
+
+    // Step 1: 해당 월의 실제 weeks 조회
+    const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const monthEnd = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    const { data: weeks, error: weeksError } = await supabase
+      .from('weeks')
+      .select('id, week_start_date')
+      .eq('child_id', childId)
+      .gte('week_start_date', monthStart)
+      .lt('week_start_date', monthEnd)
+      .order('week_start_date', { ascending: true });
+
+    if (weeksError) {
+      console.error('[Real] Error fetching weeks:', weeksError);
+      return null;
+    }
+
+    if (!weeks || weeks.length === 0) {
+      console.log(`[Real] No weeks found for ${year}-${month}`);
+      return null; // ✅ 명시적 null 반환
+    }
+
+    console.log(`[Real] Found ${weeks.length} weeks for ${year}-${month}`);
+
+    // Step 2: 각 주의 실제 완료율 계산
+    const weekStats = await Promise.all(
+      weeks.map(async (week, index) => {
+        const { data: habits } = await supabase
+          .from('habits')
+          .select(`
+            id,
+            name,
+            habit_records (
+              status,
+              record_date
+            )
+          `)
+          .eq('week_id', week.id);
+
+        const allRecords = habits?.flatMap(h => h.habit_records) || [];
+        const greenCount = allRecords.filter(r => r.status === 'green').length;
+        const totalCount = allRecords.length;
+
+        const weekStartDate = new Date(week.week_start_date);
+        const weekEndDate = new Date(weekStartDate);
+        weekEndDate.setDate(weekEndDate.getDate() + 6);
+
+        return {
+          week: index + 1,
+          week_start: week.week_start_date,
+          week_end: weekEndDate.toISOString().split('T')[0],
+          completion_rate: totalCount > 0 ? Math.round((greenCount / totalCount) * 100) : 0,
+          total_records: totalCount,
+          green_count: greenCount,
+          has_data: totalCount > 0,
+          emoji: totalCount === 0 ? '⚪' :
+                 greenCount / totalCount >= 0.8 ? '🟢' :
+                 greenCount / totalCount >= 0.5 ? '🟡' : '🔴',
+        };
+      })
+    );
+
+    const validWeeks = weekStats.filter(w => w.has_data);
+
+    if (validWeeks.length === 0) {
+      console.log(`[Real] No valid habit records for ${year}-${month}`);
+      return null; // ✅ 기록이 없으면 null 반환
+    }
+
+    // Step 3: 월간 통계 계산
+    const avgCompletion = Math.round(
+      validWeeks.reduce((sum, w) => sum + w.completion_rate, 0) / validWeeks.length
+    );
+
+    const bestWeek = validWeeks.reduce((prev, current) =>
+      prev.completion_rate > current.completion_rate ? prev : current
+    );
+
+    const worstWeek = validWeeks.reduce((prev, current) =>
+      prev.completion_rate < current.completion_rate ? prev : current
+    );
+
+    console.log(`[Real] Calculated stats: avg=${avgCompletion}%, best=${bestWeek.completion_rate}%, worst=${worstWeek.completion_rate}%`);
+
+    // Step 4: 지난달 데이터 조회 (비교용)
+    const lastMonth = month === 1 ? 12 : month - 1;
+    const lastMonthYear = month === 1 ? year - 1 : year;
+    const lastMonthData = await generateRealMonthlyData(childId, lastMonthYear, lastMonth);
+    const lastMonthAvg = lastMonthData?.summary?.average_completion || null;
+
+    return {
+      summary: {
+        year,
+        month,
+        month_name: `${year}년 ${month}월`,
+        total_weeks: validWeeks.length,
+        average_completion: avgCompletion,
+        best_week: bestWeek,
+        worst_week: worstWeek,
+        weeks: weekStats, // ✅ 모든 주 포함 (has_data 플래그로 구분)
+      },
+      comparison: {
+        current_month: `${year}년 ${month}월`,
+        current_avg: avgCompletion,
+        last_month: lastMonthAvg !== null ? `${lastMonthYear}년 ${lastMonth}월` : null,
+        last_month_avg: lastMonthAvg,
+        improvement: lastMonthAvg !== null ? avgCompletion - lastMonthAvg : null,
+      },
+      top_months: [], // TODO: 상위 월간 성과는 별도 집계 필요 (향후 구현)
+    };
+  } catch (error) {
+    console.error('[Real] Error generating real monthly data:', error);
+    return null;
+  }
 }
 
 /**
@@ -550,10 +1151,25 @@ export function useMonthlyStats(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터베이스 기반 Mock 데이터 반환
+      // 개발/테스트 환경에서는 실제 데이터 우선 조회
       if (import.meta.env.DEV) {
-        console.log('[Mock] Generating monthly stats from actual data');
-        return await generateMockMonthlyData(childId, year, month);
+        console.log('[Dev] Attempting to fetch real monthly data');
+        const realData = await generateRealMonthlyData(childId, year, month);
+
+        if (realData) {
+          console.log('[Dev] ✅ Using real monthly data');
+          return realData;
+        }
+
+        // 실제 데이터가 없으면 null 반환 (Empty State 표시)
+        console.log('[Dev] ⚪ No real data found, returning null for empty state');
+        return null;
+
+        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
+        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+        //   console.log('[Dev] Falling back to mock data');
+        //   return await generateMockMonthlyData(childId, year, month);
+        // }
       }
 
       const { data: session } = await supabase.auth.getSession();

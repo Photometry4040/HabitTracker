@@ -113,7 +113,7 @@ export async function calculateWeekStats(childName, weekStartDate) {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       throw new Error('Child not found')
@@ -125,7 +125,7 @@ export async function calculateWeekStats(childName, weekStartDate) {
       .select('*')
       .eq('child_id', child.id)
       .eq('week_start_date', adjustedDateStr)
-      .single()
+      .maybeSingle()
 
     if (weekError || !week) {
       // Return empty stats if week doesn't exist
@@ -279,7 +279,7 @@ export async function calculateMonthStats(childName, month) {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       throw new Error('Child not found')
@@ -413,7 +413,7 @@ export async function calculateYearStats(childName, year) {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       throw new Error('Child not found')

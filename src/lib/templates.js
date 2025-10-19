@@ -53,7 +53,7 @@ export const createTemplate = async (name, habits, childId = null, description =
         is_default: isDefault
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error creating template:', error)
@@ -128,7 +128,7 @@ export const getTemplate = async (templateId) => {
       .select('*')
       .eq('id', templateId)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching template:', error)
@@ -190,7 +190,7 @@ export const updateTemplate = async (templateId, updates) => {
       .eq('id', templateId)
       .eq('user_id', user.id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error updating template:', error)
@@ -261,13 +261,9 @@ export const getDefaultTemplate = async (childId = null) => {
       query = query.eq('child_id', childId)
     }
 
-    const { data, error } = await query.single()
+    const { data, error } = await query.maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No default template found (not an error)
-        return null
-      }
       console.error('Error fetching default template:', error)
       throw error
     }
@@ -329,7 +325,7 @@ export const saveWeekAsTemplate = async (name, habits, childName = null, descrip
         .select('id')
         .eq('user_id', user.id)
         .eq('name', childName)
-        .single()
+        .maybeSingle()
 
       if (!childError && child) {
         childId = child.id

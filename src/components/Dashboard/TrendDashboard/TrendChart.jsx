@@ -10,7 +10,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
+  Scatter,
+  ComposedChart,
 } from 'recharts';
+import { getISOWeekNumber } from '@/lib/weekNumber.js';
 
 /**
  * Trend Chart Component
@@ -30,15 +34,27 @@ export default function TrendChart({ data }) {
     );
   }
 
-  // 차트 데이터 포맷팅
-  const chartData = data.map((week, index) => ({
-    week: `${index + 1}주`,
-    rate: week.has_data ? week.completion_rate : null,
-    habits: week.total_habits,
-    completed: week.completed_habits,
-    has_data: week.has_data !== false, // 데이터 존재 여부
-    date: week.week_start_date,
-  }));
+  // 차트 데이터 포맷팅 (ISO 주차 번호 사용)
+  const chartData = data.map((week, index) => {
+    // ISO 8601 주차 계산
+    let weekLabel;
+    try {
+      const isoWeekNum = getISOWeekNumber(week.week_start_date);
+      weekLabel = `${isoWeekNum}주`;
+    } catch (error) {
+      // 폴백: 배열 인덱스 사용
+      weekLabel = `${index + 1}주`;
+    }
+
+    return {
+      week: weekLabel,
+      rate: week.has_data ? week.completion_rate : null,
+      habits: week.total_habits,
+      completed: week.completed_habits,
+      has_data: week.has_data !== false, // 데이터 존재 여부
+      date: week.week_start_date,
+    };
+  });
 
   // 커스텀 커서 렌더러
   const CustomTooltip = ({ active, payload, label }) => {
@@ -64,13 +80,16 @@ export default function TrendChart({ data }) {
     return null;
   };
 
+  // Filter data to show only weeks with actual data for scatter plot
+  const scatterData = chartData.filter(d => d.rate !== null && d.rate !== undefined);
+
   return (
     <div className="w-full">
       <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
               <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -78,7 +97,11 @@ export default function TrendChart({ data }) {
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="week"
-            tick={{ fill: '#6b7280', fontSize: 12 }}
+            tick={{ fill: '#6b7280', fontSize: 10 }}
+            angle={-45}
+            textAnchor="end"
+            height={60}
+            interval={Math.floor(chartData.length / 10)} // Show approximately 10 labels
           />
           <YAxis
             domain={[0, 100]}
@@ -87,28 +110,75 @@ export default function TrendChart({ data }) {
           />
 
           {/* 목표선 (80%) */}
-          <line
-            y1="20%"
-            y2="20%"
+          <ReferenceLine
+            y={80}
             stroke="#10B981"
             strokeDasharray="5 5"
-            style={{
-              position: 'absolute',
-              top: '20%',
-            }}
+            label={{ value: "목표 80%", position: "right", fill: "#10B981", fontSize: 12 }}
           />
 
           <Tooltip content={<CustomTooltip />} />
 
+          {/* Area filling for visual effect */}
           <Area
+            type="monotone"
+            dataKey="rate"
+            stroke="none"
+            fill="url(#colorRate)"
+            connectNulls={false}
+          />
+
+          {/* Main data line */}
+          <Line
             type="monotone"
             dataKey="rate"
             stroke="#3B82F6"
             strokeWidth={2}
-            fill="url(#colorRate)"
             connectNulls={false}
+            dot={(props) => {
+              const { cx, cy, value, payload, index } = props;
+              // Only render dots for actual data points
+              if (value === null || value === undefined) {
+                return null;
+              }
+
+              return (
+                <g key={`dot-${payload.date || index}`}>
+                  {/* Outer white circle for visibility */}
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={7}
+                    fill="#ffffff"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                  />
+                  {/* Inner colored circle */}
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={4}
+                    fill="#3B82F6"
+                  />
+                  {/* Label for 100% achievements */}
+                  {value === 100 && (
+                    <text
+                      x={cx}
+                      y={cy - 12}
+                      fill="#3B82F6"
+                      fontSize={11}
+                      fontWeight="bold"
+                      textAnchor="middle"
+                    >
+                      💯
+                    </text>
+                  )}
+                </g>
+              );
+            }}
+            activeDot={{ r: 10, stroke: '#3B82F6', strokeWidth: 2, fill: '#fff' }}
           />
-        </AreaChart>
+        </ComposedChart>
       </ResponsiveContainer>
 
       {/* Goal Line Indicator */}

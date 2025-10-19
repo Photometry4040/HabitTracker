@@ -16,7 +16,7 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - Discord notifications for habit tracking events
 - Achievement badge system
 
-**Project Status:** 🎉 **Phase 3 Complete** - Database migration to NEW SCHEMA finished!
+**Project Status:** 🚀 **Phase 4 Ready** (95% complete) - Dashboard with real-time aggregation nearly complete. Only database views creation remaining.
 
 ## Current Architecture (Phase 3 Complete - 2025-10-18)
 
@@ -86,7 +86,12 @@ Idempotency: idempotency_log table
    - `App.jsx` - Main component, handles all state and data operations
    - `Auth.jsx` - Login/signup UI
    - `ChildSelector.jsx` - Child selection interface (uses Edge Function for delete)
-   - `Dashboard.jsx` - Data visualization with Recharts
+   - `Dashboard/` - Modular dashboard system with 4 specialized views:
+     - `ComparisonDashboard/` - Multi-child comparison with ranking
+     - `TrendDashboard/` - Weekly trend analysis with continuous week display
+     - `SelfAwarenessDashboard/` - Insights, strengths, weaknesses analysis
+     - `MonthlyDashboard/` - Monthly statistics and calendar view
+   - `hooks/useDashboardData.ts` - React Query hooks for dashboard data fetching
 
 ## Migration History
 
@@ -119,6 +124,14 @@ Idempotency: idempotency_log table
 - NEW SCHEMA: Primary, fully operational
 - Edge Function: new_only mode (640 lines, -35% from dual-write)
 
+### Phase 4: Dashboard Aggregation (95% Complete - 2025-10-19)
+- ✅ Edge Function `dashboard-aggregation` deployed to Supabase
+- ✅ React Query v5 hooks implemented (`useDashboardData.ts`)
+- ✅ 4 Dashboard types: Comparison, Trends, Self-Awareness (Insights), Monthly
+- ✅ Environment-based data switching (DEV: real data, PROD: Edge Function)
+- ⏳ **Pending**: Database views creation (`v_weekly_completion`, `v_daily_completion`, `v_habit_failure_patterns`)
+- 📚 **Next Step**: See `VIEWS_CREATION_MANUAL.md` for final setup
+
 ## Development Commands
 
 ### Essential Commands
@@ -141,7 +154,7 @@ npm run lint
 
 ### Database Commands
 ```bash
-# Analyze drift between schemas
+# Analyze drift between schemas (Phase 3 legacy)
 node scripts/analyze-drift-details.js
 
 # Check latest save operation
@@ -152,6 +165,12 @@ node scripts/verify-new-schema-only.js
 
 # Verify table rename
 node scripts/verify-table-rename.js
+
+# Phase 4: Dashboard data verification
+node scripts/check-august-weeks.js
+node scripts/verify-week-33-data.js
+node scripts/test-real-monthly-data.js
+node scripts/verify-chart-rendering.js
 ```
 
 ### Environment Setup
@@ -173,6 +192,15 @@ node scripts/verify-table-rename.js
 - `012`: Enable RLS policies
 - `013`: Create indexes for performance
 - `014`: Rename OLD SCHEMA to habit_tracker_old
+
+**Phase 4 Setup (Manual - Pending):**
+1. **Database Views**: Run SQL scripts in `supabase-views-dashboard.sql`
+   - `v_weekly_completion` - Weekly aggregated completion rates
+   - `v_daily_completion` - Daily completion tracking
+   - `v_habit_failure_patterns` - Pattern analysis for insights
+2. **Performance Indexes**: 4 indexes for optimized querying
+3. **Edge Function**: `dashboard-aggregation` already deployed
+4. **Detailed Guide**: See `VIEWS_CREATION_MANUAL.md`
 
 ## Key Design Patterns
 
@@ -281,10 +309,16 @@ AND schemaname = 'public';
 - Error messages go to console, user-facing errors use alerts
 
 ### Working with Edge Functions
-- Deploy: Use Supabase CLI or dashboard
-- Test: Check `idempotency_log` table for operation logs
-- Debug: Check Edge Function logs in Supabase dashboard
-- Current version: new_only mode (640 lines)
+- **dual-write-habit**: Handles all write operations (create/update/delete weeks and habits)
+  - Deploy: `supabase functions deploy dual-write-habit`
+  - Test: Check `idempotency_log` table for operation logs
+  - Debug: Check Edge Function logs in Supabase dashboard
+  - Current version: new_only mode (640 lines)
+- **dashboard-aggregation**: Handles dashboard data aggregation (Phase 4)
+  - Deploy: `supabase functions deploy dashboard-aggregation`
+  - Operations: `comparison`, `trends`, `insights`, `monthly`
+  - Uses database views for optimized queries
+  - CORS enabled for cross-origin requests
 
 ### Styling Approach
 - Tailwind CSS with custom CSS variables for theming
@@ -296,6 +330,163 @@ AND schemaname = 'public';
 - `@/` resolves to `./src/` (configured in vite.config.js)
 - Use for imports: `import { Button } from '@/components/ui/button.jsx'`
 
+### Trend Chart Implementation (Recharts)
+
+**Important Guidelines for Maintaining Data Visibility**
+
+#### Chart Type Selection
+- **MUST use ComposedChart** for trend data with potential gaps
+- Combines Line + Area components for optimal visualization
+- ❌ **DO NOT use AreaChart or LineChart alone** - isolated data points will not display
+
+#### Data Point Visibility (Critical)
+All data points must render explicitly with custom dot renderer:
+
+```jsx
+<Line
+  dataKey="rate"
+  dot={(props) => {
+    const { cx, cy, value } = props;
+    if (value === null || value === undefined) return null;
+
+    return (
+      <g>
+        {/* Outer white circle for visibility against any background */}
+        <circle cx={cx} cy={cy} r={7} fill="#ffffff" stroke="#3B82F6" strokeWidth={2} />
+        {/* Inner colored circle - actual data point */}
+        <circle cx={cx} cy={cy} r={4} fill="#3B82F6" />
+        {/* Special indicator for 100% achievements */}
+        {value === 100 && <text x={cx} y={cy - 12}>💯</text>}
+      </g>
+    );
+  }}
+  connectNulls={false} // CRITICAL: Keep false to show gaps
+/>
+```
+
+**Why this matters:**
+- With `connectNulls={false}`, lines don't connect across empty weeks
+- Without custom dot renderer, isolated points (like Week 33) become invisible
+- White outer circle ensures visibility on any background
+
+#### X-Axis Optimization
+```jsx
+<XAxis
+  dataKey="week"
+  angle={-45}              // Rotate labels for readability
+  textAnchor="end"
+  interval={Math.floor(chartData.length / 10)}  // Show ~10 labels max
+/>
+```
+
+#### Reference Lines
+```jsx
+<ReferenceLine
+  y={80}
+  stroke="#10B981"
+  strokeDasharray="5 5"
+  label={{ value: "목표 80%", position: "right" }}
+/>
+```
+
+#### Complete Example
+```jsx
+<ComposedChart data={chartData}>
+  {/* Gradient definition */}
+  <defs>
+    <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+    </linearGradient>
+  </defs>
+
+  <CartesianGrid strokeDasharray="3 3" />
+  <XAxis dataKey="week" angle={-45} textAnchor="end" />
+  <YAxis domain={[0, 100]} />
+  <ReferenceLine y={80} stroke="#10B981" strokeDasharray="5 5" />
+  <Tooltip />
+
+  {/* Area for visual effect */}
+  <Area
+    dataKey="rate"
+    fill="url(#colorRate)"
+    stroke="none"
+    connectNulls={false}
+  />
+
+  {/* Line with custom dots - ESSENTIAL */}
+  <Line
+    dataKey="rate"
+    stroke="#3B82F6"
+    strokeWidth={2}
+    connectNulls={false}
+    dot={/* custom dot renderer as shown above */}
+  />
+</ComposedChart>
+```
+
+#### Common Pitfalls to Avoid
+- ❌ Using only AreaChart - isolated points won't show
+- ❌ Setting `connectNulls={true}` - hides intentional gaps
+- ❌ Omitting custom dot renderer - isolated points invisible
+- ❌ Not filtering null values in dot renderer - renders empty circles
+
+#### Related Files
+- `src/components/Dashboard/TrendDashboard/TrendChart.jsx` - Main implementation
+- `src/hooks/useDashboardData.ts` - Data generation with continuous weeks
+- `src/lib/weekNumber.js` - ISO week number calculation
+
+**Last Updated**: 2025-10-19 (Week 33 visibility fix)
+
+### Dashboard Data Fetching Pattern (Phase 4)
+
+**Environment-Based Data Switching:**
+```typescript
+// src/hooks/useDashboardData.ts
+export function useComparisonData(userId: string, period: string) {
+  return useQuery({
+    queryKey: ['comparison', userId, period],
+    queryFn: async () => {
+      // DEV: Use real database data directly
+      if (import.meta.env.DEV) {
+        return await generateRealComparisonData(userId, period);
+      }
+
+      // PROD: Call Edge Function (which uses database views)
+      const response = await fetch(DASHBOARD_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          operation: 'comparison',
+          data: { userId }
+        })
+      });
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minute cache
+  });
+}
+```
+
+**4 Dashboard Operations:**
+1. **Comparison**: Compare all children's current week performance
+   - Hook: `useComparisonData(userId, period, customWeekStart?)`
+   - Returns: Children ranked by completion rate with trend indicators
+2. **Trends**: Weekly trend analysis for a specific child
+   - Hook: `useTrendData(childId, weeks)`
+   - Returns: Continuous weekly data (includes empty weeks for chart continuity)
+3. **Insights**: Self-awareness analysis (strengths, weaknesses, patterns)
+   - Hook: `useInsights(childId, weeks)`
+   - Returns: Habit-level statistics, day-of-week patterns, feedback
+4. **Monthly**: Monthly statistics and calendar view
+   - Hook: `useMonthlyStats(childId, year, month)`
+   - Returns: Daily/weekly summary, best/worst weeks, month-over-month comparison
+
+**React Query Configuration:**
+- v5 syntax (`gcTime` instead of `cacheTime`)
+- Automatic refetching on window focus
+- Cache invalidation hooks available via `useInvalidateDashboardQueries()`
+- Error boundaries handle loading/error states in components
+
 ## Deployment
 
 ### Netlify Deployment
@@ -306,10 +497,17 @@ AND schemaname = 'public';
 5. Supabase authentication settings must include Netlify URL in redirect URLs
 
 ### Edge Function Deployment
+**dual-write-habit (Write Operations):**
 1. Use Supabase CLI: `supabase functions deploy dual-write-habit`
 2. Or deploy via Supabase dashboard
 3. Verify deployment in Edge Function logs
 4. Test with `scripts/check-edge-function-request.js`
+
+**dashboard-aggregation (Read/Analytics - Phase 4):**
+1. Deploy: `supabase functions deploy dashboard-aggregation`
+2. **Prerequisites**: Database views must be created first (see `VIEWS_CREATION_MANUAL.md`)
+3. Test: Check browser console for Edge Function calls in production
+4. Monitor: Supabase Functions dashboard for performance metrics
 
 ### GitHub Pages Deployment
 - Requires GitHub Actions workflow (see README.md)
@@ -355,10 +553,11 @@ src/
 
 supabase/
 ├── functions/
-│   ├── dual-write-habit/ # Edge Function (new_only mode) ⭐
+│   ├── dual-write-habit/ # Edge Function (new_only mode) - Write operations ⭐
+│   ├── dashboard-aggregation/ # Edge Function - Dashboard analytics (Phase 4) ⭐
 │   └── send-discord-notification/ # Discord notification Edge Function
 └── migrations/
-    └── 001-014_*.sql     # Database migrations
+    └── 001-014_*.sql     # Database migrations (Phase 3 complete)
 
 scripts/                  # Analysis and verification scripts
 ├── analyze-drift-details.js
@@ -391,6 +590,34 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ## Known Issues & Considerations
 
+### Recent Fixes (2025-10-19)
+
+#### ✅ Fixed: Supabase `.single()` 406 Error
+- **Issue**: All Supabase queries using `.single()` returned `406 (Not Acceptable)` errors
+- **Root Cause**: `.single()` requires `Accept: application/vnd.pgrst.object+json` header, which may not be allowed in some Supabase project configurations
+- **Solution**: Replaced all `.single()` with `.maybeSingle()` across the codebase
+- **Files Modified**:
+  - `src/hooks/useDashboardData.ts` (3 instances)
+  - `src/components/ChildSelector.jsx` (1 instance)
+  - `src/lib/database-new.js` (3 instances)
+  - `src/lib/templates.js` (5 instances)
+  - `src/lib/statistics.js` (4 instances)
+- **Impact**: All database queries now work correctly without 406 errors
+
+#### ✅ Fixed: React Key Prop Warning in TrendChart
+- **Issue**: Recharts Line component's custom dot renderer caused "unique key prop" warning
+- **Solution**: Added `key={`dot-${payload.date || index}`}` to `<g>` element in dot renderer
+- **File Modified**: `src/components/Dashboard/TrendDashboard/TrendChart.jsx`
+- **Impact**: Console warnings eliminated, chart renders cleanly
+
+### Phase 4 Completion (Action Required)
+- **Database Views**: Not yet created in production Supabase instance
+  - Required views: `v_weekly_completion`, `v_daily_completion`, `v_habit_failure_patterns`
+  - **Action**: Run SQL from `supabase-views-dashboard.sql` in Supabase SQL Editor
+  - **Guide**: Follow `VIEWS_CREATION_MANUAL.md` for step-by-step instructions
+  - **Impact**: Production dashboard will use Edge Function only after views are created
+  - **Current Workaround**: Development environment uses direct database queries
+
 ### Monitoring Period (Until 2025-10-25)
 - OLD SCHEMA (`habit_tracker_old`) is being monitored for 1 week
 - Verify no unexpected changes via `v_old_schema_status` view
@@ -417,7 +644,10 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ---
 
-**Last Updated**: 2025-10-18
-**Phase**: Phase 3 Complete ✅
+**Last Updated**: 2025-10-19
+**Phase**: Phase 4 Ready (95% - Views Creation Pending) 🚀
 **Schema Version**: NEW SCHEMA (v2)
-**Edge Function Mode**: new_only
+**Edge Functions**:
+  - `dual-write-habit`: new_only mode ✅
+  - `dashboard-aggregation`: deployed, awaiting views ⏳
+**Next Action**: Create database views (5 min) - See `VIEWS_CREATION_MANUAL.md`

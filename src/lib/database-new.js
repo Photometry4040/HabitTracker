@@ -54,7 +54,7 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       console.log('Child not found in new schema:', childName)
@@ -262,7 +262,7 @@ export const loadChildWeeksNew = async (childName) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       console.log('Child not found:', childName)
@@ -310,7 +310,7 @@ export const loadChildMultipleWeeksNew = async (childName, weeksCount = 4) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('name', childName)
-      .single()
+      .maybeSingle()
 
     if (childError || !child) {
       console.log('Child not found:', childName)
