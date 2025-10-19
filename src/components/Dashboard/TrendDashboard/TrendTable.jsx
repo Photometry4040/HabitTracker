@@ -48,28 +48,8 @@ export default function TrendTable({ data }) {
               const isoWeekNum = getISOWeekNumber(week.week_start_date);
               weekLabel = `${isoWeekNum}주차`;
             } catch (error) {
-              // 폴백: 역순 카운트
-              weekLabel = `${index + 1}주`;
-            }
-
-            // 데이터 없는 경우
-            if (week.has_data === false) {
-              return (
-                <tr
-                  key={`${week.week_start_date}-missing`}
-                  className="border-b border-gray-200 bg-gray-100 hover:bg-gray-150 transition-colors"
-                >
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    {weekLabel}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
-                  </td>
-                  <td colSpan="4" className="px-6 py-4 text-sm text-center text-gray-500">
-                    📭 기록 없음
-                  </td>
-                </tr>
-              );
+              // 폴백: 인덱스 기반
+              weekLabel = `${sortedData.length - index}주 전`;
             }
 
             // 달성률에 따른 상태
@@ -79,6 +59,7 @@ export default function TrendTable({ data }) {
             const statusText =
               rate >= 80 ? '🟢 우수' : rate >= 50 ? '🟡 보통' : '🔴 미흡';
 
+            // 모든 데이터가 실제 데이터이므로 has_data 체크 불필요
             return (
               <tr
                 key={week.week_id}

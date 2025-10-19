@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { getISOWeekNumber } from '@/lib/weekNumber.js';
 
 const DASHBOARD_API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-aggregation`;
 
@@ -76,14 +77,14 @@ function getDefaultMockComparisonData() {
 }
 
 /**
- * 실제 데이터베이스 기반 Mock 추세 데이터 생성
- * weeksCount 기간 동안의 모든 주를 생성하고, 실제 데이터가 있는 주만 채움
+ * 실제 데이터베이스 기반 Trend 데이터 생성 (빈 주차 제외)
+ * 실제로 기록된 주차만 반환 (최신 weeksCount개)
  */
 async function generateMockTrendData(childId: string, weeksCount: number) {
   try {
-    console.log(`[Trend] Fetching weeks for child: ${childId}, period: ${weeksCount} weeks`);
+    console.log(`[Trend] Fetching recent ${weeksCount} weeks for child: ${childId}`);
 
-    // 해당 아이의 주 데이터 가져오기 (limit 없이 모든 주 조회)
+    // 해당 아이의 주 데이터 가져오기 (모든 주 조회)
     let weeks;
     let error;
 
@@ -97,7 +98,7 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
     weeks = result1.data;
     error = result1.error;
 
-    // 아이의 weeks가 없으면, 모든 weeks에서 선택
+    // 아이의 weeks가 없으면, 모든 weeks에서 선택 (폴백)
     if (!weeks || weeks.length === 0) {
       console.warn(`[Trend] No weeks found for specific child, trying all weeks...`);
 
@@ -136,101 +137,42 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
     console.log(`[Trend] Found ${weeks.length} actual weeks for child: ${childId}`);
 
     // 실제 데이터 주 로깅
-    console.log('[Trend] Actual weeks from DB:');
+    console.log('[Trend] All weeks from DB:');
     weeks.forEach((w, idx) => {
       console.log(`  ${idx + 1}. ${w.week_start_date} (ID: ${w.id})`);
     });
 
-    // 마지막 주의 시작 날짜부터 역순으로 weeksCount만큼의 주차 생성
-    // 실제 데이터의 마지막 주부터 과거로 거슬러 올라감
-    // 타임존 이슈 해결: YYYY-MM-DD 문자열을 그대로 사용
-    const lastWeekDateStr = weeks[weeks.length - 1].week_start_date;
-    const [lastYear, lastMonth, lastDay] = lastWeekDateStr.split('-').map(Number);
-    const lastWeekDate = new Date(lastYear, lastMonth - 1, lastDay);
+    // ✨ 핵심 로직: 최신 N개만 선택 (빈 주차 제외!)
+    const recentWeeks = weeks.slice(-Math.min(weeksCount, weeks.length));
 
-    console.log(`[Trend] Last week date string: ${lastWeekDateStr}`);
-    console.log(`[Trend] Last week date parsed: ${lastWeekDate.toDateString()}`);
-
-    const firstWeekDate = new Date(lastWeekDate);
-    firstWeekDate.setDate(firstWeekDate.getDate() - (weeksCount - 1) * 7);
-
-    // 첫 주 날짜도 YYYY-MM-DD 형식으로
-    const firstYear = firstWeekDate.getFullYear();
-    const firstMonth = String(firstWeekDate.getMonth() + 1).padStart(2, '0');
-    const firstDay = String(firstWeekDate.getDate()).padStart(2, '0');
-    const firstWeekDateStr = `${firstYear}-${firstMonth}-${firstDay}`;
-
-    console.log(`[Trend] Date range: ${firstWeekDateStr} to ${lastWeekDateStr} (${weeksCount} weeks)`);
-
-    // weeksCount개의 연속 주 생성 (YYYY-MM-DD 형식 유지)
-    const allWeeksInRange = [];
-    for (let i = 0; i < weeksCount; i++) {
-      const weekStart = new Date(firstWeekDate);
-      weekStart.setDate(weekStart.getDate() + i * 7);
-
-      // 로컬 시간을 YYYY-MM-DD로 변환 (타임존 이슈 회피)
-      const year = weekStart.getFullYear();
-      const month = String(weekStart.getMonth() + 1).padStart(2, '0');
-      const day = String(weekStart.getDate()).padStart(2, '0');
-      const weekStartStr = `${year}-${month}-${day}`;
-
-      allWeeksInRange.push(weekStartStr);
-    }
-
-    console.log(`[Trend] Generated ${allWeeksInRange.length} week slots for the period`);
-    console.log('[Trend] Generated week slots:');
-    allWeeksInRange.forEach((slot, idx) => {
-      console.log(`  ${idx + 1}. ${slot}`);
+    console.log(`[Trend] Selected ${recentWeeks.length} recent weeks (requested: ${weeksCount})`);
+    console.log('[Trend] Selected weeks:');
+    recentWeeks.forEach((w, idx) => {
+      const isoWeek = getISOWeekNumber(w.week_start_date);
+      console.log(`  ${idx + 1}. ${w.week_start_date} (${isoWeek}주차)`);
     });
 
-    // Map으로 실제 데이터 주를 빠르게 찾기
-    const weekDataMap = new Map();
-    weeks.forEach(w => {
-      weekDataMap.set(w.week_start_date, w);
-    });
-
-    console.log('[Trend] Matching results:');
-    allWeeksInRange.forEach((slot, idx) => {
-      const found = weekDataMap.has(slot);
-      console.log(`  ${idx + 1}. ${slot}: ${found ? '✓ FOUND' : '✗ MISSING'}`);
-    });
-
-    // 각 주별 완료율 시뮬레이션
+    // 각 주별 완료율 시뮬레이션 (Mock 데이터)
     const completionRates = [72, 68, 75, 82, 88, 95, 80, 85];
 
-    // 모든 주에 대해 데이터 생성 (있으면 데이터 채우고, 없으면 null/0으로 표현)
-    const trendData = allWeeksInRange.map((weekStartStr, index) => {
-      const weekData = weekDataMap.get(weekStartStr);
-      const startDate = new Date(weekStartStr);
+    // 실제 데이터만 변환 (has_data는 항상 true)
+    const trendData = recentWeeks.map((weekData, index) => {
+      const startDate = new Date(weekData.week_start_date);
       const endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+      const completionRate = completionRates[index % completionRates.length];
 
-      if (weekData) {
-        // 실제 데이터가 있는 경우
-        const completionRate = completionRates[index % completionRates.length];
-        return {
-          week_id: weekData.id,
-          week_start_date: weekData.week_start_date,
-          week_end_date: endDate.toISOString().split('T')[0],
-          completion_rate: completionRate,
-          total_habits: 5,
-          completed_habits: Math.round((completionRate / 100) * 5),
-          has_data: true,
-        };
-      } else {
-        // 데이터가 없는 주 (누락된 주)
-        return {
-          week_id: null,
-          week_start_date: weekStartStr,
-          week_end_date: endDate.toISOString().split('T')[0],
-          completion_rate: 0,
-          total_habits: 0,
-          completed_habits: 0,
-          has_data: false,
-        };
-      }
+      return {
+        week_id: weekData.id,
+        week_start_date: weekData.week_start_date,
+        week_end_date: endDate.toISOString().split('T')[0],
+        completion_rate: completionRate,
+        total_habits: 5,
+        completed_habits: Math.round((completionRate / 100) * 5),
+        has_data: true, // 항상 true (빈 주차 없음)
+      };
     });
 
-    console.log(`[Trend] Generated ${trendData.length} trend data points (${trendData.filter(d => d.has_data).length} with data, ${trendData.filter(d => !d.has_data).length} missing)`);
+    console.log(`[Trend] Generated ${trendData.length} trend data points (all with actual data)`);
     return trendData;
   } catch (error) {
     console.error('Error generating mock trend data:', error);
