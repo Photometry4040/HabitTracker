@@ -735,7 +735,221 @@ export function useTrendData(
 }
 
 /**
- * 자기인식 분석 Mock 데이터 생성
+ * 자기인식 분석 실제 데이터 생성
+ * @param {string} childId - 자녀 ID
+ * @param {number} weeksCount - 분석 기간 (주 단위)
+ * @returns {Object|null} 실제 insights 데이터 또는 null
+ */
+async function generateRealInsightsData(childId: string, weeksCount: number = 4) {
+  try {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📊 [Insights] Starting analysis for child: ${childId}`);
+    console.log(`📅 Analysis period: ${weeksCount} weeks`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    // Step 1: 최근 N주의 weeks 조회
+    const { data: weeks, error: weeksError } = await supabase
+      .from('weeks')
+      .select('id, week_start_date')
+      .eq('child_id', childId)
+      .order('week_start_date', { ascending: false })
+      .limit(weeksCount);
+
+    if (weeksError) {
+      console.error('❌ [Insights] Error fetching weeks:', weeksError);
+      return null;
+    }
+
+    if (!weeks || weeks.length === 0) {
+      console.log('⚪ [Insights] No weeks found for analysis');
+      return null;
+    }
+
+    console.log(`✅ Found ${weeks.length} weeks for analysis`);
+    const weekIds = weeks.map(w => w.id);
+
+    // Step 2: 해당 weeks의 모든 habits 조회
+    const { data: habits, error: habitsError } = await supabase
+      .from('habits')
+      .select('id, name, week_id')
+      .in('week_id', weekIds);
+
+    if (habitsError || !habits || habits.length === 0) {
+      console.log('⚪ [Insights] No habits found');
+      return null;
+    }
+
+    console.log(`✅ Found ${habits.length} total habits across all weeks`);
+
+    // Step 3: 모든 habit_records 조회
+    const habitIds = habits.map(h => h.id);
+    const { data: records, error: recordsError } = await supabase
+      .from('habit_records')
+      .select('habit_id, record_date, status')
+      .in('habit_id', habitIds);
+
+    if (recordsError) {
+      console.error('❌ [Insights] Error fetching habit records:', recordsError);
+      return null;
+    }
+
+    console.log(`✅ Found ${records?.length || 0} habit records`);
+
+    // Step 4: 습관별 통계 계산
+    const habitStatsMap = new Map();
+
+    habits.forEach(habit => {
+      const habitRecords = records?.filter(r => r.habit_id === habit.id) || [];
+      const totalDays = habitRecords.length;
+      const completedDays = habitRecords.filter(r => r.status === 'green').length;
+      const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+      // 습관 이름 기준으로 그룹화
+      if (!habitStatsMap.has(habit.name)) {
+        habitStatsMap.set(habit.name, {
+          habit_name: habit.name,
+          total_days: 0,
+          completed_days: 0,
+          total_records: 0,
+        });
+      }
+
+      const stats = habitStatsMap.get(habit.name);
+      stats.total_days += totalDays;
+      stats.completed_days += completedDays;
+      stats.total_records += habitRecords.length;
+    });
+
+    // Map을 배열로 변환하고 완료율 계산
+    const habitStats = Array.from(habitStatsMap.values()).map(stats => {
+      const completionRate = stats.total_days > 0
+        ? Math.round((stats.completed_days / stats.total_days) * 100)
+        : 0;
+
+      return {
+        habit_name: stats.habit_name,
+        completion_rate: completionRate,
+        total_days: stats.total_days,
+        completed_days: stats.completed_days,
+        trend: 'stable', // TODO: 이전 기간과 비교하여 실제 트렌드 계산
+        trend_value: 0,
+      };
+    });
+
+    console.log(`\n📊 Habit Statistics:`);
+    habitStats.forEach(h => {
+      console.log(`  ${h.completion_rate >= 80 ? '✅' : h.completion_rate >= 50 ? '⚠️' : '❌'} ${h.habit_name}: ${h.completion_rate}% (${h.completed_days}/${h.total_days})`);
+    });
+
+    if (habitStats.length === 0) {
+      console.log('⚪ [Insights] No habit statistics to analyze');
+      return null;
+    }
+
+    // Step 5: 강점 (상위 3개)
+    const strengths = habitStats
+      .sort((a, b) => b.completion_rate - a.completion_rate)
+      .slice(0, 3)
+      .map((h, idx) => ({ ...h, rank: idx + 1 }));
+
+    // Step 6: 약점 (하위 3개)
+    const weaknesses = habitStats
+      .sort((a, b) => a.completion_rate - b.completion_rate)
+      .slice(0, 3)
+      .map((h, idx) => ({ ...h, rank: idx + 1 }));
+
+    // Step 7: 요일별 분석
+    const dayOfWeekMap = new Map([
+      [0, { day: '일요일', emoji: '😴', total: 0, completed: 0 }],
+      [1, { day: '월요일', emoji: '📅', total: 0, completed: 0 }],
+      [2, { day: '화요일', emoji: '📅', total: 0, completed: 0 }],
+      [3, { day: '수요일', emoji: '📅', total: 0, completed: 0 }],
+      [4, { day: '목요일', emoji: '📅', total: 0, completed: 0 }],
+      [5, { day: '금요일', emoji: '🎉', total: 0, completed: 0 }],
+      [6, { day: '토요일', emoji: '📅', total: 0, completed: 0 }],
+    ]);
+
+    records?.forEach(record => {
+      const date = new Date(record.record_date);
+      const dayOfWeek = date.getDay();
+      const dayStats = dayOfWeekMap.get(dayOfWeek);
+
+      if (dayStats) {
+        dayStats.total++;
+        if (record.status === 'green') {
+          dayStats.completed++;
+        }
+      }
+    });
+
+    const dayOfWeekStats = Array.from(dayOfWeekMap.values()).map(stats => ({
+      day: stats.day,
+      emoji: stats.emoji,
+      rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+      total: stats.total,
+      completed: stats.completed,
+    }));
+
+    console.log(`\n📅 Day of Week Statistics:`);
+    dayOfWeekStats.forEach(d => {
+      console.log(`  ${d.emoji} ${d.day}: ${d.rate}% (${d.completed}/${d.total})`);
+    });
+
+    // Step 8: 평균 완료율
+    const averageCompletion = habitStats.length > 0
+      ? Math.round(habitStats.reduce((sum, h) => sum + h.completion_rate, 0) / habitStats.length)
+      : 0;
+
+    // Step 9: 피드백 메시지
+    let feedbackMessage = '';
+    if (averageCompletion >= 85) {
+      feedbackMessage = '🌟 정말 멋있어요! 계속 이 조건을 유지해주세요.';
+    } else if (averageCompletion >= 70) {
+      feedbackMessage = '👍 잘하고 있어요! 조금만 더 노력하면 목표 달성!';
+    } else if (averageCompletion >= 50) {
+      feedbackMessage = '💪 열심히 하고 있네요. 더 집중해봅시다!';
+    } else {
+      feedbackMessage = '🎯 목표 달성을 위해 함께 노력해봅시다!';
+    }
+
+    console.log(`\n📊 Summary:`);
+    console.log(`  • Average completion: ${averageCompletion}%`);
+    console.log(`  • Strengths: ${strengths.length} habits`);
+    console.log(`  • Weaknesses: ${weaknesses.length} habits`);
+    console.log(`  • Feedback: ${feedbackMessage}`);
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`✅ [Insights] Analysis complete`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    return {
+      summary: {
+        average_completion: averageCompletion,
+        total_habits: habitStats.length,
+        feedback_message: feedbackMessage,
+        period: `최근 ${weeks.length}주`,
+      },
+      strengths,
+      weaknesses,
+      day_of_week_stats: dayOfWeekStats,
+      all_habit_stats: habitStats.sort((a, b) => b.completion_rate - a.completion_rate),
+      insights: {
+        best_day: dayOfWeekStats.reduce((prev, current) =>
+          prev.rate > current.rate ? prev : current
+        ),
+        worst_day: dayOfWeekStats.reduce((prev, current) =>
+          prev.rate < current.rate ? prev : current
+        ),
+        trend_summary: averageCompletion >= 70 ? 'improving' : 'stable',
+      },
+    };
+  } catch (error) {
+    console.error('❌ [Insights] Error generating real insights:', error);
+    return null;
+  }
+}
+
+/**
+ * 자기인식 분석 Mock 데이터 생성 (Fallback)
  */
 async function generateMockInsightsData(childId: string, weeksCount: number = 4) {
   try {
@@ -863,21 +1077,19 @@ export function useInsights(
 
       // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
       // TODO: Edge Function 문제 해결 후 원래대로 복구
-      console.log('[Insights] Attempting to fetch data (direct DB query)');
+      console.log('[Insights] Attempting to fetch real insights data (direct DB query)');
 
-      const { data: weeksData } = await supabase
-        .from('weeks')
-        .select('id')
-        .eq('child_id', childId)
-        .limit(weeks);
+      // 실제 데이터 생성 시도
+      const realData = await generateRealInsightsData(childId, weeks);
 
-      if (!weeksData || weeksData.length === 0) {
-        console.log('[Insights] ⚪ No weeks found, returning null');
-        return null;
+      if (realData) {
+        console.log('[Insights] ✅ Using real insights data');
+        return realData;
       }
 
-      console.log('[Insights] ⚠️ Using mock insights (TODO: implement real insights)');
-      return await generateMockInsightsData(childId, weeks);
+      // 실제 데이터가 없으면 null 반환 (Empty State 표시)
+      console.log('[Insights] ⚪ No real data found, returning null');
+      return null;
 
       // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
       // const { data: session } = await supabase.auth.getSession();
