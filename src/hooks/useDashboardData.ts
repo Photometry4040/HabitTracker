@@ -690,50 +690,43 @@ export function useTrendData(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터 우선 조회
-      if (import.meta.env.DEV) {
-        console.log('[Dev] Attempting to fetch real trend data');
-        const realData = await generateRealTrendData(childId, weeks);
+      // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
+      // TODO: Edge Function 문제 해결 후 원래대로 복구
+      console.log('[Trend] Attempting to fetch real trend data (direct DB query)');
+      const realData = await generateRealTrendData(childId, weeks);
 
-        if (realData) {
-          console.log('[Dev] ✅ Using real trend data (continuous weeks)');
-          return realData; // ✅ 빈 배열도 유효한 데이터 (연속성 보장)
-        }
-
-        // 에러 발생 시에만 null 반환
-        console.log('[Dev] ❌ Error generating trend data, returning null');
-        return null;
-
-        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
-        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-        //   console.log('[Dev] Falling back to mock trend data');
-        //   return await generateMockTrendData(childId, weeks);
-        // }
+      if (realData) {
+        console.log('[Trend] ✅ Using real trend data (continuous weeks)');
+        return realData;
       }
 
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
-      }
+      console.log('[Trend] ❌ Error generating trend data, returning null');
+      return null;
 
-      const response = await fetch(DASHBOARD_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session.access_token}`,
-        },
-        body: JSON.stringify({
-          operation: 'trends',
-          data: { childId, weeks },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch trend data');
-      }
-
-      const result = await response.json();
-      return result.result;
+      // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
+      // const { data: session } = await supabase.auth.getSession();
+      // if (!session?.session?.access_token) {
+      //   throw new Error('Not authenticated');
+      // }
+      //
+      // const response = await fetch(DASHBOARD_API_URL, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${session.session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     operation: 'trends',
+      //     data: { childId, weeks },
+      //   }),
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error('Failed to fetch trend data');
+      // }
+      //
+      // const result = await response.json();
+      // return result.result;
     },
     enabled: !!childId,
     staleTime: 10 * 60 * 1000, // 10분
@@ -868,51 +861,48 @@ export function useInsights(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터 우선 조회
-      if (import.meta.env.DEV) {
-        console.log('[Dev] Attempting to fetch real insights data');
+      // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
+      // TODO: Edge Function 문제 해결 후 원래대로 복구
+      console.log('[Insights] Attempting to fetch data (direct DB query)');
 
-        // TODO: generateRealInsightsData() 구현 필요
-        // 현재는 간단하게 실제 weeks 존재 여부만 확인
-        const { data: weeksData } = await supabase
-          .from('weeks')
-          .select('id')
-          .eq('child_id', childId)
-          .limit(weeks);
+      const { data: weeksData } = await supabase
+        .from('weeks')
+        .select('id')
+        .eq('child_id', childId)
+        .limit(weeks);
 
-        if (!weeksData || weeksData.length === 0) {
-          console.log('[Dev] ⚪ No weeks found for insights, returning null');
-          return null;
-        }
-
-        // 임시: Mock 데이터 사용 (향후 실제 데이터로 교체 필요)
-        console.log('[Dev] ⚠️ Using mock insights (TODO: implement real insights)');
-        return await generateMockInsightsData(childId, weeks);
+      if (!weeksData || weeksData.length === 0) {
+        console.log('[Insights] ⚪ No weeks found, returning null');
+        return null;
       }
 
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
-      }
+      console.log('[Insights] ⚠️ Using mock insights (TODO: implement real insights)');
+      return await generateMockInsightsData(childId, weeks);
 
-      const response = await fetch(DASHBOARD_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session.access_token}`,
-        },
-        body: JSON.stringify({
-          operation: 'insights',
-          data: { childId, weeks },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch insights');
-      }
-
-      const result = await response.json();
-      return result.result;
+      // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
+      // const { data: session } = await supabase.auth.getSession();
+      // if (!session?.session?.access_token) {
+      //   throw new Error('Not authenticated');
+      // }
+      //
+      // const response = await fetch(DASHBOARD_API_URL, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${session.session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     operation: 'insights',
+      //     data: { childId, weeks },
+      //   }),
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error('Failed to fetch insights');
+      // }
+      //
+      // const result = await response.json();
+      // return result.result;
     },
     enabled: !!childId,
     staleTime: 10 * 60 * 1000, // 10분
@@ -1145,50 +1135,43 @@ export function useMonthlyStats(
     queryFn: async () => {
       if (!childId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터 우선 조회
-      if (import.meta.env.DEV) {
-        console.log('[Dev] Attempting to fetch real monthly data');
-        const realData = await generateRealMonthlyData(childId, year, month);
+      // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
+      // TODO: Edge Function 문제 해결 후 원래대로 복구
+      console.log('[Monthly] Attempting to fetch real monthly data (direct DB query)');
+      const realData = await generateRealMonthlyData(childId, year, month);
 
-        if (realData) {
-          console.log('[Dev] ✅ Using real monthly data');
-          return realData;
-        }
-
-        // 실제 데이터가 없으면 null 반환 (Empty State 표시)
-        console.log('[Dev] ⚪ No real data found, returning null for empty state');
-        return null;
-
-        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
-        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-        //   console.log('[Dev] Falling back to mock data');
-        //   return await generateMockMonthlyData(childId, year, month);
-        // }
+      if (realData) {
+        console.log('[Monthly] ✅ Using real monthly data');
+        return realData;
       }
 
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
-      }
+      console.log('[Monthly] ⚪ No real data found, returning null');
+      return null;
 
-      const response = await fetch(DASHBOARD_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session.access_token}`,
-        },
-        body: JSON.stringify({
-          operation: 'monthly',
-          data: { childId, year, month },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch monthly stats');
-      }
-
-      const result = await response.json();
-      return result.result;
+      // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
+      // const { data: session } = await supabase.auth.getSession();
+      // if (!session?.session?.access_token) {
+      //   throw new Error('Not authenticated');
+      // }
+      //
+      // const response = await fetch(DASHBOARD_API_URL, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${session.session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     operation: 'monthly',
+      //     data: { childId, year, month },
+      //   }),
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error('Failed to fetch monthly stats');
+      // }
+      //
+      // const result = await response.json();
+      // return result.result;
     },
     enabled: !!childId && !!year && !!month,
     staleTime: 15 * 60 * 1000, // 15분

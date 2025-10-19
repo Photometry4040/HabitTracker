@@ -13,7 +13,8 @@
       "Bash(npm run build)",
       "Bash(node:*)",
       "Bash(git restore:*)",
-      "mcp__supabase__apply_migration"
+      "mcp__supabase__apply_migration",
+      "Bash(git push)"
     ],
     "deny": [],
     "ask": []
