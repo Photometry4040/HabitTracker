@@ -632,50 +632,44 @@ export function useComparisonData(
     queryFn: async () => {
       if (!userId) return null;
 
-      // 개발/테스트 환경에서는 실제 데이터 우선 조회
-      if (import.meta.env.DEV) {
-        console.log('[Dev] Attempting to fetch real comparison data');
-        const realData = await generateRealComparisonData(userId, period, customWeekStart);
+      // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
+      // TODO: Edge Function 문제 해결 후 원래대로 복구
+      console.log('[Comparison] Attempting to fetch real data (direct DB query)');
+      const realData = await generateRealComparisonData(userId, period, customWeekStart);
 
-        if (realData && realData.children && realData.children.length > 0) {
-          console.log('[Dev] ✅ Using real comparison data');
-          return realData;
-        }
-
-        // 실제 데이터가 없으면 null 반환 (Empty State 표시)
-        console.log('[Dev] ⚪ No real comparison data found, returning null');
-        return null;
-
-        // Mock 데이터 생성은 비활성화 (필요시 환경 변수로 제어 가능)
-        // if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-        //   console.log('[Dev] Falling back to mock comparison data');
-        //   return await generateMockComparisonData(userId);
-        // }
+      if (realData && realData.children && realData.children.length > 0) {
+        console.log('[Comparison] ✅ Using real comparison data');
+        return realData;
       }
 
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
-      }
+      // 실제 데이터가 없으면 null 반환 (Empty State 표시)
+      console.log('[Comparison] ⚪ No real comparison data found, returning null');
+      return null;
 
-      const response = await fetch(DASHBOARD_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session.access_token}`,
-        },
-        body: JSON.stringify({
-          operation: 'comparison',
-          data: { userId },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch comparison data');
-      }
-
-      const result = await response.json();
-      return result.result;
+      // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
+      // const { data: session } = await supabase.auth.getSession();
+      // if (!session?.session?.access_token) {
+      //   throw new Error('Not authenticated');
+      // }
+      //
+      // const response = await fetch(DASHBOARD_API_URL, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${session.session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     operation: 'comparison',
+      //     data: { userId },
+      //   }),
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error('Failed to fetch comparison data');
+      // }
+      //
+      // const result = await response.json();
+      // return result.result;
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000, // 5분
