@@ -10,13 +10,14 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - User authentication with Supabase Auth
 - Multi-child habit tracking with weekly periods
 - Color-coded habit evaluation system (green/yellow/red)
+- Habit template system for quick week creation
 - Data visualization dashboard with Recharts
 - Cloud storage with Supabase PostgreSQL
 - PWA support with app icons for all platforms
 - Discord notifications for habit tracking events
 - Achievement badge system
 
-**Project Status:** 🎉 **Phase 4 Complete** (100%) - All dashboards operational with real-time data. Edge Function temporarily bypassed for stability.
+**Project Status:** 🎉 **Phase 4 Complete** (100%) - All dashboards operational with real-time data. Template system GUI integrated. Edge Function temporarily bypassed for stability.
 
 ## Current Architecture (Phase 3 Complete - 2025-10-18)
 
@@ -27,6 +28,7 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - `weeks` - Weekly tracking periods (child_id, week_start_date, reflection, reward)
 - `habits` - Individual habits (week_id, name, display_order)
 - `habit_records` - Daily habit status (habit_id, record_date, status)
+- `habit_templates` - Reusable habit templates (user_id, child_id, name, description, habits, is_default)
 
 **Archived Tables:**
 - `habit_tracker_old` - Old denormalized schema (READ-ONLY, archived 2025-10-18)
@@ -71,6 +73,14 @@ Idempotency: idempotency_log table
    - `updateHabitRecordDualWrite()` - Updates single habit record
    - `deleteWeekDualWrite()` - Deletes week data
 
+3.5. **Template System** (`src/lib/templates.js`):
+   - `createTemplate()` - Create new habit template
+   - `getTemplates()` - Retrieve user's templates
+   - `updateTemplate()` - Update existing template
+   - `deleteTemplate()` - Delete template
+   - `getDefaultTemplate()` - Get user's default template
+   - `setDefaultTemplate()` - Set a template as default
+
 4. **Edge Function** (`supabase/functions/dual-write-habit/index.ts`):
    - Handles ALL write operations
    - Mode: `new_only` (writes to NEW SCHEMA only)
@@ -81,17 +91,24 @@ Idempotency: idempotency_log table
    - Main app state lives in `App.jsx` (no external state management)
    - Key state: `habits`, `reflection`, `reward`, `selectedChild`, `weekPeriod`
    - **Manual save model**: User must click save button (no auto-save)
+   - **3-View System**: App renders one of three views based on state:
+     - `showDashboard = true` → Dashboard view (4 dashboard types)
+     - `showTemplateManager = true` → Template Manager view
+     - Both false → Habit Tracker view (default)
 
 6. **Component Architecture**:
-   - `App.jsx` - Main component, handles all state and data operations
+   - `App.jsx` - Main component, handles all state and data operations, includes 3 view modes (tracker/dashboard/template)
    - `Auth.jsx` - Login/signup UI
    - `ChildSelector.jsx` - Child selection interface (uses Edge Function for delete)
+   - `TemplateManager.jsx` - Template CRUD interface with preview
+   - `TemplatePreview.jsx` - Visual preview of template habits
    - `Dashboard/` - Modular dashboard system with 4 specialized views:
      - `ComparisonDashboard/` - Multi-child comparison with ranking
      - `TrendDashboard/` - Weekly trend analysis with continuous week display
      - `SelfAwarenessDashboard/` - Insights, strengths, weaknesses analysis
      - `MonthlyDashboard/` - Monthly statistics and calendar view
    - `hooks/useDashboardData.ts` - React Query hooks for dashboard data fetching
+   - `hooks/useTemplate.js` - React Query hooks for template management
 
 ## Migration History
 
@@ -304,6 +321,14 @@ AND schemaname = 'public';
 3. Update `database-new.js` read functions
 4. Modify habit rendering in components
 5. Test with idempotency
+
+### Working with Templates
+- **Template Structure**: Templates store habit arrays with `name` and `display_order` fields
+- **Child Scope**: Templates can be child-specific (`child_id`) or shared (`child_id = null`)
+- **Default Template**: Only one template per child can be marked as default
+- **Applying Templates**: Use `handleApplyTemplate()` in App.jsx to populate habits from a template
+- **Template Manager**: Access via Template button in header (3-view system: tracker/dashboard/template)
+- **React Query Hooks**: All template operations use `useTemplate.js` hooks for caching and real-time updates
 
 ### Working with Supabase
 - Always use helper functions in `src/lib/database-new.js`, `src/lib/dual-write.js`, and `src/lib/auth.js`
@@ -550,6 +575,7 @@ src/
 │   ├── auth.js           # Authentication helpers
 │   ├── database-new.js   # NEW SCHEMA read operations ⭐
 │   ├── dual-write.js     # Edge Function write wrapper ⭐
+│   ├── templates.js      # Template CRUD operations ⭐
 │   ├── discord.js        # Discord webhook notifications
 │   ├── security.js       # Security utilities
 │   └── utils.js          # General utilities (clsx, tailwind-merge)
@@ -557,14 +583,19 @@ src/
 │   ├── ui/               # Reusable UI components (shadcn-style)
 │   ├── charts/           # Chart components (Recharts)
 │   ├── badges/           # Achievement badge system
+│   ├── Dashboard/        # Dashboard components (4 types)
 │   ├── Auth.jsx          # Login/signup component
 │   ├── ChildSelector.jsx # Child selection UI
+│   ├── TemplateManager.jsx # Template CRUD interface
+│   ├── TemplatePreview.jsx # Template preview component
 │   ├── Dashboard.jsx     # Data visualization
 │   └── MonthlyStats.jsx  # Monthly statistics
 ├── hooks/
-│   └── useStatistics.js  # React Query hooks for stats
+│   ├── useStatistics.js  # React Query hooks for stats
+│   ├── useDashboardData.ts # React Query hooks for dashboards
+│   └── useTemplate.js    # React Query hooks for templates
 ├── main.jsx              # React entry point
-└── App.jsx               # Main application component (800+ lines)
+└── App.jsx               # Main application component (850+ lines, 3 view modes)
 
 supabase/
 ├── functions/
@@ -662,7 +693,7 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ### Future Enhancements
 - Real-time updates with Supabase Realtime
-- Habit templates system
+- ~~Habit templates system~~ ✅ **Completed** (2025-10-19)
 - Advanced statistics and analytics
 - Multi-language support (i18n)
 - Mobile app (React Native)
@@ -681,14 +712,16 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ---
 
-**Last Updated**: 2025-10-19
+**Last Updated**: 2025-10-25
 **Phase**: 🎉 **Phase 4 Complete (100%)** 🚀
 **Schema Version**: NEW SCHEMA (v2)
 **Edge Functions**:
   - `dual-write-habit`: new_only mode ✅
   - `dashboard-aggregation`: deployed ✅ (temporarily bypassed)
 **Current Architecture**: Direct DB queries for all dashboards
+**Latest Feature**: 🆕 Template System GUI integrated (2025-10-19)
 **Next Actions**:
-  1. Implement real insights data (currently using mock data)
-  2. Debug Edge Function 500 errors (optional optimization)
-  3. Monitor OLD SCHEMA until 2025-10-25
+  1. ~~Implement real insights data~~ ✅ **Completed** (2025-10-19)
+  2. ~~Implement template system~~ ✅ **Completed** (2025-10-19)
+  3. Debug Edge Function 500 errors (optional optimization)
+  4. Monitor OLD SCHEMA until 2025-10-25 (can drop after this date)
