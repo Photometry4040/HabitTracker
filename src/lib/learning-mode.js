@@ -734,54 +734,74 @@ export const resolveWeakness = async (weaknessId, resolutionNote = '') => {
 }
 
 // ============================================================================
-// Mandala Chart - 만다라트 차트
+// Mandala Chart - 만다라트 차트 (mandala_charts 테이블 사용)
 // ============================================================================
 
 /**
- * Create a mandala chart (1 main goal + 8 sub-goals)
+ * Create a mandala chart using mandala_charts table
  * @param {string} childName - Name of the child
- * @param {string} mainGoalTitle - Main goal title (center)
- * @param {Array<string>} subGoalTitles - Array of 8 sub-goal titles
- * @returns {Object} Created mandala chart with main and sub goals
+ * @param {string} centerGoal - Center goal title
+ * @param {Array<Object>} nodes - Array of node objects (optional)
+ * @param {Object} options - Chart options (color_scheme, show_emojis, etc.)
+ * @returns {Object} Created mandala chart
  */
-export const createMandalaChart = async (childName, mainGoalTitle, subGoalTitles = []) => {
+export const createMandalaChart = async (childName, centerGoal, nodes = [], options = {}) => {
   try {
-    if (!mainGoalTitle || mainGoalTitle.trim().length === 0) {
-      throw new Error('중심 목표를 입력해주세요.')
+    if (!centerGoal || centerGoal.trim().length < 3) {
+      throw new Error('중심 목표를 3자 이상 입력해주세요.')
     }
 
-    if (subGoalTitles.length > 8) {
-      throw new Error('세부 목표는 최대 8개까지 가능합니다.')
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('인증되지 않은 사용자입니다.')
     }
 
-    // 1. Create main goal (center)
-    const mainGoal = await createGoal(childName, {
-      title: mainGoalTitle,
-      metric_type: 'boolean',
-      status: 'active',
-      parent_goal_id: null
-    })
+    const { data: child, error: childError } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .maybeSingle()
 
-    // 2. Create sub-goals (8 cells around center)
-    const subGoals = []
-    for (let i = 0; i < subGoalTitles.length; i++) {
-      if (subGoalTitles[i] && subGoalTitles[i].trim().length > 0) {
-        const subGoal = await createGoal(childName, {
-          title: subGoalTitles[i],
-          metric_type: 'boolean',
-          status: 'active',
-          parent_goal_id: mainGoal.id
-        })
-        subGoals.push(subGoal)
-      }
+    if (childError || !child) {
+      throw new Error('아이를 찾을 수 없습니다.')
     }
 
-    console.log(`✅ Mandala chart created: ${mainGoalTitle} with ${subGoals.length} sub-goals`)
+    // Prepare nodes JSONB
+    const preparedNodes = nodes.map((node, index) => ({
+      position: node.position || index + 1,
+      title: node.title || '',
+      color: node.color || '#3B82F6',
+      emoji: node.emoji || null,
+      goal_id: node.goal_id || null,
+      completed: false,
+      completion_rate: 0,
+      expanded: false
+    }))
 
-    return {
-      mainGoal,
-      subGoals
-    }
+    // Create mandala_charts record
+    const { data, error } = await supabase
+      .from('mandala_charts')
+      .insert({
+        user_id: user.id,
+        child_id: child.id,
+        center_goal: centerGoal,
+        center_goal_color: options.center_goal_color || '#3B82F6',
+        center_goal_emoji: options.center_goal_emoji || null,
+        nodes: preparedNodes,
+        chart_level: 'basic',
+        color_scheme: options.color_scheme || 'blue',
+        show_emojis: options.show_emojis !== false,
+        show_progress: options.show_progress !== false,
+        overall_completion_rate: 0
+      })
+      .select()
+      .maybeSingle()
+
+    if (error) throw error
+
+    console.log(`✅ Mandala chart created: ${centerGoal}`)
+    return data
   } catch (error) {
     console.error('만다라트 생성 실패:', error)
     throw error
@@ -789,36 +809,48 @@ export const createMandalaChart = async (childName, mainGoalTitle, subGoalTitles
 }
 
 /**
- * Get mandala chart for a goal (main goal + its sub-goals)
- * @param {string} goalId - Main goal ID
- * @returns {Object} Mandala chart data
+ * Get mandala chart by ID
+ * @param {string} chartId - Mandala chart ID
+ * @returns {Object} Mandala chart with nodes
  */
-export const getMandalaChart = async (goalId) => {
+export const getMandalaChart = async (chartId) => {
   try {
-    // Get main goal
-    const { data: mainGoal, error: mainError } = await supabase
-      .from('goals')
+    const { data, error } = await supabase
+      .from('mandala_charts')
       .select('*')
-      .eq('id', goalId)
+      .eq('id', chartId)
       .maybeSingle()
 
-    if (mainError || !mainGoal) {
-      throw new Error('목표를 찾을 수 없습니다.')
+    if (error) throw error
+    if (!data) throw new Error('만다라트 차트를 찾을 수 없습니다.')
+
+    // For each node with goal_id, fetch the actual goal
+    if (data.nodes && data.nodes.length > 0) {
+      const nodesWithGoals = await Promise.all(
+        data.nodes.map(async (node) => {
+          if (node.goal_id) {
+            const { data: goal } = await supabase
+              .from('goals')
+              .select('*')
+              .eq('id', node.goal_id)
+              .maybeSingle()
+
+            return {
+              ...node,
+              goal
+            }
+          }
+          return node
+        })
+      )
+
+      return {
+        ...data,
+        nodes: nodesWithGoals
+      }
     }
 
-    // Get sub-goals
-    const { data: subGoals, error: subError } = await supabase
-      .from('goals')
-      .select('*')
-      .eq('parent_goal_id', goalId)
-      .order('created_at', { ascending: true })
-
-    if (subError) throw subError
-
-    return {
-      mainGoal,
-      subGoals: subGoals || []
-    }
+    return data
   } catch (error) {
     console.error('만다라트 조회 실패:', error)
     throw error
@@ -826,7 +858,7 @@ export const getMandalaChart = async (goalId) => {
 }
 
 /**
- * Get all mandala charts for a child (only main goals with sub-goals)
+ * Get all mandala charts for a child
  * @param {string} childName - Name of the child
  * @returns {Array} List of mandala charts
  */
@@ -848,34 +880,16 @@ export const getAllMandalaCharts = async (childName) => {
       throw new Error('아이를 찾을 수 없습니다.')
     }
 
-    // Get all main goals (no parent)
-    const { data: mainGoals, error: mainError } = await supabase
-      .from('goals')
+    const { data, error } = await supabase
+      .from('mandala_charts')
       .select('*')
       .eq('child_id', child.id)
-      .is('parent_goal_id', null)
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
 
-    if (mainError) throw mainError
+    if (error) throw error
 
-    // For each main goal, get sub-goals count
-    const mandalaCharts = await Promise.all(
-      (mainGoals || []).map(async (mainGoal) => {
-        const { data: subGoals, error: subError } = await supabase
-          .from('goals')
-          .select('id')
-          .eq('parent_goal_id', mainGoal.id)
-
-        if (subError) throw subError
-
-        return {
-          ...mainGoal,
-          subGoalCount: subGoals?.length || 0
-        }
-      })
-    )
-
-    return mandalaCharts
+    return data || []
   } catch (error) {
     console.error('만다라트 목록 조회 실패:', error)
     throw error
@@ -883,79 +897,181 @@ export const getAllMandalaCharts = async (childName) => {
 }
 
 /**
- * Add sub-goal to existing mandala chart
- * @param {string} mainGoalId - Main goal ID
- * @param {string} subGoalTitle - Sub-goal title
- * @returns {Object} Created sub-goal
+ * Update a node in mandala chart
+ * @param {string} chartId - Mandala chart ID
+ * @param {number} position - Node position (1-8)
+ * @param {Object} nodeData - Node data to update
+ * @returns {Object} Updated mandala chart
  */
-export const addSubGoalToMandala = async (mainGoalId, subGoalTitle) => {
+export const updateMandalaNode = async (chartId, position, nodeData) => {
   try {
-    // Get main goal to get child info
-    const { data: mainGoal, error: mainError } = await supabase
-      .from('goals')
-      .select('*, children!inner(name)')
-      .eq('id', mainGoalId)
-      .maybeSingle()
+    // Get current chart
+    const chart = await getMandalaChart(chartId)
 
-    if (mainError || !mainGoal) {
-      throw new Error('중심 목표를 찾을 수 없습니다.')
-    }
-
-    // Check current sub-goal count
-    const { data: existingSubGoals, error: countError } = await supabase
-      .from('goals')
-      .select('id')
-      .eq('parent_goal_id', mainGoalId)
-
-    if (countError) throw countError
-
-    if (existingSubGoals && existingSubGoals.length >= 8) {
-      throw new Error('세부 목표는 최대 8개까지만 추가할 수 있습니다.')
-    }
-
-    // Create sub-goal
-    const subGoal = await createGoal(mainGoal.children.name, {
-      title: subGoalTitle,
-      metric_type: 'boolean',
-      status: 'active',
-      parent_goal_id: mainGoalId
+    // Update the specific node
+    const updatedNodes = chart.nodes.map(node => {
+      if (node.position === position) {
+        return {
+          ...node,
+          ...nodeData,
+          position // Ensure position doesn't change
+        }
+      }
+      return node
     })
 
-    console.log(`✅ Sub-goal added to mandala: ${subGoalTitle}`)
-    return subGoal
+    // Update chart
+    const { data, error } = await supabase
+      .from('mandala_charts')
+      .update({ nodes: updatedNodes })
+      .eq('id', chartId)
+      .select()
+      .maybeSingle()
+
+    if (error) throw error
+
+    console.log(`✅ Mandala node updated: position ${position}`)
+    return data
   } catch (error) {
-    console.error('세부 목표 추가 실패:', error)
+    console.error('만다라트 노드 업데이트 실패:', error)
     throw error
   }
 }
 
 /**
- * Delete mandala chart (main goal + all sub-goals)
- * @param {string} mainGoalId - Main goal ID
+ * Add a new node to mandala chart
+ * @param {string} chartId - Mandala chart ID
+ * @param {Object} nodeData - Node data (title, color, emoji, etc.)
+ * @returns {Object} Updated mandala chart
+ */
+export const addNodeToMandala = async (chartId, nodeData) => {
+  try {
+    const chart = await getMandalaChart(chartId)
+
+    if (chart.nodes.length >= 8) {
+      throw new Error('만다라트 차트는 최대 8개의 노드만 가질 수 있습니다.')
+    }
+
+    // Find next available position
+    const usedPositions = chart.nodes.map(n => n.position)
+    let nextPosition = 1
+    for (let i = 1; i <= 8; i++) {
+      if (!usedPositions.includes(i)) {
+        nextPosition = i
+        break
+      }
+    }
+
+    const newNode = {
+      position: nextPosition,
+      title: nodeData.title || '',
+      color: nodeData.color || '#3B82F6',
+      emoji: nodeData.emoji || null,
+      goal_id: nodeData.goal_id || null,
+      completed: false,
+      completion_rate: 0,
+      expanded: false
+    }
+
+    const updatedNodes = [...chart.nodes, newNode].sort((a, b) => a.position - b.position)
+
+    const { data, error } = await supabase
+      .from('mandala_charts')
+      .update({ nodes: updatedNodes })
+      .eq('id', chartId)
+      .select()
+      .maybeSingle()
+
+    if (error) throw error
+
+    console.log(`✅ Node added to mandala at position ${nextPosition}`)
+    return data
+  } catch (error) {
+    console.error('만다라트 노드 추가 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete a node from mandala chart
+ * @param {string} chartId - Mandala chart ID
+ * @param {number} position - Node position to delete
+ * @returns {Object} Updated mandala chart
+ */
+export const deleteNodeFromMandala = async (chartId, position) => {
+  try {
+    const chart = await getMandalaChart(chartId)
+
+    const updatedNodes = chart.nodes.filter(node => node.position !== position)
+
+    const { data, error } = await supabase
+      .from('mandala_charts')
+      .update({ nodes: updatedNodes })
+      .eq('id', chartId)
+      .select()
+      .maybeSingle()
+
+    if (error) throw error
+
+    console.log(`✅ Node deleted from mandala at position ${position}`)
+    return data
+  } catch (error) {
+    console.error('만다라트 노드 삭제 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete mandala chart
+ * @param {string} chartId - Mandala chart ID
  * @returns {boolean} Success status
  */
-export const deleteMandalaChart = async (mainGoalId) => {
+export const deleteMandalaChart = async (chartId) => {
   try {
-    // Delete all sub-goals first (CASCADE should handle this, but explicit is safer)
-    const { error: subError } = await supabase
-      .from('goals')
+    const { error } = await supabase
+      .from('mandala_charts')
       .delete()
-      .eq('parent_goal_id', mainGoalId)
+      .eq('id', chartId)
 
-    if (subError) throw subError
+    if (error) throw error
 
-    // Delete main goal
-    const { error: mainError } = await supabase
-      .from('goals')
-      .delete()
-      .eq('id', mainGoalId)
-
-    if (mainError) throw mainError
-
-    console.log(`✅ Mandala chart deleted: ${mainGoalId}`)
+    console.log(`✅ Mandala chart deleted: ${chartId}`)
     return true
   } catch (error) {
     console.error('만다라트 삭제 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Calculate and update overall completion rate
+ * @param {string} chartId - Mandala chart ID
+ * @returns {number} Calculated completion rate
+ */
+export const calculateMandalaCompletion = async (chartId) => {
+  try {
+    const chart = await getMandalaChart(chartId)
+
+    if (chart.nodes.length === 0) {
+      return 0
+    }
+
+    const totalCompletion = chart.nodes.reduce((sum, node) => {
+      return sum + (node.completion_rate || 0)
+    }, 0)
+
+    const overallRate = Math.round(totalCompletion / chart.nodes.length)
+
+    // Update chart
+    await supabase
+      .from('mandala_charts')
+      .update({ overall_completion_rate: overallRate })
+      .eq('id', chartId)
+
+    console.log(`✅ Mandala completion calculated: ${overallRate}%`)
+    return overallRate
+  } catch (error) {
+    console.error('만다라트 진행률 계산 실패:', error)
     throw error
   }
 }

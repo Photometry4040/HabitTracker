@@ -2,43 +2,63 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
+import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Edit2 } from 'lucide-react'
+import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Palette } from 'lucide-react'
 import {
   createMandalaChart,
   getAllMandalaCharts,
   getMandalaChart,
-  addSubGoalToMandala,
+  updateMandalaNode,
+  addNodeToMandala,
+  deleteNodeFromMandala,
   deleteMandalaChart,
-  updateGoal,
-  deleteGoal,
-  completeGoal
+  calculateMandalaCompletion
 } from '@/lib/learning-mode.js'
 
+const COLORS = [
+  { name: '파란색', value: '#3B82F6' },
+  { name: '초록색', value: '#10B981' },
+  { name: '보라색', value: '#8B5CF6' },
+  { name: '빨간색', value: '#EF4444' },
+  { name: '노란색', value: '#F59E0B' },
+  { name: '분홍색', value: '#EC4899' },
+  { name: '하늘색', value: '#06B6D4' },
+  { name: '주황색', value: '#F97316' }
+]
+
+const EMOJIS = ['📚', '💡', '🎯', '⭐', '🏆', '✨', '🔥', '💪', '🎨', '🎵', '⚡', '🌟']
+
 export function MandalaChart({ childName }) {
-  const [mandalaCharts, setMandalaCharts] = useState([])
+  const [charts, setCharts] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState('list') // 'list' or 'chart'
   const [currentChart, setCurrentChart] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   // Create form state
-  const [mainGoalTitle, setMainGoalTitle] = useState('')
-  const [subGoalTitles, setSubGoalTitles] = useState(Array(8).fill(''))
+  const [centerGoal, setCenterGoal] = useState('')
+  const [centerEmoji, setCenterEmoji] = useState(null)
+  const [centerColor, setCenterColor] = useState('#3B82F6')
+  const [initialNodes, setInitialNodes] = useState([])
 
-  // Edit sub-goal state
-  const [editingSubGoal, setEditingSubGoal] = useState(null)
-  const [editSubGoalTitle, setEditSubGoalTitle] = useState('')
+  // Node editor state
+  const [editingNode, setEditingNode] = useState(null)
+  const [nodeFormData, setNodeFormData] = useState({
+    title: '',
+    color: '#3B82F6',
+    emoji: null
+  })
 
   useEffect(() => {
-    loadMandalaCharts()
+    loadCharts()
   }, [childName])
 
-  const loadMandalaCharts = async () => {
+  const loadCharts = async () => {
     try {
       setLoading(true)
-      const charts = await getAllMandalaCharts(childName)
-      setMandalaCharts(charts)
+      const data = await getAllMandalaCharts(childName)
+      setCharts(data)
     } catch (error) {
       console.error('만다라트 목록 로드 실패:', error)
     } finally {
@@ -46,28 +66,65 @@ export function MandalaChart({ childName }) {
     }
   }
 
-  const handleCreateMandalaChart = async () => {
+  const handleCreateChart = async () => {
     try {
-      if (!mainGoalTitle.trim()) {
-        alert('중심 목표를 입력해주세요.')
+      if (!centerGoal.trim() || centerGoal.length < 3) {
+        alert('중심 목표를 3자 이상 입력해주세요.')
         return
       }
 
-      const nonEmptySubGoals = subGoalTitles.filter(title => title.trim().length > 0)
+      await createMandalaChart(
+        childName,
+        centerGoal,
+        initialNodes,
+        {
+          center_goal_color: centerColor,
+          center_goal_emoji: centerEmoji
+        }
+      )
 
-      await createMandalaChart(childName, mainGoalTitle, nonEmptySubGoals)
-      await loadMandalaCharts()
-
-      // Reset form
-      setMainGoalTitle('')
-      setSubGoalTitles(Array(8).fill(''))
+      await loadCharts()
+      resetCreateForm()
       setShowCreateForm(false)
-
       alert('만다라트 차트가 생성되었습니다!')
     } catch (error) {
       console.error('만다라트 생성 실패:', error)
       alert('만다라트 생성 중 오류가 발생했습니다.')
     }
+  }
+
+  const resetCreateForm = () => {
+    setCenterGoal('')
+    setCenterEmoji(null)
+    setCenterColor('#3B82F6')
+    setInitialNodes([])
+  }
+
+  const handleAddInitialNode = () => {
+    if (initialNodes.length >= 8) {
+      alert('최대 8개의 노드만 추가할 수 있습니다.')
+      return
+    }
+
+    setInitialNodes([
+      ...initialNodes,
+      {
+        position: initialNodes.length + 1,
+        title: '',
+        color: '#3B82F6',
+        emoji: null
+      }
+    ])
+  }
+
+  const handleUpdateInitialNode = (index, field, value) => {
+    const updated = [...initialNodes]
+    updated[index] = { ...updated[index], [field]: value }
+    setInitialNodes(updated)
+  }
+
+  const handleRemoveInitialNode = (index) => {
+    setInitialNodes(initialNodes.filter((_, i) => i !== index))
   }
 
   const handleViewChart = async (chart) => {
@@ -81,30 +138,12 @@ export function MandalaChart({ childName }) {
     }
   }
 
-  const handleAddSubGoal = async () => {
-    try {
-      const newTitle = prompt('새로운 세부 목표를 입력하세요:')
-      if (!newTitle || newTitle.trim().length === 0) return
-
-      await addSubGoalToMandala(currentChart.mainGoal.id, newTitle)
-
-      // Reload current chart
-      const updatedChart = await getMandalaChart(currentChart.mainGoal.id)
-      setCurrentChart(updatedChart)
-
-      alert('세부 목표가 추가되었습니다!')
-    } catch (error) {
-      console.error('세부 목표 추가 실패:', error)
-      alert(error.message || '세부 목표 추가 중 오류가 발생했습니다.')
-    }
-  }
-
   const handleDeleteChart = async (chartId) => {
-    if (!confirm('정말 이 만다라트 차트를 삭제하시겠습니까?\n중심 목표와 모든 세부 목표가 삭제됩니다.')) return
+    if (!confirm('정말 이 만다라트 차트를 삭제하시겠습니까?')) return
 
     try {
       await deleteMandalaChart(chartId)
-      await loadMandalaCharts()
+      await loadCharts()
       alert('만다라트 차트가 삭제되었습니다.')
     } catch (error) {
       console.error('만다라트 삭제 실패:', error)
@@ -112,76 +151,75 @@ export function MandalaChart({ childName }) {
     }
   }
 
-  const handleEditSubGoal = (subGoal) => {
-    setEditingSubGoal(subGoal)
-    setEditSubGoalTitle(subGoal.title)
+  const handleEditNode = (node) => {
+    setEditingNode(node)
+    setNodeFormData({
+      title: node.title || '',
+      color: node.color || '#3B82F6',
+      emoji: node.emoji || null
+    })
   }
 
-  const handleSaveSubGoalEdit = async () => {
+  const handleSaveNode = async () => {
     try {
-      if (!editSubGoalTitle.trim()) {
-        alert('세부 목표 제목을 입력해주세요.')
+      if (!nodeFormData.title.trim()) {
+        alert('노드 제목을 입력해주세요.')
         return
       }
 
-      await updateGoal(editingSubGoal.id, { title: editSubGoalTitle })
+      await updateMandalaNode(currentChart.id, editingNode.position, nodeFormData)
 
-      // Reload current chart
-      const updatedChart = await getMandalaChart(currentChart.mainGoal.id)
-      setCurrentChart(updatedChart)
+      // Reload chart
+      const updated = await getMandalaChart(currentChart.id)
+      setCurrentChart(updated)
 
-      setEditingSubGoal(null)
-      setEditSubGoalTitle('')
-      alert('세부 목표가 수정되었습니다!')
+      // Recalculate completion
+      await calculateMandalaCompletion(currentChart.id)
+
+      setEditingNode(null)
+      setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
+      alert('노드가 수정되었습니다!')
     } catch (error) {
-      console.error('세부 목표 수정 실패:', error)
-      alert('세부 목표 수정 중 오류가 발생했습니다.')
+      console.error('노드 수정 실패:', error)
+      alert('노드 수정 중 오류가 발생했습니다.')
     }
   }
 
-  const handleDeleteSubGoal = async (subGoalId) => {
-    if (!confirm('이 세부 목표를 삭제하시겠습니까?')) return
+  const handleAddNode = async () => {
+    try {
+      const title = prompt('새 노드 제목을 입력하세요:')
+      if (!title || title.trim().length === 0) return
+
+      await addNodeToMandala(currentChart.id, {
+        title,
+        color: '#3B82F6',
+        emoji: null
+      })
+
+      const updated = await getMandalaChart(currentChart.id)
+      setCurrentChart(updated)
+
+      alert('노드가 추가되었습니다!')
+    } catch (error) {
+      console.error('노드 추가 실패:', error)
+      alert(error.message || '노드 추가 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleDeleteNode = async (position) => {
+    if (!confirm('이 노드를 삭제하시겠습니까?')) return
 
     try {
-      await deleteGoal(subGoalId)
+      await deleteNodeFromMandala(currentChart.id, position)
 
-      // Reload current chart
-      const updatedChart = await getMandalaChart(currentChart.mainGoal.id)
-      setCurrentChart(updatedChart)
+      const updated = await getMandalaChart(currentChart.id)
+      setCurrentChart(updated)
 
-      alert('세부 목표가 삭제되었습니다.')
+      alert('노드가 삭제되었습니다.')
     } catch (error) {
-      console.error('세부 목표 삭제 실패:', error)
-      alert('세부 목표 삭제 중 오류가 발생했습니다.')
+      console.error('노드 삭제 실패:', error)
+      alert('노드 삭제 중 오류가 발생했습니다.')
     }
-  }
-
-  const handleCompleteSubGoal = async (subGoalId) => {
-    try {
-      await completeGoal(subGoalId)
-
-      // Reload current chart
-      const updatedChart = await getMandalaChart(currentChart.mainGoal.id)
-      setCurrentChart(updatedChart)
-
-      alert('세부 목표 달성! 🎉')
-    } catch (error) {
-      console.error('세부 목표 완료 실패:', error)
-      alert('세부 목표 완료 처리 중 오류가 발생했습니다.')
-    }
-  }
-
-  const getStatusBadge = (status) => {
-    const variants = {
-      active: { variant: 'default', label: '진행중', color: 'bg-blue-600' },
-      completed: { variant: 'default', label: '완료', color: 'bg-green-600' }
-    }
-    const config = variants[status] || variants.active
-    return (
-      <Badge variant={config.variant} className={`text-xs ${config.color}`}>
-        {config.label}
-      </Badge>
-    )
   }
 
   if (loading) {
@@ -194,7 +232,7 @@ export function MandalaChart({ childName }) {
     )
   }
 
-  // List View
+  // LIST VIEW
   if (viewMode === 'list') {
     return (
       <div className="space-y-4">
@@ -227,45 +265,91 @@ export function MandalaChart({ childName }) {
               <CardTitle className="text-lg">새 만다라트 차트 만들기</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Main Goal */}
+              {/* Center Goal */}
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  중심 목표 (가운데 칸) *
-                </label>
+                <Label htmlFor="center_goal">중심 목표 * (최소 3자)</Label>
                 <Input
-                  value={mainGoalTitle}
-                  onChange={(e) => setMainGoalTitle(e.target.value)}
-                  placeholder="예: 수학 실력 향상하기"
+                  id="center_goal"
+                  value={centerGoal}
+                  onChange={(e) => setCenterGoal(e.target.value)}
+                  placeholder="예: 수학 실력 향상"
                   maxLength={100}
                 />
               </div>
 
-              {/* Sub Goals */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  세부 목표 (주변 8칸, 선택사항)
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {subGoalTitles.map((title, index) => (
-                    <Input
-                      key={index}
-                      value={title}
-                      onChange={(e) => {
-                        const newTitles = [...subGoalTitles]
-                        newTitles[index] = e.target.value
-                        setSubGoalTitles(newTitles)
-                      }}
-                      placeholder={`세부 목표 ${index + 1}`}
-                      maxLength={100}
-                    />
-                  ))}
+              {/* Center Color & Emoji */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>색상</Label>
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {COLORS.slice(0, 8).map((c) => (
+                      <button
+                        key={c.value}
+                        onClick={() => setCenterColor(c.value)}
+                        className={`w-8 h-8 rounded-full border-2 ${
+                          centerColor === c.value ? 'border-gray-900' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: c.value }}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
                 </div>
+                <div>
+                  <Label>이모지 (선택)</Label>
+                  <div className="grid grid-cols-6 gap-1 mt-2">
+                    {EMOJIS.slice(0, 12).map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => setCenterEmoji(emoji)}
+                        className={`text-xl p-1 rounded ${
+                          centerEmoji === emoji ? 'bg-indigo-100' : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Initial Nodes */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>초기 노드 (선택, 최대 8개)</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddInitialNode}
+                    disabled={initialNodes.length >= 8}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    노드 추가
+                  </Button>
+                </div>
+                {initialNodes.map((node, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <Input
+                      value={node.title}
+                      onChange={(e) => handleUpdateInitialNode(index, 'title', e.target.value)}
+                      placeholder={`노드 ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRemoveInitialNode(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
               {/* Buttons */}
               <div className="flex gap-2">
                 <Button
-                  onClick={handleCreateMandalaChart}
+                  onClick={handleCreateChart}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
                   <Check className="w-4 h-4 mr-1" />
@@ -274,8 +358,7 @@ export function MandalaChart({ childName }) {
                 <Button
                   onClick={() => {
                     setShowCreateForm(false)
-                    setMainGoalTitle('')
-                    setSubGoalTitles(Array(8).fill(''))
+                    resetCreateForm()
                   }}
                   variant="outline"
                 >
@@ -287,24 +370,38 @@ export function MandalaChart({ childName }) {
           </Card>
         )}
 
-        {/* Mandala Charts List */}
-        {mandalaCharts.length > 0 ? (
+        {/* Charts List */}
+        {charts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mandalaCharts.map((chart) => (
-              <Card
-                key={chart.id}
-                className="hover:shadow-md transition-shadow"
-              >
+            {charts.map((chart) => (
+              <Card key={chart.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{chart.title}</h3>
-                        {getStatusBadge(chart.status)}
+                        {chart.center_goal_emoji && (
+                          <span className="text-2xl">{chart.center_goal_emoji}</span>
+                        )}
+                        <h3 className="font-semibold text-lg">{chart.center_goal}</h3>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">
-                        세부 목표: {chart.subGoalCount}/8개
+                      <p className="text-sm text-gray-600 mb-2">
+                        노드: {chart.nodes?.length || 0}/8개
                       </p>
+                      {chart.overall_completion_rate > 0 && (
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-indigo-600 h-2 rounded-full"
+                                style={{ width: `${chart.overall_completion_rate}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-600">
+                              {chart.overall_completion_rate}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -335,7 +432,7 @@ export function MandalaChart({ childName }) {
             <CardContent className="pt-6 text-center text-gray-500">
               <LayoutGrid className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p>아직 만다라트 차트가 없습니다.</p>
-              <p className="text-sm">위의 "새 만다라트" 버튼을 클릭하여 첫 차트를 만들어보세요!</p>
+              <p className="text-sm">위의 &ldquo;새 만다라트&rdquo; 버튼을 클릭하여 첫 차트를 만들어보세요!</p>
             </CardContent>
           </Card>
         )}
@@ -343,19 +440,18 @@ export function MandalaChart({ childName }) {
     )
   }
 
-  // Chart View (9-grid)
+  // CHART VIEW (3x3 Grid)
   if (viewMode === 'chart' && currentChart) {
-    const { mainGoal, subGoals } = currentChart
-
-    // Arrange sub-goals in 3x3 grid (center is main goal)
+    // Create 3x3 grid with center + 8 positions
     const grid = Array(9).fill(null)
-    grid[4] = { type: 'main', goal: mainGoal } // Center
+    grid[4] = { type: 'center' } // Center position
 
-    // Fill sub-goals around center (positions: 0,1,2,3,5,6,7,8)
-    const positions = [0, 1, 2, 3, 5, 6, 7, 8]
-    subGoals.forEach((subGoal, index) => {
-      if (index < positions.length) {
-        grid[positions[index]] = { type: 'sub', goal: subGoal }
+    // Map nodes to grid positions (1-8 → 0,1,2,3,5,6,7,8)
+    const positionMap = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 5, 6: 6, 7: 7, 8: 8 }
+    currentChart.nodes?.forEach((node) => {
+      const gridIndex = positionMap[node.position]
+      if (gridIndex !== undefined) {
+        grid[gridIndex] = { type: 'node', data: node }
       }
     })
 
@@ -367,18 +463,16 @@ export function MandalaChart({ childName }) {
             <CardTitle className="text-xl font-bold text-indigo-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <LayoutGrid className="w-5 h-5" />
-                {mainGoal.title}
+                {currentChart.center_goal_emoji && (
+                  <span className="text-2xl">{currentChart.center_goal_emoji}</span>
+                )}
+                {currentChart.center_goal}
               </div>
               <div className="flex gap-2">
-                {subGoals.length < 8 && (
-                  <Button
-                    onClick={handleAddSubGoal}
-                    size="sm"
-                    variant="outline"
-                    className="text-indigo-600"
-                  >
+                {currentChart.nodes?.length < 8 && (
+                  <Button onClick={handleAddNode} size="sm" variant="outline">
                     <Plus className="w-4 h-4 mr-1" />
-                    세부 목표 추가
+                    노드 추가
                   </Button>
                 )}
                 <Button
@@ -397,6 +491,30 @@ export function MandalaChart({ childName }) {
           </CardHeader>
         </Card>
 
+        {/* Progress */}
+        {currentChart.overall_completion_rate > 0 && (
+          <Card className="bg-indigo-50 border-indigo-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-sm text-indigo-900 mb-1">전체 진행률</div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-indigo-200 rounded-full h-3">
+                      <div
+                        className="bg-indigo-600 h-3 rounded-full transition-all"
+                        style={{ width: `${currentChart.overall_completion_rate}%` }}
+                      />
+                    </div>
+                    <span className="text-lg font-bold text-indigo-900">
+                      {currentChart.overall_completion_rate}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 3x3 Grid */}
         <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
           {grid.map((cell, index) => {
@@ -407,55 +525,63 @@ export function MandalaChart({ childName }) {
                   key={index}
                   className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
                 >
-                  <span className="text-gray-400 text-sm">빈 칸</span>
+                  <span className="text-gray-400 text-xs">빈 칸</span>
                 </div>
               )
             }
 
-            if (cell.type === 'main') {
-              // Main goal (center)
+            if (cell.type === 'center') {
+              // Center goal
               return (
                 <div
                   key={index}
-                  className="aspect-square border-4 border-indigo-600 rounded-lg flex flex-col items-center justify-center bg-indigo-50 p-3"
+                  className="aspect-square border-4 rounded-lg flex flex-col items-center justify-center p-3"
+                  style={{
+                    borderColor: currentChart.center_goal_color || '#3B82F6',
+                    backgroundColor: `${currentChart.center_goal_color || '#3B82F6'}10`
+                  }}
                 >
                   <div className="text-center">
-                    <div className="text-xs text-indigo-600 font-semibold mb-1">중심 목표</div>
-                    <div className="font-bold text-sm sm:text-base text-indigo-900 break-words">
-                      {cell.goal.title}
+                    <div className="text-xs font-semibold mb-1" style={{ color: currentChart.center_goal_color }}>
+                      중심 목표
                     </div>
-                    {getStatusBadge(cell.goal.status)}
+                    {currentChart.center_goal_emoji && (
+                      <div className="text-3xl mb-2">{currentChart.center_goal_emoji}</div>
+                    )}
+                    <div className="font-bold text-sm sm:text-base break-words">
+                      {currentChart.center_goal}
+                    </div>
                   </div>
                 </div>
               )
             }
 
-            if (cell.type === 'sub') {
-              // Sub goal
-              const isEditing = editingSubGoal?.id === cell.goal.id
-              const isCompleted = cell.goal.status === 'completed'
+            if (cell.type === 'node') {
+              const node = cell.data
+              const isEditing = editingNode?.position === node.position
 
               return (
                 <div
                   key={index}
-                  className={`aspect-square border-2 rounded-lg flex flex-col p-2 ${
-                    isCompleted
-                      ? 'border-green-400 bg-green-50'
-                      : 'border-purple-400 bg-purple-50'
-                  }`}
+                  className="aspect-square border-2 rounded-lg flex flex-col p-2"
+                  style={{
+                    borderColor: node.color || '#3B82F6',
+                    backgroundColor: `${node.color || '#3B82F6'}10`
+                  }}
                 >
                   {isEditing ? (
                     <div className="flex flex-col h-full justify-between">
                       <Input
-                        value={editSubGoalTitle}
-                        onChange={(e) => setEditSubGoalTitle(e.target.value)}
+                        value={nodeFormData.title}
+                        onChange={(e) => setNodeFormData({ ...nodeFormData, title: e.target.value })}
                         className="text-xs mb-1"
+                        placeholder="제목"
                         autoFocus
                       />
                       <div className="flex gap-1">
                         <Button
                           size="sm"
-                          onClick={handleSaveSubGoalEdit}
+                          onClick={handleSaveNode}
                           className="flex-1 h-6 text-xs"
                         >
                           <Check className="w-3 h-3" />
@@ -464,8 +590,8 @@ export function MandalaChart({ childName }) {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setEditingSubGoal(null)
-                            setEditSubGoalTitle('')
+                            setEditingNode(null)
+                            setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
                           }}
                           className="flex-1 h-6 text-xs"
                         >
@@ -475,49 +601,32 @@ export function MandalaChart({ childName }) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex-1 flex items-center justify-center text-center">
+                      <div className="flex-1 flex flex-col items-center justify-center text-center">
+                        {node.emoji && <div className="text-2xl mb-1">{node.emoji}</div>}
                         <p className="text-xs sm:text-sm font-medium break-words">
-                          {cell.goal.title}
+                          {node.title || '(제목 없음)'}
                         </p>
                       </div>
                       <div className="flex gap-1 justify-center mt-1">
-                        {!isCompleted && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditSubGoal(cell.goal)}
-                              className="h-6 w-6 p-0"
-                              title="수정"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleCompleteSubGoal(cell.goal.id)}
-                              className="h-6 w-6 p-0 text-green-600"
-                              title="완료"
-                            >
-                              <Check className="w-3 h-3" />
-                            </Button>
-                          </>
-                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleDeleteSubGoal(cell.goal.id)}
+                          onClick={() => handleEditNode(node)}
+                          className="h-6 w-6 p-0"
+                          title="수정"
+                        >
+                          <Palette className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteNode(node.position)}
                           className="h-6 w-6 p-0 text-red-600"
                           title="삭제"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
-                      {isCompleted && (
-                        <div className="text-center mt-1">
-                          {getStatusBadge(cell.goal.status)}
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -528,12 +637,82 @@ export function MandalaChart({ childName }) {
           })}
         </div>
 
+        {/* Edit Node Panel */}
+        {editingNode && (
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                노드 편집: Position {editingNode.position}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label>제목</Label>
+                <Input
+                  value={nodeFormData.title}
+                  onChange={(e) => setNodeFormData({ ...nodeFormData, title: e.target.value })}
+                  placeholder="노드 제목"
+                />
+              </div>
+              <div>
+                <Label>색상</Label>
+                <div className="grid grid-cols-8 gap-2 mt-2">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => setNodeFormData({ ...nodeFormData, color: c.value })}
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        nodeFormData.color === c.value ? 'border-gray-900' : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: c.value }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>이모지</Label>
+                <div className="grid grid-cols-12 gap-1 mt-2">
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setNodeFormData({ ...nodeFormData, emoji })}
+                      className={`text-xl p-1 rounded ${
+                        nodeFormData.emoji === emoji ? 'bg-purple-200' : 'hover:bg-purple-100'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveNode} className="bg-purple-600 hover:bg-purple-700">
+                  <Check className="w-4 h-4 mr-1" />
+                  저장
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingNode(null)
+                    setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
+                  }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  취소
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Instructions */}
-        <Card className="bg-indigo-50 border-indigo-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-4">
-            <p className="text-sm text-indigo-900">
+            <p className="text-sm text-blue-900">
               <strong>만다라트 차트 사용법:</strong> 중심 목표를 중심으로 8개의 세부 목표를 배치합니다.
-              각 세부 목표를 하나씩 달성하면서 중심 목표에 가까워지세요!
+              각 노드는 position (1-8)에 따라 배치되며, 색상과 이모지로 시각화할 수 있습니다.
             </p>
           </CardContent>
         </Card>
