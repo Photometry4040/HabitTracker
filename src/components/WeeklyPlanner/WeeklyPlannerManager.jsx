@@ -333,6 +333,7 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
         <WeeklyPlanEditor
           plan={currentPlan}
           weekStartDate={weekStartDate}
+          childName={childName}
           onClose={() => setShowEditor(false)}
           onUpdate={() => {
             loadWeeklyPlan()

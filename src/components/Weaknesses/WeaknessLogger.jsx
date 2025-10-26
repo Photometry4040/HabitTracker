@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { AlertCircle, Plus, Edit2, Trash2, Check, X, Clock, Lightbulb } from 'lucide-react'
-import { createWeakness, getWeaknesses, updateWeakness, deleteWeakness, resolveWeakness } from '@/lib/learning-mode.js'
+import { createWeakness, getWeaknesses, updateWeakness, deleteWeakness, resolveWeakness, checkFirstWeaknessResolved } from '@/lib/learning-mode.js'
 
 export function WeaknessLogger({ childName }) {
   const [weaknesses, setWeaknesses] = useState([])
@@ -125,6 +125,18 @@ export function WeaknessLogger({ childName }) {
 
     try {
       await resolveWeakness(weaknessId, resolutionNote)
+
+      // Phase 5.3: Check for first weakness resolved achievement
+      try {
+        const event = await checkFirstWeaknessResolved(childName)
+        if (event) {
+          console.log('🎉 First weakness resolved achievement unlocked!')
+        }
+      } catch (rewardError) {
+        console.error('보상 체크 실패 (계속 진행):', rewardError)
+        // Don't block the main flow if reward check fails
+      }
+
       await loadWeaknesses()
       alert('약점이 해결되었습니다! 🎉')
     } catch (error) {

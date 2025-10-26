@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { X, Save } from 'lucide-react'
-import { updateWeeklyPlan, completeWeeklyPlan } from '@/lib/weekly-planner.js'
+import { updateWeeklyPlan, completeWeeklyPlan, getWeeklyPlanProgress } from '@/lib/weekly-planner.js'
+import { checkWeeklyPlannerPerfect } from '@/lib/learning-mode.js'
 
-export function WeeklyPlanEditor({ plan, weekStartDate, onClose, onUpdate }) {
+export function WeeklyPlanEditor({ plan, weekStartDate, childName, onClose, onUpdate }) {
   const [formData, setFormData] = useState({
     title: plan.title || '',
     description: plan.description || '',
@@ -54,6 +55,22 @@ export function WeeklyPlanEditor({ plan, weekStartDate, onClose, onUpdate }) {
       }
 
       await completeWeeklyPlan(plan.id, completionData)
+
+      // Phase 5.3: Check for 100% completion achievement
+      if (childName) {
+        try {
+          const progress = await getWeeklyPlanProgress(plan.id)
+          if (progress && progress.completion_rate === 100) {
+            const event = await checkWeeklyPlannerPerfect(childName, plan.id, 100)
+            if (event) {
+              console.log('🎉 Weekly planner perfect achievement unlocked!')
+            }
+          }
+        } catch (rewardError) {
+          console.error('보상 체크 실패 (계속 진행):', rewardError)
+          // Don't block the main flow if reward check fails
+        }
+      }
 
       if (onUpdate) onUpdate()
       onClose()
