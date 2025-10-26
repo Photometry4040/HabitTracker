@@ -81,17 +81,104 @@ export function calculateGreenStreak(records) {
 
 /**
  * Get habit records for streak calculation
- * Note: This is a simplified version. In production, you would:
- * 1. Fetch records from database for specific habit
- * 2. Include records from multiple weeks if needed
- * 3. Cache results for performance
+ * Fetches records from current and previous weeks for a specific habit
  *
- * @param {string} habitId - Habit ID
- * @returns {Promise<Array>} Array of habit records
+ * Strategy:
+ * 1. Get habit details (to find week_id and habit name)
+ * 2. Get child_id from week
+ * 3. Find all weeks for this child
+ * 4. Find all habits with same name across weeks
+ * 5. Fetch all records for these habits (last 60 days for performance)
+ *
+ * @param {string} habitId - Current habit ID
+ * @returns {Promise<Array>} Array of habit records sorted by date DESC
  */
 export async function getHabitRecordsForStreak(habitId) {
-  // TODO: Implement database query
-  // For now, return empty array (streak checking will be disabled)
-  console.warn('[Streak Calculator] getHabitRecordsForStreak not yet implemented')
-  return []
+  try {
+    const { supabase } = await import('./supabase.js')
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.warn('[Streak Calculator] User not authenticated')
+      return []
+    }
+
+    // Step 1: Get habit details (week_id, name)
+    const { data: currentHabit, error: habitError } = await supabase
+      .from('habits')
+      .select('id, name, week_id')
+      .eq('id', habitId)
+      .maybeSingle()
+
+    if (habitError || !currentHabit) {
+      console.error('[Streak Calculator] Failed to fetch habit:', habitError)
+      return []
+    }
+
+    // Step 2: Get child_id from week
+    const { data: currentWeek, error: weekError } = await supabase
+      .from('weeks')
+      .select('id, child_id, user_id')
+      .eq('id', currentHabit.week_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (weekError || !currentWeek) {
+      console.error('[Streak Calculator] Failed to fetch week:', weekError)
+      return []
+    }
+
+    // Step 3: Find all habits with same name for this child (last 60 days)
+    const sixtyDaysAgo = new Date()
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+    const cutoffDate = sixtyDaysAgo.toISOString().split('T')[0]
+
+    const { data: allWeeks, error: weeksError } = await supabase
+      .from('weeks')
+      .select('id')
+      .eq('child_id', currentWeek.child_id)
+      .eq('user_id', user.id)
+      .gte('week_start_date', cutoffDate)
+
+    if (weeksError || !allWeeks || allWeeks.length === 0) {
+      console.error('[Streak Calculator] Failed to fetch weeks:', weeksError)
+      return []
+    }
+
+    const weekIds = allWeeks.map(w => w.id)
+
+    // Step 4: Find all habits with same name across these weeks
+    const { data: matchingHabits, error: habitsError } = await supabase
+      .from('habits')
+      .select('id')
+      .in('week_id', weekIds)
+      .eq('name', currentHabit.name)
+
+    if (habitsError || !matchingHabits || matchingHabits.length === 0) {
+      console.warn('[Streak Calculator] No matching habits found')
+      return []
+    }
+
+    const habitIds = matchingHabits.map(h => h.id)
+
+    // Step 5: Fetch all records for these habits
+    const { data: records, error: recordsError } = await supabase
+      .from('habit_records')
+      .select('id, habit_id, record_date, status')
+      .in('habit_id', habitIds)
+      .gte('record_date', cutoffDate)
+      .order('record_date', { ascending: false })
+
+    if (recordsError) {
+      console.error('[Streak Calculator] Failed to fetch records:', recordsError)
+      return []
+    }
+
+    console.log(`[Streak Calculator] Found ${records?.length || 0} records for habit "${currentHabit.name}"`)
+    return records || []
+
+  } catch (error) {
+    console.error('[Streak Calculator] Unexpected error:', error)
+    return []
+  }
 }

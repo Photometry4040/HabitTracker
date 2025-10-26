@@ -20,6 +20,8 @@ import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
+import { checkStreak21, checkHabitMastery } from '@/lib/learning-mode.js'
+import { getHabitRecordsForStreak, calculateStreak, calculateGreenStreak } from '@/lib/streak-calculator.js'
 import './App.css'
 
 function App() {
@@ -388,6 +390,54 @@ function App() {
     }
   }, [weekStartDate, selectedChild])
 
+  // Phase 5.3: Streak achievement checker
+  const checkStreakAchievements = async (habitName, childName) => {
+    try {
+      // Find the database habit ID by name
+      // We need to query the current week's habits to get the UUID
+      const data = await loadChildData(childName, weekStartDate)
+      if (!data || !data.habits) {
+        console.log('[Streak Check] No habit data found')
+        return
+      }
+
+      const habitData = data.habits.find(h => h.name === habitName)
+      if (!habitData || !habitData.id) {
+        console.log(`[Streak Check] Habit "${habitName}" not found in database`)
+        return
+      }
+
+      const habitId = habitData.id // This is the database UUID
+
+      // Fetch habit records for streak calculation
+      const records = await getHabitRecordsForStreak(habitId)
+      if (!records || records.length === 0) {
+        console.log('[Streak Check] No records found for streak calculation')
+        return
+      }
+
+      // Calculate streaks
+      const totalStreak = calculateStreak(records)
+      const greenStreak = calculateGreenStreak(records)
+
+      console.log(`[Streak Check] ${habitName}: ${totalStreak} days total, ${greenStreak} green days`)
+
+      // Check for 21-day streak
+      if (totalStreak >= 21) {
+        await checkStreak21(childName, habitId, totalStreak)
+      }
+
+      // Check for 30-day green mastery
+      if (greenStreak >= 30) {
+        await checkHabitMastery(childName, habitId, greenStreak)
+      }
+
+    } catch (error) {
+      console.error('[Streak Check] Error:', error)
+      // Don't throw - this is non-critical
+    }
+  }
+
   // 자동 저장 제거 - 수동 저장 방식으로 변경
 
   const updateHabitColor = async (habitId, dayIndex, color) => {
@@ -437,6 +487,11 @@ function App() {
       )
 
       console.log(`Habit record updated via Edge Function: ${habit.name} day ${dayIndex} = ${newColor}`)
+
+      // Phase 5.3: Check for streak achievements (async, non-blocking)
+      checkStreakAchievements(habit.name, selectedChild).catch(err => {
+        console.log('[Streak Check] Failed (non-critical):', err)
+      })
 
       // Discord 알림 전송 (비동기, 실패해도 무시)
       const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
