@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate, AlertCircle, Grid3x3 } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate, AlertCircle, LayoutGrid } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import DashboardHub from '@/components/Dashboard/DashboardHub'
@@ -652,7 +652,7 @@ function App() {
                         size="sm"
                         className="bg-indigo-600 hover:bg-indigo-700"
                       >
-                        <Grid3x3 className="w-4 h-4 sm:mr-1" />
+                        <LayoutGrid className="w-4 h-4 sm:mr-1" />
                         <span className="hidden sm:inline">{showMandala ? '습관 추적' : '만다라트'}</span>
                         <span className="sm:hidden">{showMandala ? '추적' : '만다'}</span>
                       </Button>

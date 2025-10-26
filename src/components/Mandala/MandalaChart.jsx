@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Grid3x3, Plus, Trash2, Eye, ArrowLeft, Check, X, Edit2 } from 'lucide-react'
+import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Edit2 } from 'lucide-react'
 import {
   createMandalaChart,
   getAllMandalaCharts,
@@ -203,7 +203,7 @@ export function MandalaChart({ childName }) {
           <CardHeader>
             <CardTitle className="text-xl font-bold text-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Grid3x3 className="w-5 h-5" />
+                <LayoutGrid className="w-5 h-5" />
                 {childName}의 만다라트 차트
               </div>
               {!showCreateForm && (
@@ -333,7 +333,7 @@ export function MandalaChart({ childName }) {
         ) : (
           <Card>
             <CardContent className="pt-6 text-center text-gray-500">
-              <Grid3x3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <LayoutGrid className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p>아직 만다라트 차트가 없습니다.</p>
               <p className="text-sm">위의 "새 만다라트" 버튼을 클릭하여 첫 차트를 만들어보세요!</p>
             </CardContent>
@@ -366,7 +366,7 @@ export function MandalaChart({ childName }) {
           <CardHeader>
             <CardTitle className="text-xl font-bold text-indigo-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Grid3x3 className="w-5 h-5" />
+                <LayoutGrid className="w-5 h-5" />
                 {mainGoal.title}
               </div>
               <div className="flex gap-2">
