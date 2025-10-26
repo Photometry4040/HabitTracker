@@ -15,18 +15,27 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - PWA support with app icons for all platforms
 - Discord notifications for habit tracking events
 - Achievement badge system
+- **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards
 
-**Project Status:** 🎉 **Phase 4 Complete** (100%) - All dashboards operational with real-time data. Edge Function temporarily bypassed for stability.
+**Project Status:** 🎉 **Phase 5 In Progress** (85%) - Learning Mode core features operational. Mobile UI optimized.
 
 ## Current Architecture (Phase 3 Complete - 2025-10-18)
 
 ### Database Schema (NEW SCHEMA)
 
-**Active Tables:**
+**Core Habit Tracking Tables:**
 - `children` - Child profiles (user_id, name, theme)
 - `weeks` - Weekly tracking periods (child_id, week_start_date, reflection, reward)
 - `habits` - Individual habits (week_id, name, display_order)
 - `habit_records` - Daily habit status (habit_id, record_date, status)
+
+**Learning Mode Tables (Phase 5):**
+- `goals` - Learning goals with hierarchical structure (parent_goal_id, depth, ICE scoring)
+- `mandala_charts` - Mandala charts (9칸/27칸 support, 81칸 disabled)
+- `weaknesses` - Weakness tracking with retry system and badge rewards
+- `reward_definitions` - Reward definitions (badge, sticker, achievement, theme, level_up)
+- `progress_events` - Progress event log (goal_completed, weakness_resolved, streaks, etc.)
+- `rewards_ledger` - Reward issuance ledger (prevents duplicate rewards)
 
 **Archived Tables:**
 - `habit_tracker_old` - Old denormalized schema (READ-ONLY, archived 2025-10-18)
@@ -92,6 +101,11 @@ Idempotency: idempotency_log table
      - `SelfAwarenessDashboard/` - Insights, strengths, weaknesses analysis
      - `MonthlyDashboard/` - Monthly statistics and calendar view
    - `hooks/useDashboardData.ts` - React Query hooks for dashboard data fetching
+   - **Learning Mode Components** (Phase 5):
+     - `Goals/GoalsManager.jsx` - Goal creation, editing, hierarchical view, ICE scoring
+     - `Mandala/MandalaChart.jsx` - 3x3 grid visualization, node editor, goal integration
+     - `Weaknesses/WeaknessLogger.jsx` - Weakness tracking, retry system, badges
+     - `lib/learning-mode.js` - API layer (29 functions for goals/mandala/weaknesses/rewards)
 
 ## Migration History
 
@@ -133,6 +147,47 @@ Idempotency: idempotency_log table
 - ✅ Production deployment successful with direct DB queries
 - ⚠️ **Temporary**: Edge Function bypassed due to 500 errors (see `EDGE_FUNCTION_500_FIX.md`)
 - 📚 **Current Status**: All dashboards operational, using direct database queries for stability
+
+### Phase 5: Learning Mode (85% Complete - 2025-10-26)
+**Database Schema (Completed):**
+- ✅ 10 migrations created (goals, mandala_charts, weaknesses, rewards system)
+- ✅ Goals table with hierarchical structure (parent_goal_id, depth 0-5)
+- ✅ Mandala charts with JSONB nodes (9칸/27칸 support, 81칸 disabled for MVP 5.1)
+- ✅ Weaknesses table with retry tracking and badge rewards
+- ✅ Reward system (3 tables: reward_definitions, progress_events, rewards_ledger)
+- ✅ RLS policies enabled on all tables
+- ✅ Bidirectional FK: goals ↔ mandala_charts, weaknesses ↔ rewards_ledger
+
+**Frontend Components (Completed):**
+- ✅ GoalsManager component (CRUD, hierarchical goals, ICE scoring)
+- ✅ MandalaChart component (3x3 grid visualization, node editor, color/emoji)
+- ✅ WeaknessLogger component (retry system, pattern analysis, badge display)
+- ✅ Learning mode navigation (tab-based UI)
+- ✅ Mobile-first responsive design (all buttons optimized for touch)
+
+**Integration (Completed):**
+- ✅ Goal-Mandala bidirectional sync (auto-sync on goal completion)
+- ✅ Reward system integration (first_mandala, perfect_week events)
+- ✅ Goal Detail Panel (progress tracking, ICE score, completion)
+- ✅ Clickable empty mandala slots for easy node creation
+
+**API Layer (learning-mode.js - 29 functions):**
+- ✅ Goals CRUD (6 functions): create, getGoals, getGoal, update, delete, complete
+- ✅ Weaknesses CRUD (5 functions): create, get, update, delete, resolve
+- ✅ Rewards (5 functions): getUnrewarded, getChild, getNew, markViewed, getDefinitions
+- ✅ Mandala (8 functions): create, get, getAll, updateNode, addNode, deleteNode, deleteChart, calculate
+- ✅ Goal-Mandala Integration (5 functions): createWithGoal, find, sync, updateProgress, link
+
+**Mobile UI Optimization (2025-10-26):**
+- ✅ All buttons: 40px touch targets on mobile, 32-36px on desktop
+- ✅ Icons: 20px on mobile, 16px on desktop
+- ✅ Responsive text labels (shortened/hidden on small screens)
+- ✅ 12 button groups optimized in MandalaChart component
+
+**Pending:**
+- ⏳ Weekly Planner integration (Phase 5.2)
+- ⏳ 81칸 Mandala expansion (Phase 5.2)
+- ⏳ Advanced reward triggers (streak_21, first_weakness_resolved, etc.)
 
 ## Development Commands
 
@@ -187,13 +242,14 @@ node scripts/verify-chart-rendering.js
 
 **Initial Setup:**
 1. Run migrations in `supabase/migrations/` folder in order
-2. Latest migration: `014_rename_old_schema.sql` (Phase 3 complete)
+2. Latest migration: `20251024_010_phase5_weekly_planner.sql` (Phase 5 complete)
 
 **Key Migrations:**
-- `001-011`: Initial NEW SCHEMA setup
+- `001-011`: Initial NEW SCHEMA setup (Phase 0-3)
 - `012`: Enable RLS policies
 - `013`: Create indexes for performance
 - `014`: Rename OLD SCHEMA to habit_tracker_old
+- `20251024_001-010`: Phase 5 Learning Mode (10 migrations)
 
 **Phase 4 Setup (Completed):**
 1. **Database Views**: ✅ Created with Security Invoker mode
@@ -439,7 +495,7 @@ All data points must render explicitly with custom dot renderer:
 - `src/hooks/useDashboardData.ts` - Data generation with continuous weeks
 - `src/lib/weekNumber.js` - ISO week number calculation
 
-**Last Updated**: 2025-10-19 (Week 33 visibility fix)
+**Last Updated**: 2025-10-26 (Phase 5 Learning Mode)
 
 ### Dashboard Data Fetching Pattern (Phase 4)
 
@@ -681,14 +737,21 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ---
 
-**Last Updated**: 2025-10-19
-**Phase**: 🎉 **Phase 4 Complete (100%)** 🚀
-**Schema Version**: NEW SCHEMA (v2)
+**Last Updated**: 2025-10-26
+**Phase**: 🎉 **Phase 5 In Progress (85%)** 🚀
+**Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables
 **Edge Functions**:
   - `dual-write-habit`: new_only mode ✅
   - `dashboard-aggregation`: deployed ✅ (temporarily bypassed)
 **Current Architecture**: Direct DB queries for all dashboards
+**Learning Mode Status**:
+  - ✅ Goals, Mandala Charts, Weaknesses, Rewards (CRUD complete)
+  - ✅ Goal-Mandala bidirectional sync
+  - ✅ Reward system integration (first_mandala, perfect_week)
+  - ✅ Mobile UI optimization (40px touch targets)
+  - ⏳ Weekly Planner (Phase 5.2)
+  - ⏳ 81칸 Mandala expansion (Phase 5.2)
 **Next Actions**:
-  1. Implement real insights data (currently using mock data)
-  2. Debug Edge Function 500 errors (optional optimization)
-  3. Monitor OLD SCHEMA until 2025-10-25
+  1. Implement Weekly Planner integration
+  2. Expand Mandala to 81칸 (3-level hierarchy)
+  3. Add advanced reward triggers
