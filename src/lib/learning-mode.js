@@ -249,6 +249,27 @@ export const getGoals = async (childName, filters = {}) => {
 }
 
 /**
+ * Get a single goal by ID
+ * @param {string} goalId - Goal ID
+ * @returns {Object|null} Goal data
+ */
+export const getGoal = async (goalId) => {
+  try {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('id', goalId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('목표 조회 실패:', error)
+    throw error
+  }
+}
+
+/**
  * Update a goal
  * @param {string} goalId - Goal ID
  * @param {Object} updates - Fields to update
