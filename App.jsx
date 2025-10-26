@@ -11,6 +11,8 @@ import { Dashboard } from '@/components/Dashboard.jsx'
 import DashboardHub from '@/components/Dashboard/DashboardHub'
 import { Auth } from '@/components/Auth.jsx'
 import { TemplateManager } from '@/components/TemplateManager.jsx'
+import { GoalsManager } from '@/components/Goals/GoalsManager.jsx'
+import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
@@ -44,6 +46,7 @@ function App() {
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
   const [pendingSaveData, setPendingSaveData] = useState(null)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
+  const [showGoals, setShowGoals] = useState(false)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -540,25 +543,26 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4">
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-        {/* 로그아웃 버튼 */}
-        <div className="flex justify-end no-print">
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </Button>
-        </div>
+    <RewardNotificationProvider childName={selectedChild}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4">
+        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+          {/* 로그아웃 버튼 */}
+          <div className="flex justify-end no-print">
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </Button>
+          </div>
 
-        {/* 아이 선택 화면 */}
-        {showChildSelector ? (
-          <ChildSelector 
-            onChildSelect={handleChildSelect}
+          {/* 아이 선택 화면 */}
+          {showChildSelector ? (
+            <ChildSelector
+              onChildSelect={handleChildSelect}
             onNewChild={handleNewChild}
           />
         ) : (
@@ -607,7 +611,22 @@ function App() {
                         <span className="sm:hidden">템플릿</span>
                       </Button>
                       <Button
-                        onClick={() => setShowDashboard(!showDashboard)}
+                        onClick={() => {
+                          setShowGoals(!showGoals)
+                          setShowDashboard(false)
+                        }}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Target className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">{showGoals ? '습관 추적' : '목표 관리'}</span>
+                        <span className="sm:hidden">{showGoals ? '추적' : '목표'}</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowDashboard(!showDashboard)
+                          setShowGoals(false)
+                        }}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700"
                       >
@@ -691,6 +710,10 @@ function App() {
                   childName={childName}
                   onClose={() => setShowTemplateManager(false)}
                 />
+              </div>
+            ) : showGoals ? (
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <GoalsManager childName={selectedChild} />
               </div>
             ) : showDashboard ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
@@ -981,6 +1004,7 @@ function App() {
         )}
       </div>
     </div>
+    </RewardNotificationProvider>
   )
 }
 

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-10-25T23:27:15.967Z",
+  "version": "pre-phase5",
+  "tables": {
+    "children": {
+      "rows": 0,
+      "data": []
+    },
+    "weeks": {
+      "rows": 0,
+      "data": []
+    },
+    "habits": {
+      "rows": 0,
+      "data": []
+    },
+    "habit_records": {
+      "rows": 0,
+      "data": []
+    },
+    "habit_templates": {
+      "rows": 0,
+      "data": []
+    },
+    "notifications": {
+      "rows": 0,
+      "data": []
+    }
+  }
+}

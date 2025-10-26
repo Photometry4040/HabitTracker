@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.j
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { User, Plus, Trash2, Calendar } from 'lucide-react'
+import { Switch } from '@/components/ui/switch.jsx'
+import { User, Plus, Trash2, Calendar, GraduationCap } from 'lucide-react'
 import { supabase } from '@/lib/supabase.js'
 import { loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { deleteWeekDualWrite } from '@/lib/dual-write.js'
+import { toggleLearningMode } from '@/lib/learning-mode.js'
 
 export function ChildSelector({ onChildSelect, onNewChild }) {
   const [children, setChildren] = useState([])
@@ -21,8 +23,32 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
   const loadChildren = async () => {
     try {
       setLoading(true)
-      const data = await loadAllChildren()
-      setChildren(data || [])
+      // Load children with learning mode status
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('인증되지 않은 사용자입니다.')
+
+      const { data: childrenData } = await supabase
+        .from('children')
+        .select('id, name, theme, learning_mode_enabled, age_group')
+        .eq('user_id', user.id)
+        .order('name')
+
+      // Load week ranges for each child
+      const childrenWithWeeks = await Promise.all(
+        (childrenData || []).map(async (child) => {
+          const weeks = await loadChildWeeks(child.name)
+          return {
+            child_name: child.name,
+            theme: child.theme,
+            learning_mode_enabled: child.learning_mode_enabled || false,
+            age_group: child.age_group,
+            first_week: weeks && weeks.length > 0 ? weeks[0].week_period : null,
+            last_week: weeks && weeks.length > 0 ? weeks[weeks.length - 1].week_period : null
+          }
+        })
+      )
+
+      setChildren(childrenWithWeeks)
     } catch (error) {
       console.error('아이 목록 로드 실패:', error)
     } finally {
@@ -136,6 +162,27 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
     setNewChildName('')
   }
 
+  const handleToggleLearningMode = async (childName, currentStatus) => {
+    try {
+      const newStatus = !currentStatus
+      await toggleLearningMode(childName, newStatus)
+
+      // Update local state
+      setChildren(prevChildren =>
+        prevChildren.map(child =>
+          child.child_name === childName
+            ? { ...child, learning_mode_enabled: newStatus }
+            : child
+        )
+      )
+
+      console.log(`✅ Learning mode ${newStatus ? 'enabled' : 'disabled'} for ${childName}`)
+    } catch (error) {
+      console.error('학습 모드 토글 실패:', error)
+      alert('학습 모드 설정 중 오류가 발생했습니다.')
+    }
+  }
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
@@ -194,13 +241,21 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
                 key={`${child.child_name}-${index}`}
                 className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg hover:bg-gray-50 gap-3"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   <User className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <div className="font-semibold text-sm sm:text-base">{child.child_name}</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm sm:text-base flex items-center gap-2">
+                      {child.child_name}
+                      {child.learning_mode_enabled && (
+                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                          <GraduationCap className="w-3 h-3 mr-1" />
+                          학습
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
-                      {child.first_week && child.last_week 
+                      {child.first_week && child.last_week
                         ? child.first_week === child.last_week
                           ? child.first_week
                           : `${child.first_week.split(' ~ ')[0]} ~ ${child.last_week.split(' ~ ')[1]}`
@@ -209,31 +264,40 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {child.theme && (
-                    <Badge variant="outline" className="text-xs hidden sm:block">
-                      {child.theme}
-                    </Badge>
-                  )}
-                  <div className="text-xs text-purple-600 font-medium sm:hidden">
-                    주간 목표 달성
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                  {/* Learning Mode Toggle */}
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md w-full sm:w-auto">
+                    <GraduationCap className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs sm:text-sm text-gray-700 flex-1 sm:flex-none">학습 모드</span>
+                    <Switch
+                      checked={child.learning_mode_enabled}
+                      onCheckedChange={() => handleToggleLearningMode(child.child_name, child.learning_mode_enabled)}
+                    />
                   </div>
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      onClick={() => onChildSelect(child.child_name)}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
-                    >
-                      <span className="hidden sm:inline">선택</span>
-                      <span className="sm:hidden">선택</span>
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteChild(child.child_name)}
-                      size="sm"
-                      variant="destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                    {child.theme && (
+                      <Badge variant="outline" className="text-xs hidden sm:block">
+                        {child.theme}
+                      </Badge>
+                    )}
+                    <div className="flex gap-1 sm:gap-2">
+                      <Button
+                        onClick={() => onChildSelect(child.child_name)}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
+                      >
+                        <span className="hidden sm:inline">선택</span>
+                        <span className="sm:hidden">선택</span>
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteChild(child.child_name)}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
