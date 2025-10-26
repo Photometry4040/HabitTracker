@@ -33,7 +33,13 @@
       "Bash(git add EDGE_FUNCTION_500_FIX.md)",
       "Bash(git add CLAUDE.md)",
       "Bash(chmod:*)",
-      "Bash(supabase db push:*)"
+      "Bash(supabase db push:*)",
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git log:*)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase functions deploy:*)"
     ],
     "deny": [],
     "ask": []

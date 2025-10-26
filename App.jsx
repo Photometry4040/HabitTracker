@@ -54,6 +54,7 @@ function App() {
   const [showMandala, setShowMandala] = useState(false)
   const [showWeeklyPlanner, setShowWeeklyPlanner] = useState(false)
   const [currentWeekId, setCurrentWeekId] = useState(null)
+  const [currentChildId, setCurrentChildId] = useState(null)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -164,6 +165,7 @@ function App() {
         setReflection(data.reflection || reflection)
         setReward(data.reward || '')
         setCurrentWeekId(data.id || null) // Store week ID for Weekly Planner
+        setCurrentChildId(data.child_id || null) // Store child UUID for Weekly Planner
 
         // 주간 시작일 설정 (새 필드 우선, 기존 데이터에서 추출은 백업)
         if (data.week_start_date) {
@@ -185,6 +187,7 @@ function App() {
         console.log('해당 주간에 저장된 데이터가 없습니다. 초기화합니다.')
         resetDataKeepDate()
         setCurrentWeekId(null) // Reset week ID
+        setCurrentChildId(null) // Reset child ID
 
         // 대시보드 모드가 아닐 때만 알림 표시
         if (!showDashboard) {
@@ -196,6 +199,7 @@ function App() {
       // 오류 발생 시에도 초기화 (날짜는 유지)
       resetDataKeepDate()
       setCurrentWeekId(null) // Reset week ID
+      setCurrentChildId(null) // Reset child ID
 
       // 대시보드 모드가 아닐 때만 알림 표시
       if (!showDashboard) {
@@ -773,7 +777,7 @@ function App() {
             ) : showWeeklyPlanner ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
                 <WeeklyPlannerManager
-                  childId={selectedChild}
+                  childId={currentChildId}
                   childName={childName}
                   weekId={currentWeekId}
                   weekStartDate={weekStartDate}

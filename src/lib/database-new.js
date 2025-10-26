@@ -134,6 +134,7 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
     // Return in old schema format for compatibility
     return {
       id: week.id,
+      child_id: child.id, // Add child UUID for Weekly Planner
       child_name: childName,
       week_period: weekPeriod,
       week_start_date: adjustedDateStr, // Return adjusted date
