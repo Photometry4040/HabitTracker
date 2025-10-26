@@ -604,15 +604,13 @@ function App() {
                         <span className="sm:hidden">저장중</span>
                       </div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 sm:flex gap-2">
                       <Button
                         onClick={() => setShowTemplateManager(!showTemplateManager)}
-                        size="sm"
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className="bg-indigo-600 hover:bg-indigo-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                       >
-                        <BookTemplate className="w-4 h-4 sm:mr-1" />
-                        <span className="hidden sm:inline">템플릿</span>
-                        <span className="sm:hidden">템플릿</span>
+                        <BookTemplate className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
+                        <span className="text-xs sm:text-sm">템플릿</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -621,12 +619,11 @@ function App() {
                           setShowWeaknesses(false)
                           setShowMandala(false)
                         }}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                       >
-                        <Target className="w-4 h-4 sm:mr-1" />
+                        <Target className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
                         <span className="hidden sm:inline">{showGoals ? '습관 추적' : '목표 관리'}</span>
-                        <span className="sm:hidden">{showGoals ? '추적' : '목표'}</span>
+                        <span className="text-xs sm:hidden">{showGoals ? '추적' : '목표'}</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -635,12 +632,11 @@ function App() {
                           setShowGoals(false)
                           setShowMandala(false)
                         }}
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-orange-600 hover:bg-orange-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                       >
-                        <AlertCircle className="w-4 h-4 sm:mr-1" />
+                        <AlertCircle className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
                         <span className="hidden sm:inline">{showWeaknesses ? '습관 추적' : '약점 관리'}</span>
-                        <span className="sm:hidden">{showWeaknesses ? '추적' : '약점'}</span>
+                        <span className="text-xs sm:hidden">{showWeaknesses ? '추적' : '약점'}</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -649,12 +645,11 @@ function App() {
                           setShowGoals(false)
                           setShowWeaknesses(false)
                         }}
-                        size="sm"
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className="bg-indigo-600 hover:bg-indigo-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                       >
-                        <LayoutGrid className="w-4 h-4 sm:mr-1" />
+                        <LayoutGrid className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
                         <span className="hidden sm:inline">{showMandala ? '습관 추적' : '만다라트'}</span>
-                        <span className="sm:hidden">{showMandala ? '추적' : '만다'}</span>
+                        <span className="text-xs sm:hidden">만다라</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -663,22 +658,19 @@ function App() {
                           setShowWeaknesses(false)
                           setShowMandala(false)
                         }}
-                        size="sm"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-purple-600 hover:bg-purple-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                       >
-                        <BarChart3 className="w-4 h-4 sm:mr-1" />
+                        <BarChart3 className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
                         <span className="hidden sm:inline">{showDashboard ? '습관 추적' : '대시보드'}</span>
-                        <span className="sm:hidden">{showDashboard ? '추적' : '보드'}</span>
+                        <span className="text-xs sm:hidden">보드</span>
                       </Button>
                       <Button
                         onClick={() => saveData(false)}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 h-12 sm:h-9 text-sm px-2 sm:px-3 flex flex-col sm:flex-row items-center justify-center"
                         disabled={saving}
                       >
-                        <Save className="w-4 h-4 sm:mr-1" />
-                        <span className="hidden sm:inline">저장</span>
-                        <span className="sm:hidden">저장</span>
+                        <Save className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1" />
+                        <span className="text-xs sm:text-sm">저장</span>
                       </Button>
                     </div>
                   </div>
