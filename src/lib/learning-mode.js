@@ -1353,3 +1353,219 @@ export const linkGoalToNode = async (chartId, position, goalId) => {
     throw error
   }
 }
+
+// ============================================================================
+// Advanced Reward Triggers (Phase 5.3)
+// ============================================================================
+
+/**
+ * Check and record streak_21 achievement
+ * @param {string} childName - Name of the child
+ * @param {string} habitId - Habit ID that achieved streak
+ * @param {number} streakDays - Current streak count
+ * @returns {Object|null} Progress event if triggered
+ */
+export const checkStreak21 = async (childName, habitId, streakDays) => {
+  try {
+    if (streakDays < 21) return null
+
+    // Check if already recorded
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('인증되지 않은 사용자입니다.')
+
+    const { data: child } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .maybeSingle()
+
+    if (!child) throw new Error('아이를 찾을 수 없습니다.')
+
+    // Check if event already exists for this habit
+    const { data: existing } = await supabase
+      .from('progress_events')
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('event_type', 'streak_21')
+      .eq('payload->>habit_id', habitId)
+      .maybeSingle()
+
+    if (existing) {
+      console.log('✅ streak_21 already recorded for this habit')
+      return null
+    }
+
+    // Record new streak_21 event
+    const event = await createProgressEvent(childName, 'streak_21', {
+      habit_id: habitId,
+      streak_count: streakDays
+    })
+
+    console.log(`✅ streak_21 achievement recorded for ${childName}`)
+    return event
+  } catch (error) {
+    console.error('streak_21 체크 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Check and record habit_mastery achievement (30 days green)
+ * @param {string} childName - Name of the child
+ * @param {string} habitId - Habit ID
+ * @param {number} greenDays - Consecutive green days
+ * @returns {Object|null} Progress event if triggered
+ */
+export const checkHabitMastery = async (childName, habitId, greenDays) => {
+  try {
+    if (greenDays < 30) return null
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('인증되지 않은 사용자입니다.')
+
+    const { data: child } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .maybeSingle()
+
+    if (!child) throw new Error('아이를 찾을 수 없습니다.')
+
+    // Check if already recorded
+    const { data: existing } = await supabase
+      .from('progress_events')
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('event_type', 'habit_mastery')
+      .eq('payload->>habit_id', habitId)
+      .maybeSingle()
+
+    if (existing) {
+      console.log('✅ habit_mastery already recorded for this habit')
+      return null
+    }
+
+    // Record new habit_mastery event
+    const event = await createProgressEvent(childName, 'habit_mastery', {
+      habit_id: habitId,
+      green_days: greenDays
+    })
+
+    console.log(`✅ habit_mastery achievement recorded for ${childName}`)
+    return event
+  } catch (error) {
+    console.error('habit_mastery 체크 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Check and record weekly_planner_perfect achievement
+ * @param {string} childName - Name of the child
+ * @param {string} weeklyPlanId - Weekly plan ID
+ * @param {number} completionRate - Completion rate (0-100)
+ * @returns {Object|null} Progress event if triggered
+ */
+export const checkWeeklyPlannerPerfect = async (childName, weeklyPlanId, completionRate) => {
+  try {
+    if (completionRate < 100) return null
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('인증되지 않은 사용자입니다.')
+
+    const { data: child } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .maybeSingle()
+
+    if (!child) throw new Error('아이를 찾을 수 없습니다.')
+
+    // Check if already recorded for this plan
+    const { data: existing } = await supabase
+      .from('progress_events')
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('event_type', 'weekly_planner_perfect')
+      .eq('payload->>weekly_plan_id', weeklyPlanId)
+      .maybeSingle()
+
+    if (existing) {
+      console.log('✅ weekly_planner_perfect already recorded for this plan')
+      return null
+    }
+
+    // Record new weekly_planner_perfect event
+    const event = await createProgressEvent(childName, 'weekly_planner_perfect', {
+      weekly_plan_id: weeklyPlanId,
+      completion_rate: completionRate
+    })
+
+    console.log(`✅ weekly_planner_perfect achievement recorded for ${childName}`)
+    return event
+  } catch (error) {
+    console.error('weekly_planner_perfect 체크 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Check and record first_weakness_resolved achievement
+ * @param {string} childName - Name of the child
+ * @returns {Object|null} Progress event if triggered
+ */
+export const checkFirstWeaknessResolved = async (childName) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('인증되지 않은 사용자입니다.')
+
+    const { data: child } = await supabase
+      .from('children')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', childName)
+      .maybeSingle()
+
+    if (!child) throw new Error('아이를 찾을 수 없습니다.')
+
+    // Check if this is the first resolved weakness
+    const { data: resolvedWeaknesses } = await supabase
+      .from('weaknesses')
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('status', 'resolved')
+      .order('resolved_at', { ascending: true })
+
+    if (!resolvedWeaknesses || resolvedWeaknesses.length !== 1) {
+      // Only trigger on first resolution
+      return null
+    }
+
+    // Check if event already recorded
+    const { data: existing } = await supabase
+      .from('progress_events')
+      .select('id')
+      .eq('child_id', child.id)
+      .eq('event_type', 'first_weakness_resolved')
+      .maybeSingle()
+
+    if (existing) {
+      console.log('✅ first_weakness_resolved already recorded')
+      return null
+    }
+
+    // Record first_weakness_resolved event
+    const event = await createProgressEvent(childName, 'first_weakness_resolved', {
+      weakness_id: resolvedWeaknesses[0].id
+    })
+
+    console.log(`✅ first_weakness_resolved achievement recorded for ${childName}`)
+    return event
+  } catch (error) {
+    console.error('first_weakness_resolved 체크 실패:', error)
+    throw error
+  }
+}
