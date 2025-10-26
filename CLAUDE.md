@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - RLS enabled on all tables (user isolation at DB level)
 - Monday-only week start dates (enforced by CHECK constraint)
 
-**Current Focus:** Phase 5 Learning Mode (85% complete) - Goals, Mandala Charts, Weaknesses, Rewards
+**Current Focus:** Phase 5 Learning Mode (95% complete) - Phase 5.2 Weekly Planner completed!
 
 ## Project Overview
 
@@ -32,9 +32,9 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - PWA support with app icons for all platforms
 - Discord notifications for habit tracking events
 - Achievement badge system
-- **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards
+- **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards, Weekly Planner
 
-**Project Status:** 🎉 **Phase 5 In Progress** (85%) - Learning Mode core features operational. Template system integrated. Mobile UI optimized.
+**Project Status:** 🎉 **Phase 5.2 Complete** (95%) - Weekly Planner fully integrated. Goals, Mandala, Weaknesses operational. Template system ready.
 
 **Monitoring Period:** OLD SCHEMA monitoring ended 2025-10-25. `habit_tracker_old` can be safely dropped if no issues detected.
 
@@ -56,6 +56,9 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - `reward_definitions` - Reward definitions (badge, sticker, achievement, theme, level_up)
 - `progress_events` - Progress event log (goal_completed, weakness_resolved, streaks, etc.)
 - `rewards_ledger` - Reward issuance ledger (prevents duplicate rewards)
+- `weekly_plans` - Weekly learning plans (child_id, week_id, title, status, goal_targets)
+- `daily_plan_items` - Daily tasks (weekly_plan_id, planned_date, task_title, priority, completed)
+- `weekly_plan_templates` - Reusable weekly plan templates with usage tracking
 
 **Archived Tables:**
 - `habit_tracker_old` - Old denormalized schema (READ-ONLY, archived 2025-10-18)
@@ -186,46 +189,40 @@ Idempotency: idempotency_log table
 - ⚠️ **Temporary**: Edge Function bypassed due to 500 errors (see `EDGE_FUNCTION_500_FIX.md`)
 - 📚 **Current Status**: All dashboards operational, using direct database queries for stability
 
-### Phase 5: Learning Mode (85% Complete - 2025-10-26)
-**Database Schema (Completed):**
-- ✅ 10 migrations created (goals, mandala_charts, weaknesses, rewards system)
-- ✅ Goals table with hierarchical structure (parent_goal_id, depth 0-5)
-- ✅ Mandala charts with JSONB nodes (9칸/27칸 support, 81칸 disabled for MVP 5.1)
-- ✅ Weaknesses table with retry tracking and badge rewards
-- ✅ Reward system (3 tables: reward_definitions, progress_events, rewards_ledger)
-- ✅ RLS policies enabled on all tables
-- ✅ Bidirectional FK: goals ↔ mandala_charts, weaknesses ↔ rewards_ledger
-
-**Frontend Components (Completed):**
-- ✅ GoalsManager component (CRUD, hierarchical goals, ICE scoring)
-- ✅ MandalaChart component (3x3 grid visualization, node editor, color/emoji)
-- ✅ WeaknessLogger component (retry system, pattern analysis, badge display)
-- ✅ Learning mode navigation (tab-based UI)
-- ✅ Mobile-first responsive design (all buttons optimized for touch)
-
-**Integration (Completed):**
-- ✅ Goal-Mandala bidirectional sync (auto-sync on goal completion)
+### Phase 5: Learning Mode (95% Complete - 2025-10-26)
+**Phase 5.1: Goals, Mandala, Weaknesses (Completed ✅):**
+- ✅ Database schema: 10 migrations (goals, mandala_charts, weaknesses, rewards system)
+- ✅ Frontend components: GoalsManager, MandalaChart, WeaknessLogger
+- ✅ API layer: 29 functions in learning-mode.js
+- ✅ Goal-Mandala bidirectional sync with auto-completion
 - ✅ Reward system integration (first_mandala, perfect_week events)
-- ✅ Goal Detail Panel (progress tracking, ICE score, completion)
-- ✅ Clickable empty mandala slots for easy node creation
+- ✅ Mobile UI optimization (40px touch targets, responsive layouts)
 
-**API Layer (learning-mode.js - 29 functions):**
-- ✅ Goals CRUD (6 functions): create, getGoals, getGoal, update, delete, complete
-- ✅ Weaknesses CRUD (5 functions): create, get, update, delete, resolve
-- ✅ Rewards (5 functions): getUnrewarded, getChild, getNew, markViewed, getDefinitions
-- ✅ Mandala (8 functions): create, get, getAll, updateNode, addNode, deleteNode, deleteChart, calculate
-- ✅ Goal-Mandala Integration (5 functions): createWithGoal, find, sync, updateProgress, link
+**Phase 5.2: Weekly Planner (Completed ✅ - 2025-10-26):**
+- ✅ Database schema: 3 tables (weekly_plans, daily_plan_items, weekly_plan_templates)
+- ✅ Database views: v_weekly_plan_progress, v_daily_tasks_summary
+- ✅ API layer: 22 functions in weekly-planner.js (857 lines)
+  - Weekly Plans CRUD (7 functions): create, get, update, delete, complete
+  - Daily Tasks CRUD (7 functions): add, get, update, complete, uncomplete, delete
+  - Templates CRUD (5 functions): create, get, apply, update, delete
+  - Analytics (3 functions): getProgress, getDailySummary, getCompletionStats
+- ✅ Frontend components (966 lines total):
+  - WeeklyPlannerManager.jsx (360 lines) - Main container with 3 views
+  - DailyTaskCalendar.jsx (412 lines) - 7-day calendar with task management
+  - WeeklyPlanEditor.jsx (194 lines) - Plan editing and completion form
+- ✅ App.jsx integration: currentWeekId state, WeeklyPlanner button, rendering logic
+- ✅ Features:
+  - 7-day calendar view with daily task tracking
+  - Priority system (1-5: 긴급 → 최저)
+  - Time estimation and actual time tracking
+  - Weekly reflection and completion workflow
+  - Progress tracking (total tasks, completed, completion rate, time spent)
+  - Template system for reusable weekly plans
 
-**Mobile UI Optimization (2025-10-26):**
-- ✅ All buttons: 40px touch targets on mobile, 32-36px on desktop
-- ✅ Icons: 20px on mobile, 16px on desktop
-- ✅ Responsive text labels (shortened/hidden on small screens)
-- ✅ 12 button groups optimized in MandalaChart component
-
-**Pending:**
-- ⏳ Weekly Planner integration (Phase 5.2)
-- ⏳ 81칸 Mandala expansion (Phase 5.2)
+**Pending (Phase 5.3+):**
+- ⏳ 81칸 Mandala expansion (3-level hierarchy: 9칸 → 27칸 → 81칸)
 - ⏳ Advanced reward triggers (streak_21, first_weakness_resolved, etc.)
+- ⏳ Template manager UI for Weekly Planner (optional enhancement)
 
 ## Development Commands
 
@@ -778,13 +775,13 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ## 📋 Project Status Summary
 
-**Last Updated**: 2025-10-26 22:27 KST
-**Current Phase**: 🎉 **Phase 5 In Progress (85%)** 🚀
-**Latest Commit**: `8bd2510` - Improve mobile layout with lg breakpoint and simplified header
+**Last Updated**: 2025-10-26 23:45 KST
+**Current Phase**: 🎉 **Phase 5.2 Complete (95%)** 🚀
+**Latest Commit**: `e3b4131` - Integrate Weekly Planner into App.jsx
 
 ### Database Architecture
-- **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (10 migrations)
-- **Total Migrations**: 36 SQL files (core + Phase 5)
+- **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (11 migrations)
+- **Total Migrations**: 37 SQL files (core + Phase 5.1 + Phase 5.2)
 - **RLS Status**: ✅ Enabled on all tables
 - **OLD SCHEMA**: Monitoring completed (2025-10-25), safe to drop
 
@@ -800,18 +797,23 @@ Comprehensive documentation is available in the `docs/` folder:
 - **State Management**: React Hooks in `App.jsx` (no external store)
 
 ### Learning Mode Status (Phase 5)
+**Phase 5.1 (Completed ✅):**
 - ✅ Goals CRUD with hierarchical structure (6 API functions)
 - ✅ Mandala Charts 9칸/27칸 (8 API functions)
 - ✅ Weaknesses tracking with retry system (5 API functions)
 - ✅ Reward system integration (5 API functions)
 - ✅ Goal-Mandala bidirectional sync (5 API functions)
 - ✅ Mobile UI optimization (40px touch targets, lg breakpoint)
-- ⏳ Weekly Planner integration (Phase 5.2)
-- ⏳ 81칸 Mandala expansion (Phase 5.2)
+
+**Phase 5.2 (Completed ✅):**
+- ✅ Weekly Planner database schema (3 tables, 2 views)
+- ✅ Weekly Planner API layer (22 functions, 857 lines)
+- ✅ Weekly Planner components (3 components, 966 lines)
+- ✅ App.jsx integration (currentWeekId state, button, rendering)
 
 ### Next Priority Actions
-1. **Phase 5.2**: Implement Weekly Planner integration
-2. **Phase 5.2**: Expand Mandala to 81칸 (3-level hierarchy)
-3. **Phase 5.2**: Add advanced reward triggers (streak_21, first_weakness_resolved)
+1. **Phase 5.3**: Expand Mandala to 81칸 (3-level hierarchy: 9→27→81)
+2. **Phase 5.3**: Add advanced reward triggers (streak_21, first_weakness_resolved)
+3. **Optional**: Weekly Planner template manager UI
 4. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
 5. **Optional**: Drop `habit_tracker_old` table (backup verified)
