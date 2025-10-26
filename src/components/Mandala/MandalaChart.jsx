@@ -13,7 +13,9 @@ import {
   addNodeToMandala,
   deleteNodeFromMandala,
   deleteMandalaChart,
-  calculateMandalaCompletion
+  calculateMandalaCompletion,
+  createNodeWithGoal,
+  linkGoalToNode
 } from '@/lib/learning-mode.js'
 
 const COLORS = [
@@ -43,11 +45,12 @@ export function MandalaChart({ childName }) {
   const [initialNodes, setInitialNodes] = useState([])
 
   // Node editor state
-  const [editingNode, setEditingNode] = useState(null)
+  const [editingNode, setEditingNode] = useState(null) // { position, mode: 'edit' | 'create' }
   const [nodeFormData, setNodeFormData] = useState({
     title: '',
     color: '#3B82F6',
-    emoji: null
+    emoji: null,
+    createGoal: true // 목표 자동 생성 여부
   })
 
   useEffect(() => {
@@ -167,7 +170,42 @@ export function MandalaChart({ childName }) {
         return
       }
 
-      await updateMandalaNode(currentChart.id, editingNode.position, nodeFormData)
+      if (editingNode.mode === 'create') {
+        // CREATE mode: Add new node with optional goal
+        if (nodeFormData.createGoal) {
+          // Create node with goal
+          await createNodeWithGoal(
+            currentChart.id,
+            childName,
+            {
+              position: editingNode.position,
+              title: nodeFormData.title,
+              color: nodeFormData.color,
+              emoji: nodeFormData.emoji
+            },
+            {
+              metric_type: 'boolean' // Default to boolean goal
+            }
+          )
+        } else {
+          // Create node without goal
+          await addNodeToMandala(currentChart.id, {
+            position: editingNode.position,
+            title: nodeFormData.title,
+            color: nodeFormData.color || '#3B82F6',
+            emoji: nodeFormData.emoji || null
+          })
+        }
+        alert('노드가 추가되었습니다!')
+      } else {
+        // EDIT mode: Update existing node
+        await updateMandalaNode(currentChart.id, editingNode.position, {
+          title: nodeFormData.title,
+          color: nodeFormData.color,
+          emoji: nodeFormData.emoji
+        })
+        alert('노드가 수정되었습니다!')
+      }
 
       // Reload chart
       const updated = await getMandalaChart(currentChart.id)
@@ -177,11 +215,10 @@ export function MandalaChart({ childName }) {
       await calculateMandalaCompletion(currentChart.id)
 
       setEditingNode(null)
-      setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
-      alert('노드가 수정되었습니다!')
+      setNodeFormData({ title: '', color: '#3B82F6', emoji: null, createGoal: true })
     } catch (error) {
-      console.error('노드 수정 실패:', error)
-      alert('노드 수정 중 오류가 발생했습니다.')
+      console.error('노드 저장 실패:', error)
+      alert('노드 저장 중 오류가 발생했습니다.')
     }
   }
 
@@ -448,12 +485,22 @@ export function MandalaChart({ childName }) {
 
     // Map nodes to grid positions (1-8 → 0,1,2,3,5,6,7,8)
     const positionMap = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 5, 6: 6, 7: 7, 8: 8 }
+    const reversePositionMap = { 0: 1, 1: 2, 2: 3, 3: 4, 5: 5, 6: 6, 7: 7, 8: 8 }
+
     currentChart.nodes?.forEach((node) => {
       const gridIndex = positionMap[node.position]
       if (gridIndex !== undefined) {
         grid[gridIndex] = { type: 'node', data: node }
       }
     })
+
+    const handleEmptyCellClick = (gridIndex) => {
+      const position = reversePositionMap[gridIndex]
+      if (position) {
+        setEditingNode({ position, mode: 'create' })
+        setNodeFormData({ title: '', color: '#3B82F6', emoji: null, createGoal: true })
+      }
+    }
 
     return (
       <div className="space-y-4">
@@ -519,13 +566,17 @@ export function MandalaChart({ childName }) {
         <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
           {grid.map((cell, index) => {
             if (!cell) {
-              // Empty cell
+              // Empty cell - clickable to add node
               return (
                 <div
                   key={index}
-                  className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
+                  onClick={() => handleEmptyCellClick(index)}
+                  className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
                 >
-                  <span className="text-gray-400 text-xs">빈 칸</span>
+                  <div className="text-center">
+                    <Plus className="w-6 h-6 mx-auto text-gray-400 mb-1" />
+                    <span className="text-gray-400 text-xs">노드 추가</span>
+                  </div>
                 </div>
               )
             }
@@ -601,11 +652,33 @@ export function MandalaChart({ childName }) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex-1 flex flex-col items-center justify-center text-center">
+                      <div className="flex-1 flex flex-col items-center justify-center text-center relative">
+                        {/* Goal status badges */}
+                        {node.goal_id && (
+                          <div className="absolute top-0 right-0 flex gap-1">
+                            {node.completed && (
+                              <Badge className="h-4 text-xs bg-green-500">✓</Badge>
+                            )}
+                            {node.completion_rate > 0 && (
+                              <Badge variant="outline" className="h-4 text-xs">
+                                {node.completion_rate}%
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+
                         {node.emoji && <div className="text-2xl mb-1">{node.emoji}</div>}
                         <p className="text-xs sm:text-sm font-medium break-words">
                           {node.title || '(제목 없음)'}
                         </p>
+
+                        {/* Goal indicator */}
+                        {node.goal_id && (
+                          <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                            <span>🎯</span>
+                            <span>목표 연동</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-1 justify-center mt-1">
                         <Button
@@ -687,6 +760,23 @@ export function MandalaChart({ childName }) {
                   ))}
                 </div>
               </div>
+
+              {/* Goal creation option (only in CREATE mode) */}
+              {editingNode.mode === 'create' && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="checkbox"
+                    id="createGoal"
+                    checked={nodeFormData.createGoal}
+                    onChange={(e) => setNodeFormData({ ...nodeFormData, createGoal: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="createGoal" className="cursor-pointer text-sm">
+                    목표 자동 생성 (습관 추적 연동)
+                  </Label>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button onClick={handleSaveNode} className="bg-purple-600 hover:bg-purple-700">
                   <Check className="w-4 h-4 mr-1" />

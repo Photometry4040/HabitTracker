@@ -333,6 +333,15 @@ export const completeGoal = async (goalId) => {
       goal_title: goal.title
     })
 
+    // 4. Sync to mandala chart (if connected)
+    // syncGoalToMandala is defined later in this file, but available at runtime
+    try {
+      await syncGoalToMandala(goalId)
+    } catch (syncError) {
+      // Non-critical: goal not connected to mandala
+      console.debug('Mandala sync skipped (not connected):', syncError.message)
+    }
+
     return data
   } catch (error) {
     console.error('목표 완료 실패:', error)
@@ -1072,6 +1081,218 @@ export const calculateMandalaCompletion = async (chartId) => {
     return overallRate
   } catch (error) {
     console.error('만다라트 진행률 계산 실패:', error)
+    throw error
+  }
+}
+
+// ============================================================================
+// Goal-Mandala Integration - 목표와 만다라트 연동
+// ============================================================================
+
+/**
+ * Create a mandala node with auto-generated goal
+ * @param {string} chartId - Mandala chart ID
+ * @param {string} childName - Child name
+ * @param {Object} nodeData - Node data (title, color, emoji, position)
+ * @param {Object} goalOptions - Optional goal settings (metric_type, target_value, etc.)
+ * @returns {Object} { node, goal } - Created node and goal
+ */
+export const createNodeWithGoal = async (chartId, childName, nodeData, goalOptions = {}) => {
+  try {
+    const { title, color, emoji, position } = nodeData
+
+    if (!title || title.trim().length < 3) {
+      throw new Error('노드 제목을 3자 이상 입력해주세요.')
+    }
+
+    // 1. Create goal first
+    const goal = await createGoal(childName, {
+      title,
+      metric_type: goalOptions.metric_type || 'boolean',
+      target_value: goalOptions.target_value || null,
+      current_value: 0,
+      status: 'active',
+      mandala_chart_id: chartId,
+      start_date: goalOptions.start_date || new Date().toISOString().split('T')[0],
+      due_date: goalOptions.due_date || null,
+      ...goalOptions
+    })
+
+    // 2. Add node to mandala with goal_id
+    const updatedChart = await addNodeToMandala(chartId, {
+      position,
+      title,
+      color: color || '#3B82F6',
+      emoji: emoji || null,
+      goal_id: goal.id,
+      completed: false,
+      completion_rate: 0
+    })
+
+    console.log(`✅ Node with goal created: ${title} (goal_id: ${goal.id})`)
+    return { node: nodeData, goal, chart: updatedChart }
+  } catch (error) {
+    console.error('노드+목표 생성 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Helper: Find mandala chart and node by goal_id
+ * @param {string} goalId - Goal ID
+ * @returns {Object|null} { chart, node, position } or null
+ */
+export const findMandalaNodeByGoalId = async (goalId) => {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) return null
+
+    // Find all charts for this user
+    const { data: charts, error } = await supabase
+      .from('mandala_charts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+
+    if (error || !charts) return null
+
+    // Search through all charts' nodes
+    for (const chart of charts) {
+      const nodes = chart.nodes || []
+      const nodeIndex = nodes.findIndex(n => n.goal_id === goalId)
+
+      if (nodeIndex !== -1) {
+        return {
+          chart,
+          node: nodes[nodeIndex],
+          position: nodes[nodeIndex].position
+        }
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('만다라트 노드 찾기 실패:', error)
+    return null
+  }
+}
+
+/**
+ * Sync goal progress to mandala node
+ * @param {string} goalId - Goal ID
+ * @returns {Object|null} Updated mandala chart
+ */
+export const syncGoalToMandala = async (goalId) => {
+  try {
+    // 1. Get goal details
+    const goal = await getGoal(goalId)
+    if (!goal) {
+      console.warn(`Goal not found: ${goalId}`)
+      return null
+    }
+
+    // 2. Find mandala node
+    const result = await findMandalaNodeByGoalId(goalId)
+    if (!result) {
+      console.warn(`Mandala node not found for goal: ${goalId}`)
+      return null
+    }
+
+    const { chart, position } = result
+
+    // 3. Calculate completion rate
+    let completionRate = 0
+    let completed = false
+
+    if (goal.status === 'completed') {
+      completionRate = 100
+      completed = true
+    } else if (goal.metric_type === 'boolean') {
+      completionRate = 0
+      completed = false
+    } else if (goal.target_value && goal.target_value > 0) {
+      completionRate = Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
+      completed = completionRate >= 100
+    }
+
+    // 4. Update mandala node
+    const updatedChart = await updateMandalaNode(chart.id, position, {
+      completed,
+      completion_rate: completionRate
+    })
+
+    // 5. Recalculate chart overall completion
+    await calculateMandalaCompletion(chart.id)
+
+    console.log(`✅ Goal synced to mandala: ${goal.title} (${completionRate}%)`)
+    return updatedChart
+  } catch (error) {
+    console.error('Goal → Mandala 동기화 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Update goal progress and sync to mandala
+ * @param {string} goalId - Goal ID
+ * @param {number} currentValue - Current progress value
+ * @returns {Object} { goal, mandalaChart }
+ */
+export const updateGoalProgress = async (goalId, currentValue) => {
+  try {
+    // 1. Update goal
+    const goal = await updateGoal(goalId, {
+      current_value: currentValue
+    })
+
+    // 2. Check if target reached
+    if (goal.target_value && currentValue >= goal.target_value && goal.status !== 'completed') {
+      await completeGoal(goalId)
+    }
+
+    // 3. Sync to mandala
+    const mandalaChart = await syncGoalToMandala(goalId)
+
+    console.log(`✅ Goal progress updated: ${currentValue}/${goal.target_value}`)
+    return { goal, mandalaChart }
+  } catch (error) {
+    console.error('목표 진행률 업데이트 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * Connect existing goal to mandala node
+ * @param {string} chartId - Mandala chart ID
+ * @param {number} position - Node position (1-8)
+ * @param {string} goalId - Existing goal ID
+ * @returns {Object} Updated mandala chart
+ */
+export const linkGoalToNode = async (chartId, position, goalId) => {
+  try {
+    // 1. Get goal details
+    const goal = await getGoal(goalId)
+    if (!goal) {
+      throw new Error('목표를 찾을 수 없습니다.')
+    }
+
+    // 2. Update goal to link to mandala chart
+    await updateGoal(goalId, {
+      mandala_chart_id: chartId
+    })
+
+    // 3. Update mandala node with goal_id
+    const updatedChart = await updateMandalaNode(chartId, position, {
+      goal_id: goalId
+    })
+
+    // 4. Sync goal progress to mandala
+    await syncGoalToMandala(goalId)
+
+    console.log(`✅ Goal linked to mandala node: ${goal.title}`)
+    return updatedChart
+  } catch (error) {
+    console.error('목표 연결 실패:', error)
     throw error
   }
 }
