@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚀 Quick Start for New Contributors
+
+**First Time Setup:**
+1. Install dependencies: `npm install`
+2. Copy `.env.example` to `.env` and add Supabase credentials
+3. Run migrations in `supabase/migrations/` folder in order
+4. Start dev server: `npm run dev`
+
+**Key Points to Know:**
+- All reads: `src/lib/database-new.js` (direct DB queries)
+- All writes: `src/lib/dual-write.js` (via Edge Function)
+- Main state: `App.jsx` (no external state management)
+- RLS enabled on all tables (user isolation at DB level)
+- Monday-only week start dates (enforced by CHECK constraint)
+
+**Current Focus:** Phase 5 Learning Mode (85% complete) - Goals, Mandala Charts, Weaknesses, Rewards
+
 ## Project Overview
 
 This is a **Habit Tracker for Kids** - a visual habit tracking web application built with React + Vite. The app allows parents and children to collaboratively track daily habits using a color-coded system (green/yellow/red) and store data in Supabase with user authentication.
@@ -18,6 +35,8 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards
 
 **Project Status:** 🎉 **Phase 5 In Progress** (85%) - Learning Mode core features operational. Template system integrated. Mobile UI optimized.
+
+**Monitoring Period:** OLD SCHEMA monitoring ended 2025-10-25. `habit_tracker_old` can be safely dropped if no issues detected.
 
 ## Current Architecture (Phase 3 Complete - 2025-10-18)
 
@@ -514,11 +533,12 @@ All data points must render explicitly with custom dot renderer:
 - `src/hooks/useDashboardData.ts` - Data generation with continuous weeks
 - `src/lib/weekNumber.js` - ISO week number calculation
 
-**Last Updated**: 2025-10-26 (Phase 5 Learning Mode)
+**Last Updated**: 2025-10-26 (Phase 5 Learning Mode - Mobile UI Optimized)
 
 ### Dashboard Data Fetching Pattern (Phase 4)
 
-**Current Data Fetching (Temporary - Direct DB Queries):**
+**Current Data Fetching (Stable - Direct DB Queries):**
+> **Note**: Edge Function temporarily bypassed for stability. All dashboards use direct database queries with React Query v5 for caching and performance.
 ```typescript
 // src/hooks/useDashboardData.ts
 export function useComparisonData(userId: string, period: string) {
@@ -730,10 +750,10 @@ Comprehensive documentation is available in the `docs/` folder:
 - ⚠️ **Edge Function**: Temporarily bypassed, using direct DB queries
 - 📚 **Documentation**: Complete with troubleshooting guides
 
-### Monitoring Period (Until 2025-10-25)
-- OLD SCHEMA (`habit_tracker_old`) is being monitored for 1 week
-- Verify no unexpected changes via `v_old_schema_status` view
-- After 1 week, can safely drop `habit_tracker_old` if desired
+### Monitoring Period (Completed 2025-10-25)
+- ✅ OLD SCHEMA (`habit_tracker_old`) monitoring period completed
+- ✅ No unexpected changes detected via `v_old_schema_status` view
+- 💡 Safe to drop `habit_tracker_old` table if desired (backup exists in `backups/` folder)
 
 ### Future Enhancements
 - Real-time updates with Supabase Realtime
@@ -756,21 +776,42 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ---
 
-**Last Updated**: 2025-10-26
-**Phase**: 🎉 **Phase 5 In Progress (85%)** 🚀
-**Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables
-**Edge Functions**:
-  - `dual-write-habit`: new_only mode ✅
-  - `dashboard-aggregation`: deployed ✅ (temporarily bypassed)
-**Current Architecture**: Direct DB queries for all dashboards
-**Learning Mode Status**:
-  - ✅ Goals, Mandala Charts, Weaknesses, Rewards (CRUD complete)
-  - ✅ Goal-Mandala bidirectional sync
-  - ✅ Reward system integration (first_mandala, perfect_week)
-  - ✅ Mobile UI optimization (40px touch targets)
-  - ⏳ Weekly Planner (Phase 5.2)
-  - ⏳ 81칸 Mandala expansion (Phase 5.2)
-**Next Actions**:
-  1. Implement Weekly Planner integration
-  2. Expand Mandala to 81칸 (3-level hierarchy)
-  3. Add advanced reward triggers
+## 📋 Project Status Summary
+
+**Last Updated**: 2025-10-26 22:27 KST
+**Current Phase**: 🎉 **Phase 5 In Progress (85%)** 🚀
+**Latest Commit**: `8bd2510` - Improve mobile layout with lg breakpoint and simplified header
+
+### Database Architecture
+- **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (10 migrations)
+- **Total Migrations**: 36 SQL files (core + Phase 5)
+- **RLS Status**: ✅ Enabled on all tables
+- **OLD SCHEMA**: Monitoring completed (2025-10-25), safe to drop
+
+### Edge Functions Status
+- **dual-write-habit**: ✅ Operational (new_only mode)
+- **dashboard-aggregation**: ⚠️ Deployed but bypassed (stability)
+- **send-discord-notification**: ✅ Operational
+
+### Current Architecture Pattern
+- **Read Operations**: Direct DB queries via `database-new.js`
+- **Write Operations**: Edge Function via `dual-write.js`
+- **Dashboard Queries**: Direct DB with React Query v5 (5min cache)
+- **State Management**: React Hooks in `App.jsx` (no external store)
+
+### Learning Mode Status (Phase 5)
+- ✅ Goals CRUD with hierarchical structure (6 API functions)
+- ✅ Mandala Charts 9칸/27칸 (8 API functions)
+- ✅ Weaknesses tracking with retry system (5 API functions)
+- ✅ Reward system integration (5 API functions)
+- ✅ Goal-Mandala bidirectional sync (5 API functions)
+- ✅ Mobile UI optimization (40px touch targets, lg breakpoint)
+- ⏳ Weekly Planner integration (Phase 5.2)
+- ⏳ 81칸 Mandala expansion (Phase 5.2)
+
+### Next Priority Actions
+1. **Phase 5.2**: Implement Weekly Planner integration
+2. **Phase 5.2**: Expand Mandala to 81칸 (3-level hierarchy)
+3. **Phase 5.2**: Add advanced reward triggers (streak_21, first_weakness_resolved)
+4. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
+5. **Optional**: Drop `habit_tracker_old` table (backup verified)

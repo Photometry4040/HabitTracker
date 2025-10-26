@@ -57,11 +57,16 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Dashboard aggregation error:', error);
+    console.error('Operation:', operation || 'unknown');
+    console.error('Data:', JSON.stringify(data, null, 2));
+    console.error('Stack:', error.stack);
 
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
+        operation: operation || 'unknown',
+        errorStack: error.stack?.split('\n')[0], // First line of stack trace
         timestamp: new Date().toISOString(),
       }),
       {
@@ -235,12 +240,37 @@ async function getTrendData(supabase: any, childId: string, weeks: number) {
 async function generateInsights(supabase: any, childId: string, weeks: number) {
   console.log(`[Insights] Generating insights for child: ${childId}`);
 
-  // Get habit-level data
+  // Step 1: Get weeks for this child (fix: no JOIN support in Supabase-JS)
+  const { data: weeksData, error: weeksError } = await supabase
+    .from('weeks')
+    .select('id')
+    .eq('child_id', childId)
+    .order('week_start_date', { ascending: false })
+    .limit(weeks);
+
+  if (weeksError) {
+    throw new Error(`Failed to fetch weeks: ${weeksError.message}`);
+  }
+
+  const weekIds = weeksData?.map((w: any) => w.id) || [];
+
+  if (weekIds.length === 0) {
+    console.log('[Insights] No weeks found for child');
+    return {
+      strengths: [],
+      weaknesses: [],
+      overall_trend: 'stable',
+      total_habits: 0,
+      data_points: 0,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Step 2: Get habits for these weeks
   const { data: habitData, error: habitError } = await supabase
-    .from('habits h')
-    .select('id, name')
-    .join('weeks w', 'h.week_id = w.id')
-    .eq('w.child_id', childId);
+    .from('habits')
+    .select('id, name, week_id')
+    .in('week_id', weekIds);
 
   if (habitError) {
     throw new Error(`Failed to fetch habits: ${habitError.message}`);
