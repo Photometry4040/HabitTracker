@@ -220,9 +220,10 @@ Idempotency: idempotency_log table
   - Template system for reusable weekly plans
 
 **Pending (Phase 5.3+):**
+- ⏳ Advanced reward triggers (streak_21, first_weakness_resolved, habit_mastery, weekly_planner_perfect)
 - ⏳ 81칸 Mandala expansion (3-level hierarchy: 9칸 → 27칸 → 81칸)
-- ⏳ Advanced reward triggers (streak_21, first_weakness_resolved, etc.)
-- ⏳ Template manager UI for Weekly Planner (optional enhancement)
+- ⏳ Weekly Planner template manager UI (optional enhancement)
+- ⏳ Edge Function debugging (restore dashboard-aggregation)
 
 ## Development Commands
 
@@ -593,7 +594,7 @@ All data points must render explicitly with custom dot renderer:
 - `src/hooks/useDashboardData.ts` - Data generation with continuous weeks
 - `src/lib/weekNumber.js` - ISO week number calculation
 
-**Last Updated**: 2025-10-26 (Phase 5 Learning Mode - Mobile UI Optimized)
+**Last Updated**: 2025-10-27 (Phase 5.2 Complete - Code Cleanup)
 
 ### Dashboard Data Fetching Pattern (Phase 4)
 
@@ -878,7 +879,7 @@ console.log('childId type check:', typeof childId, childId)
 
 ## 📋 Project Status Summary
 
-**Last Updated**: 2025-10-26 23:45 KST
+**Last Updated**: 2025-10-27 00:15 KST
 **Current Phase**: 🎉 **Phase 5.2 Complete (95%)** 🚀
 **Latest Commit**: `e3b4131` - Integrate Weekly Planner into App.jsx
 
