@@ -211,9 +211,9 @@ BEGIN
     v_week_start := CURRENT_DATE - (21 - i*7);
     v_week_start := v_week_start - EXTRACT(DOW FROM v_week_start)::INTEGER + 1; -- 월요일로 조정
 
-    -- Week 생성
-    INSERT INTO weeks (user_id, child_id, week_start_date, theme)
-    VALUES (v_user_id, v_child_id, v_week_start, 'streak_test')
+    -- Week 생성 (week_end_date는 week_start_date + 6일)
+    INSERT INTO weeks (user_id, child_id, week_start_date, week_end_date, theme)
+    VALUES (v_user_id, v_child_id, v_week_start, v_week_start + 6, 'streak_test')
     RETURNING id INTO v_week_id;
 
     -- Habit 생성 (동일 이름)
@@ -307,8 +307,8 @@ BEGIN
     v_week_start := CURRENT_DATE - (35 - i*7);
     v_week_start := v_week_start - EXTRACT(DOW FROM v_week_start)::INTEGER + 1;
 
-    INSERT INTO weeks (user_id, child_id, week_start_date, theme)
-    VALUES (v_user_id, v_child_id, v_week_start, 'mastery_test')
+    INSERT INTO weeks (user_id, child_id, week_start_date, week_end_date, theme)
+    VALUES (v_user_id, v_child_id, v_week_start, v_week_start + 6, 'mastery_test')
     RETURNING id INTO v_week_id;
 
     INSERT INTO habits (week_id, name, display_order)
