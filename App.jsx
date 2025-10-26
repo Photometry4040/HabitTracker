@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate, AlertCircle, Grid3x3 } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { Dashboard } from '@/components/Dashboard.jsx'
 import DashboardHub from '@/components/Dashboard/DashboardHub'
@@ -13,6 +13,8 @@ import { Auth } from '@/components/Auth.jsx'
 import { TemplateManager } from '@/components/TemplateManager.jsx'
 import { GoalsManager } from '@/components/Goals/GoalsManager.jsx'
 import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
+import { WeaknessLogger } from '@/components/Weaknesses/WeaknessLogger.jsx'
+import { MandalaChart } from '@/components/Mandala/MandalaChart.jsx'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
@@ -47,6 +49,8 @@ function App() {
   const [pendingSaveData, setPendingSaveData] = useState(null)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [showGoals, setShowGoals] = useState(false)
+  const [showWeaknesses, setShowWeaknesses] = useState(false)
+  const [showMandala, setShowMandala] = useState(false)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -614,6 +618,8 @@ function App() {
                         onClick={() => {
                           setShowGoals(!showGoals)
                           setShowDashboard(false)
+                          setShowWeaknesses(false)
+                          setShowMandala(false)
                         }}
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700"
@@ -624,8 +630,38 @@ function App() {
                       </Button>
                       <Button
                         onClick={() => {
+                          setShowWeaknesses(!showWeaknesses)
+                          setShowDashboard(false)
+                          setShowGoals(false)
+                          setShowMandala(false)
+                        }}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        <AlertCircle className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">{showWeaknesses ? '습관 추적' : '약점 관리'}</span>
+                        <span className="sm:hidden">{showWeaknesses ? '추적' : '약점'}</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowMandala(!showMandala)
+                          setShowDashboard(false)
+                          setShowGoals(false)
+                          setShowWeaknesses(false)
+                        }}
+                        size="sm"
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        <Grid3x3 className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">{showMandala ? '습관 추적' : '만다라트'}</span>
+                        <span className="sm:hidden">{showMandala ? '추적' : '만다'}</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
                           setShowDashboard(!showDashboard)
                           setShowGoals(false)
+                          setShowWeaknesses(false)
+                          setShowMandala(false)
                         }}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700"
@@ -714,6 +750,14 @@ function App() {
             ) : showGoals ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
                 <GoalsManager childName={selectedChild} />
+              </div>
+            ) : showWeaknesses ? (
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <WeaknessLogger childName={selectedChild} />
+              </div>
+            ) : showMandala ? (
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <MandalaChart childName={selectedChild} />
               </div>
             ) : showDashboard ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
