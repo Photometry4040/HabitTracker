@@ -37,7 +37,7 @@ user_id: [User UUID]
 name: 아빠
 ```
 
-**→ 이 UUID를 복사해서 아래 [CHILD_UUID] 자리에 붙여넣으세요.**
+**→ 실제 UUID: `55e4812d-605e-4570-aa41-338e17339d64`**
 
 ---
 
@@ -68,7 +68,7 @@ SELECT
   reward_issued,
   occurred_at
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND event_type = 'first_weakness_resolved'
 ORDER BY occurred_at DESC;
 ```
@@ -152,7 +152,7 @@ SELECT
   (SELECT COUNT(*) FROM daily_plan_items WHERE weekly_plan_id = wp.id) as total_tasks,
   (SELECT COUNT(*) FROM daily_plan_items WHERE weekly_plan_id = wp.id AND completed = true) as completed_tasks
 FROM weekly_plans wp
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND title LIKE '%Phase 5.3%'
 ORDER BY created_at DESC;
 ```
@@ -167,7 +167,7 @@ SELECT
   payload->>'completion_rate' as rate,
   occurred_at
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND event_type = 'weekly_planner_perfect'
 ORDER BY occurred_at DESC;
 ```
@@ -198,7 +198,7 @@ ORDER BY occurred_at DESC;
 -- Step 1: 3주치 weeks 생성
 DO $$
 DECLARE
-  v_child_id UUID := '[CHILD_UUID]';
+  v_child_id UUID := '55e4812d-605e-4570-aa41-338e17339d64';
   v_user_id UUID := (SELECT user_id FROM children WHERE id = v_child_id);
   v_week_id UUID;
   v_habit_id UUID;
@@ -254,7 +254,7 @@ SELECT
 FROM habits h
 JOIN habit_records hr ON hr.habit_id = h.id
 JOIN weeks w ON w.id = h.week_id
-WHERE w.child_id = '[CHILD_UUID]'
+WHERE w.child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND h.name = '21일 연속 테스트 습관'
 GROUP BY h.name;
 ```
@@ -269,7 +269,7 @@ SELECT
   payload->>'streak_count' as streak_count,
   occurred_at
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND event_type = 'streak_21'
 ORDER BY occurred_at DESC;
 ```
@@ -294,7 +294,7 @@ ORDER BY occurred_at DESC;
 -- Step 1: 5주치 데이터 생성 (30일 green)
 DO $$
 DECLARE
-  v_child_id UUID := '[CHILD_UUID]';
+  v_child_id UUID := '55e4812d-605e-4570-aa41-338e17339d64';
   v_user_id UUID := (SELECT user_id FROM children WHERE id = v_child_id);
   v_week_id UUID;
   v_habit_id UUID;
@@ -341,7 +341,7 @@ SELECT
 FROM habits h
 JOIN habit_records hr ON hr.habit_id = h.id
 JOIN weeks w ON w.id = h.week_id
-WHERE w.child_id = '[CHILD_UUID]'
+WHERE w.child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND h.name = '30일 마스터리 테스트'
 GROUP BY h.name;
 ```
@@ -356,7 +356,7 @@ SELECT
   payload->>'green_days' as green_days,
   occurred_at
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND event_type = 'habit_mastery'
 ORDER BY occurred_at DESC;
 ```
@@ -384,7 +384,7 @@ SELECT
   rd.icon
 FROM progress_events pe
 LEFT JOIN reward_definitions rd ON rd.trigger_event = pe.event_type
-WHERE pe.child_id = '[CHILD_UUID]'
+WHERE pe.child_id = '55e4812d-605e-4570-aa41-338e17339d64'
 ORDER BY pe.occurred_at DESC;
 ```
 
@@ -422,7 +422,7 @@ SELECT
   COUNT(*) as event_count,
   array_agg(occurred_at ORDER BY occurred_at) as timestamps
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND event_type IN ('first_weakness_resolved', 'weekly_planner_perfect')
 GROUP BY child_id, event_type
 HAVING COUNT(*) > 1;
@@ -450,12 +450,12 @@ import { getHabitRecordsForStreak } from './src/lib/streak-calculator.js'
 
 // habit ID 확인 (SQL Editor)
 SELECT id, name FROM habits WHERE week_id = (
-  SELECT id FROM weeks WHERE child_id = '[CHILD_UUID]'
+  SELECT id FROM weeks WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   ORDER BY week_start_date DESC LIMIT 1
 );
 
-// 콘솔에서 실행
-const records = await getHabitRecordsForStreak('[HABIT_UUID]')
+// 콘솔에서 실행 (위 SQL로 조회한 habit ID 사용)
+const records = await getHabitRecordsForStreak('여기에-실제-habit-UUID-입력')
 console.log('Records:', records.length)
 ```
 
@@ -483,7 +483,7 @@ SELECT
   pe.id
 FROM progress_events pe
 JOIN reward_definitions rd ON rd.trigger_event = pe.event_type
-WHERE pe.child_id = '[CHILD_UUID]'
+WHERE pe.child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND pe.reward_issued = false
   AND rd.is_active = true
 ON CONFLICT (child_id, reward_id, source_event_id) DO NOTHING;
@@ -491,7 +491,7 @@ ON CONFLICT (child_id, reward_id, source_event_id) DO NOTHING;
 -- reward_issued 플래그 업데이트
 UPDATE progress_events
 SET reward_issued = true
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
   AND reward_issued = false;
 ```
 
@@ -511,7 +511,7 @@ SELECT
   payload,
   COUNT(*) as duplicates
 FROM progress_events
-WHERE child_id = '[CHILD_UUID]'
+WHERE child_id = '55e4812d-605e-4570-aa41-338e17339d64'
 GROUP BY event_type, payload
 HAVING COUNT(*) > 1;
 ```
