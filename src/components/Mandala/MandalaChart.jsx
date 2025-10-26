@@ -345,10 +345,9 @@ export function MandalaChart({ childName }) {
               {!showCreateForm && (
                 <Button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 h-10 md:h-9 text-sm md:text-sm px-4"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   새 만다라트
                 </Button>
               )}
@@ -416,12 +415,12 @@ export function MandalaChart({ childName }) {
                 <div className="flex items-center justify-between mb-2">
                   <Label>초기 노드 (선택, 최대 8개)</Label>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={handleAddInitialNode}
                     disabled={initialNodes.length >= 8}
+                    className="h-9 md:h-8 text-sm px-3"
                   >
-                    <Plus className="w-3 h-3 mr-1" />
+                    <Plus className="w-4 h-4 mr-1" />
                     노드 추가
                   </Button>
                 </div>
@@ -434,11 +433,11 @@ export function MandalaChart({ childName }) {
                       className="flex-1"
                     />
                     <Button
-                      size="sm"
                       variant="outline"
                       onClick={() => handleRemoveInitialNode(index)}
+                      className="h-10 md:h-9 w-10 md:w-9 p-0"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5 md:w-4 md:h-4" />
                     </Button>
                   </div>
                 ))}
@@ -448,9 +447,9 @@ export function MandalaChart({ childName }) {
               <div className="flex gap-2">
                 <Button
                   onClick={handleCreateChart}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-indigo-600 hover:bg-indigo-700 h-10 md:h-9 text-sm px-4"
                 >
-                  <Check className="w-4 h-4 mr-1" />
+                  <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   만다라트 생성
                 </Button>
                 <Button
@@ -459,8 +458,9 @@ export function MandalaChart({ childName }) {
                     resetCreateForm()
                   }}
                   variant="outline"
+                  className="h-10 md:h-9 text-sm px-4"
                 >
-                  <X className="w-4 h-4 mr-1" />
+                  <X className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   취소
                 </Button>
               </div>
@@ -502,21 +502,20 @@ export function MandalaChart({ childName }) {
                       )}
                       <div className="flex gap-2">
                         <Button
-                          size="sm"
                           onClick={() => handleViewChart(chart)}
-                          className="bg-indigo-600 hover:bg-indigo-700"
+                          className="bg-indigo-600 hover:bg-indigo-700 h-10 md:h-8 text-sm px-3 md:px-2"
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          보기
+                          <span className="hidden sm:inline">보기</span>
+                          <span className="sm:hidden">열기</span>
                         </Button>
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="text-red-600 hover:bg-red-50"
+                          className="text-red-600 hover:bg-red-50 h-10 md:h-8 text-sm px-3 md:px-2"
                           onClick={() => handleDeleteChart(chart.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
-                          삭제
+                          <span className="hidden sm:inline">삭제</span>
                         </Button>
                       </div>
                     </div>
@@ -578,9 +577,14 @@ export function MandalaChart({ childName }) {
               </div>
               <div className="flex gap-2">
                 {currentChart.nodes?.length < 8 && (
-                  <Button onClick={handleAddNode} size="sm" variant="outline">
-                    <Plus className="w-4 h-4 mr-1" />
-                    노드 추가
+                  <Button
+                    onClick={handleAddNode}
+                    variant="outline"
+                    className="h-10 md:h-9 text-sm px-3"
+                  >
+                    <Plus className="w-5 h-5 md:w-4 md:h-4 mr-1" />
+                    <span className="hidden sm:inline">노드 추가</span>
+                    <span className="sm:hidden">추가</span>
                   </Button>
                 )}
                 <Button
@@ -588,10 +592,10 @@ export function MandalaChart({ childName }) {
                     setViewMode('list')
                     setCurrentChart(null)
                   }}
-                  size="sm"
                   variant="outline"
+                  className="h-10 md:h-9 text-sm px-3"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   목록으로
                 </Button>
               </div>
@@ -692,22 +696,20 @@ export function MandalaChart({ childName }) {
                       />
                       <div className="flex gap-1">
                         <Button
-                          size="sm"
                           onClick={handleSaveNode}
-                          className="flex-1 h-6 text-xs"
+                          className="flex-1 h-8 md:h-7 text-xs"
                         >
-                          <Check className="w-3 h-3" />
+                          <Check className="w-4 h-4 md:w-3 md:h-3" />
                         </Button>
                         <Button
-                          size="sm"
                           variant="outline"
                           onClick={() => {
                             setEditingNode(null)
                             setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
                           }}
-                          className="flex-1 h-6 text-xs"
+                          className="flex-1 h-8 md:h-7 text-xs"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-4 h-4 md:w-3 md:h-3" />
                         </Button>
                       </div>
                     </div>
@@ -746,22 +748,20 @@ export function MandalaChart({ childName }) {
                       </div>
                       <div className="flex gap-1 justify-center mt-1">
                         <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => handleEditNode(node)}
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 md:h-7 md:w-7 p-0"
                           title="수정"
                         >
-                          <Palette className="w-3 h-3" />
+                          <Palette className="w-4 h-4 md:w-3 md:h-3" />
                         </Button>
                         <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => handleDeleteNode(node.position)}
-                          className="h-6 w-6 p-0 text-red-600"
+                          className="h-8 w-8 md:h-7 md:w-7 p-0 text-red-600"
                           title="삭제"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4 md:w-3 md:h-3" />
                         </Button>
                       </div>
                     </>
@@ -842,8 +842,11 @@ export function MandalaChart({ childName }) {
               )}
 
               <div className="flex gap-2">
-                <Button onClick={handleSaveNode} className="bg-purple-600 hover:bg-purple-700">
-                  <Check className="w-4 h-4 mr-1" />
+                <Button
+                  onClick={handleSaveNode}
+                  className="bg-purple-600 hover:bg-purple-700 h-10 md:h-9 text-sm px-4"
+                >
+                  <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   저장
                 </Button>
                 <Button
@@ -852,8 +855,9 @@ export function MandalaChart({ childName }) {
                     setEditingNode(null)
                     setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
                   }}
+                  className="h-10 md:h-9 text-sm px-4"
                 >
-                  <X className="w-4 h-4 mr-1" />
+                  <X className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                   취소
                 </Button>
               </div>
@@ -882,11 +886,11 @@ export function MandalaChart({ childName }) {
                   </Badge>
                 </div>
                 <Button
-                  size="sm"
                   variant="ghost"
                   onClick={() => setSelectedGoal(null)}
+                  className="h-9 w-9 md:h-8 md:w-8 p-0"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5 md:w-4 md:h-4" />
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -915,9 +919,8 @@ export function MandalaChart({ childName }) {
                     />
                     <span className="text-sm text-gray-600">/ {selectedGoal.target_value}</span>
                     <Button
-                      size="sm"
                       onClick={() => handleUpdateGoalProgress(selectedGoal.id, selectedGoal.current_value)}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-blue-600 hover:bg-blue-700 h-10 md:h-9 text-sm px-4"
                     >
                       업데이트
                     </Button>
@@ -970,15 +973,16 @@ export function MandalaChart({ childName }) {
                 {selectedGoal.status !== 'completed' && (
                   <Button
                     onClick={() => handleCompleteGoalFromDetail(selectedGoal.id)}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 h-10 md:h-9 text-sm px-4"
                   >
-                    <Check className="w-4 h-4 mr-1" />
+                    <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
                     목표 완료
                   </Button>
                 )}
                 <Button
                   variant="outline"
                   onClick={() => setSelectedGoal(null)}
+                  className="h-10 md:h-9 text-sm px-4"
                 >
                   닫기
                 </Button>
