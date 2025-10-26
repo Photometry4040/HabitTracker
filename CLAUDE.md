@@ -340,6 +340,69 @@ habit_records (id, habit_id, record_date, status)
 
 ## Important Implementation Notes
 
+### ⚠️ Common Pitfalls & Best Practices
+
+#### 1. UUID vs Name Confusion (CRITICAL)
+**Problem:** Passing child/week **name** instead of **UUID** to components/API
+**Symptoms:** Error: `invalid input syntax for type uuid: "아빠"`
+
+**Rule:** All foreign key references MUST use UUIDs, not names
+- ✅ CORRECT: `childId={currentChildId}` (UUID from database)
+- ❌ WRONG: `childId={selectedChild}` (name string like "아빠")
+- ✅ CORRECT: `weekId={currentWeekId}` (UUID from database)
+- ❌ WRONG: `weekId={weekStartDate}` (date string)
+
+**Solution Pattern:**
+```javascript
+// App.jsx state management
+const [selectedChild, setSelectedChild] = useState('') // Child NAME for display
+const [currentChildId, setCurrentChildId] = useState(null) // Child UUID for DB operations
+const [currentWeekId, setCurrentWeekId] = useState(null) // Week UUID for DB operations
+
+// Load data and store UUIDs
+const data = await loadChildData(childName, weekStartDate)
+if (data) {
+  setCurrentChildId(data.child_id) // Store UUID
+  setCurrentWeekId(data.id) // Store UUID
+}
+
+// Pass UUIDs to components
+<WeeklyPlannerManager
+  childId={currentChildId}  // UUID ✅
+  weekId={currentWeekId}    // UUID ✅
+  childName={childName}     // Name for display only
+/>
+```
+
+**Database Layer Pattern:**
+```javascript
+// database-new.js - ALWAYS return UUIDs
+export const loadWeekDataNew = async (childName, weekStartDate) => {
+  // ... fetch data
+  return {
+    id: week.id,           // Week UUID ✅
+    child_id: child.id,    // Child UUID ✅
+    child_name: childName, // Name for display
+    // ... other fields
+  }
+}
+```
+
+**Checklist Before Creating New Components:**
+- [ ] Does component accept `childId` prop? → Must be UUID, not name
+- [ ] Does component accept `weekId` prop? → Must be UUID, not date
+- [ ] Does component query database by child? → Use UUID in WHERE clause
+- [ ] Does component create/update records? → Use UUIDs for foreign keys
+- [ ] Does state need to store child/week reference? → Store both name (display) and UUID (operations)
+
+#### 2. Data Migration Requirements
+When adding new features that reference existing tables:
+- Check if parent component has UUID in state
+- If not, add UUID state variable
+- Update data loading function to return UUID
+- Store UUID when data loads
+- Pass UUID (not name) to new components
+
 ### Environment Variables
 - **CRITICAL**: Environment variables MUST be set in deployment platform (Netlify dashboard)
 - `netlify.toml` should NOT contain environment variable values (only in dashboard)
@@ -770,6 +833,46 @@ Comprehensive documentation is available in the `docs/` folder:
 - **Issues**: Check GitHub Issues
 - **Migration Plan**: `docs/00-overview/DB_MIGRATION_PLAN_V2.md`
 - **Tech Spec**: `docs/00-overview/TECH_SPEC.md`
+
+---
+
+## 🚨 Critical Rules for Claude Code Agents
+
+### Rule #1: UUID vs Name - ALWAYS Check Data Types
+**Before writing ANY component that queries the database:**
+1. Identify all foreign key references (child_id, week_id, goal_id, etc.)
+2. Verify parent component passes UUIDs, not names
+3. If UUID state missing → Add it before proceeding
+4. Update database read functions to return UUIDs
+5. Test with console.log to confirm UUID format
+
+**Auto-Check Pattern:**
+```javascript
+// When you see this in a new component prop:
+childId={selectedChild}  // 🚨 RED FLAG - is selectedChild a UUID or name?
+
+// Always verify in parent component:
+console.log('childId type check:', typeof childId, childId)
+// Expected: "string" + UUID format "123e4567-e89b-12d3-a456-426614174000"
+// Wrong: "string" + name format "아빠"
+```
+
+### Rule #2: Database Migration Verification
+**After creating migration files:**
+1. NEVER assume migration auto-applies
+2. Check Supabase Dashboard → SQL Editor
+3. Run verification query to confirm tables exist
+4. If missing → Manually execute migration SQL
+5. Verify views created (check `table_type = 'VIEW'`)
+
+### Rule #3: Component Integration Checklist
+**Before declaring "integration complete":**
+- [ ] State variables added for all required UUIDs
+- [ ] Database functions return all necessary UUIDs
+- [ ] Data loading updates all UUID states
+- [ ] Component receives correct prop types (UUID not name)
+- [ ] Browser console shows no type errors
+- [ ] Test with actual user data (not just code review)
 
 ---
 
