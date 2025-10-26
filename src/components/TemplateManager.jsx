@@ -234,12 +234,12 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-lg text-gray-900">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                            <h3 className="font-semibold text-base sm:text-lg text-gray-900 break-words">
                               {template.name}
                             </h3>
                             {template.is_default && (
-                              <Badge variant="default" className="bg-yellow-500">
+                              <Badge variant="default" className="bg-yellow-500 w-fit">
                                 <Star className="w-3 h-3 mr-1" />
                                 기본
                               </Badge>
@@ -259,39 +259,38 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ml-2 sm:ml-4">
                           <Button
                             onClick={() => setPreviewTemplate(template)}
-                            size="sm"
                             variant="outline"
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50 h-10 sm:h-9 text-sm px-3"
                           >
                             <Eye className="w-4 h-4 mr-1" />
-                            미리보기
+                            <span className="hidden sm:inline">미리보기</span>
+                            <span className="sm:hidden">보기</span>
                           </Button>
                           <Button
                             onClick={() => handleApplyTemplate(template)}
-                            size="sm"
                             variant="outline"
-                            className="text-green-600 border-green-600 hover:bg-green-50"
+                            className="text-green-600 border-green-600 hover:bg-green-50 h-10 sm:h-9 text-sm px-3"
                           >
                             <Check className="w-4 h-4 mr-1" />
                             적용
                           </Button>
                           <Button
                             onClick={() => startEdit(template)}
-                            size="sm"
                             variant="outline"
+                            className="h-10 sm:h-9 w-10 sm:w-9 p-0"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-5 h-5 sm:w-4 sm:h-4" />
                           </Button>
                           <Button
                             onClick={() => handleDeleteTemplate(template.id)}
-                            size="sm"
                             variant="destructive"
                             disabled={deleting}
+                            className="h-10 sm:h-9 w-10 sm:w-9 p-0"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                           </Button>
                         </div>
                       </div>
