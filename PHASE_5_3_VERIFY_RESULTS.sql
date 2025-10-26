@@ -122,7 +122,7 @@ SELECT
   '💪 7. first_weakness_resolved 이벤트 상세' as section,
   pe.event_type,
   pe.payload->>'weakness_id' as weakness_id,
-  w.weakness as weakness_description,
+  w.weakness_note as weakness_description,
   w.resolved_at,
   pe.occurred_at
 FROM progress_events pe
