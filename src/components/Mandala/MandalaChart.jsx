@@ -15,7 +15,10 @@ import {
   deleteMandalaChart,
   calculateMandalaCompletion,
   createNodeWithGoal,
-  linkGoalToNode
+  linkGoalToNode,
+  getGoal,
+  updateGoalProgress,
+  completeGoal
 } from '@/lib/learning-mode.js'
 
 const COLORS = [
@@ -52,6 +55,10 @@ export function MandalaChart({ childName }) {
     emoji: null,
     createGoal: true // 목표 자동 생성 여부
   })
+
+  // Goal detail state
+  const [selectedGoal, setSelectedGoal] = useState(null)
+  const [goalDetailLoading, setGoalDetailLoading] = useState(false)
 
   useEffect(() => {
     loadCharts()
@@ -256,6 +263,60 @@ export function MandalaChart({ childName }) {
     } catch (error) {
       console.error('노드 삭제 실패:', error)
       alert('노드 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  // Goal Detail functions
+  const handleViewGoal = async (goalId) => {
+    if (!goalId) return
+
+    try {
+      setGoalDetailLoading(true)
+      const goal = await getGoal(goalId)
+      setSelectedGoal(goal)
+    } catch (error) {
+      console.error('목표 조회 실패:', error)
+      alert('목표 정보를 불러올 수 없습니다.')
+    } finally {
+      setGoalDetailLoading(false)
+    }
+  }
+
+  const handleUpdateGoalProgress = async (goalId, currentValue) => {
+    try {
+      await updateGoalProgress(goalId, currentValue)
+
+      // Reload goal and chart
+      const updatedGoal = await getGoal(goalId)
+      setSelectedGoal(updatedGoal)
+
+      const updatedChart = await getMandalaChart(currentChart.id)
+      setCurrentChart(updatedChart)
+
+      alert('목표 진행률이 업데이트되었습니다!')
+    } catch (error) {
+      console.error('진행률 업데이트 실패:', error)
+      alert('진행률 업데이트 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleCompleteGoalFromDetail = async (goalId) => {
+    if (!confirm('이 목표를 완료 처리하시겠습니까?')) return
+
+    try {
+      await completeGoal(goalId)
+
+      // Reload goal and chart
+      const updatedGoal = await getGoal(goalId)
+      setSelectedGoal(updatedGoal)
+
+      const updatedChart = await getMandalaChart(currentChart.id)
+      setCurrentChart(updatedChart)
+
+      alert('목표가 완료되었습니다! 🎉')
+    } catch (error) {
+      console.error('목표 완료 실패:', error)
+      alert('목표 완료 중 오류가 발생했습니다.')
     }
   }
 
@@ -672,12 +733,15 @@ export function MandalaChart({ childName }) {
                           {node.title || '(제목 없음)'}
                         </p>
 
-                        {/* Goal indicator */}
+                        {/* Goal indicator - clickable */}
                         {node.goal_id && (
-                          <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                          <button
+                            onClick={() => handleViewGoal(node.goal_id)}
+                            className="mt-1 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer hover:underline"
+                          >
                             <span>🎯</span>
-                            <span>목표 연동</span>
-                          </div>
+                            <span>목표 상세보기</span>
+                          </button>
                         )}
                       </div>
                       <div className="flex gap-1 justify-center mt-1">
@@ -791,6 +855,132 @@ export function MandalaChart({ childName }) {
                 >
                   <X className="w-4 h-4 mr-1" />
                   취소
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Goal Detail Panel */}
+        {selectedGoal && (
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span>🎯</span>
+                  <span>{selectedGoal.title}</span>
+                  <Badge
+                    className={
+                      selectedGoal.status === 'completed'
+                        ? 'bg-green-600'
+                        : selectedGoal.status === 'active'
+                        ? 'bg-blue-600'
+                        : 'bg-gray-600'
+                    }
+                  >
+                    {selectedGoal.status === 'completed' ? '완료' : selectedGoal.status === 'active' ? '진행 중' : selectedGoal.status}
+                  </Badge>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedGoal(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Description */}
+              {selectedGoal.description && (
+                <div>
+                  <Label className="text-sm font-semibold">설명</Label>
+                  <p className="text-sm text-gray-700">{selectedGoal.description}</p>
+                </div>
+              )}
+
+              {/* Progress */}
+              {selectedGoal.metric_type !== 'boolean' && selectedGoal.target_value && (
+                <div>
+                  <Label className="text-sm font-semibold">진행률</Label>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Input
+                      type="number"
+                      value={selectedGoal.current_value || 0}
+                      onChange={(e) => {
+                        const newValue = parseFloat(e.target.value) || 0
+                        setSelectedGoal({ ...selectedGoal, current_value: newValue })
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-gray-600">/ {selectedGoal.target_value}</span>
+                    <Button
+                      size="sm"
+                      onClick={() => handleUpdateGoalProgress(selectedGoal.id, selectedGoal.current_value)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      업데이트
+                    </Button>
+                  </div>
+                  <div className="mt-2 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, (selectedGoal.current_value / selectedGoal.target_value) * 100)}%`
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {Math.round((selectedGoal.current_value / selectedGoal.target_value) * 100)}% 완료
+                  </p>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                {selectedGoal.start_date && (
+                  <div>
+                    <Label className="text-sm font-semibold">시작일</Label>
+                    <p className="text-sm">{selectedGoal.start_date}</p>
+                  </div>
+                )}
+                {selectedGoal.due_date && (
+                  <div>
+                    <Label className="text-sm font-semibold">목표일</Label>
+                    <p className="text-sm">{selectedGoal.due_date}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* ICE Score */}
+              {selectedGoal.ice_score > 0 && (
+                <div>
+                  <Label className="text-sm font-semibold">ICE 점수</Label>
+                  <div className="flex gap-4 mt-1">
+                    <span className="text-xs">Impact: {selectedGoal.impact || 0}</span>
+                    <span className="text-xs">Confidence: {selectedGoal.confidence || 0}</span>
+                    <span className="text-xs">Ease: {selectedGoal.ease || 0}</span>
+                    <Badge>{selectedGoal.ice_score}</Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2 border-t">
+                {selectedGoal.status !== 'completed' && (
+                  <Button
+                    onClick={() => handleCompleteGoalFromDetail(selectedGoal.id)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    목표 완료
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedGoal(null)}
+                >
+                  닫기
                 </Button>
               </div>
             </CardContent>
