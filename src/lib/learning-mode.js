@@ -831,6 +831,21 @@ export const createMandalaChart = async (childName, centerGoal, nodes = [], opti
     if (error) throw error
 
     console.log(`✅ Mandala chart created: ${centerGoal}`)
+
+    // Check if this is the first mandala chart for this child
+    const { data: allCharts } = await supabase
+      .from('mandala_charts')
+      .select('id')
+      .eq('child_id', child.id)
+
+    if (allCharts && allCharts.length === 1) {
+      // First mandala chart! Create progress event
+      await createProgressEvent(childName, 'first_mandala', {
+        mandala_chart_id: data.id,
+        center_goal: centerGoal
+      })
+    }
+
     return data
   } catch (error) {
     console.error('만다라트 생성 실패:', error)
@@ -1091,6 +1106,7 @@ export const calculateMandalaCompletion = async (chartId) => {
     }, 0)
 
     const overallRate = Math.round(totalCompletion / chart.nodes.length)
+    const previousRate = chart.overall_completion_rate || 0
 
     // Update chart
     await supabase
@@ -1099,6 +1115,26 @@ export const calculateMandalaCompletion = async (chartId) => {
       .eq('id', chartId)
 
     console.log(`✅ Mandala completion calculated: ${overallRate}%`)
+
+    // If just reached 100% completion, create progress event
+    if (overallRate === 100 && previousRate < 100) {
+      // Get child info
+      const { data: child } = await supabase
+        .from('children')
+        .select('name')
+        .eq('id', chart.child_id)
+        .maybeSingle()
+
+      if (child) {
+        await createProgressEvent(child.name, 'perfect_week', {
+          mandala_chart_id: chartId,
+          center_goal: chart.center_goal,
+          completion_type: 'mandala_completed'
+        })
+        console.log(`🎉 Mandala 100% completed! Reward event created.`)
+      }
+    }
+
     return overallRate
   } catch (error) {
     console.error('만다라트 진행률 계산 실패:', error)
