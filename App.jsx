@@ -15,6 +15,7 @@ import { GoalsManager } from '@/components/Goals/GoalsManager.jsx'
 import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
 import { WeaknessLogger } from '@/components/Weaknesses/WeaknessLogger.jsx'
 import { MandalaChart } from '@/components/Mandala/MandalaChart.jsx'
+import { WeeklyPlannerManager } from '@/components/WeeklyPlanner/WeeklyPlannerManager.jsx'
 import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
@@ -51,6 +52,8 @@ function App() {
   const [showGoals, setShowGoals] = useState(false)
   const [showWeaknesses, setShowWeaknesses] = useState(false)
   const [showMandala, setShowMandala] = useState(false)
+  const [showWeeklyPlanner, setShowWeeklyPlanner] = useState(false)
+  const [currentWeekId, setCurrentWeekId] = useState(null)
 
   // 데이터 초기화 함수
   const resetData = () => {
@@ -160,7 +163,8 @@ function App() {
         setHabits(data.habits || habits)
         setReflection(data.reflection || reflection)
         setReward(data.reward || '')
-        
+        setCurrentWeekId(data.id || null) // Store week ID for Weekly Planner
+
         // 주간 시작일 설정 (새 필드 우선, 기존 데이터에서 추출은 백업)
         if (data.week_start_date) {
           setWeekStartDate(data.week_start_date)
@@ -180,7 +184,8 @@ function App() {
         // 데이터가 없을 경우 초기화 (날짜는 유지)
         console.log('해당 주간에 저장된 데이터가 없습니다. 초기화합니다.')
         resetDataKeepDate()
-        
+        setCurrentWeekId(null) // Reset week ID
+
         // 대시보드 모드가 아닐 때만 알림 표시
         if (!showDashboard) {
           alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
@@ -190,7 +195,8 @@ function App() {
       console.error('데이터 로드 실패:', error)
       // 오류 발생 시에도 초기화 (날짜는 유지)
       resetDataKeepDate()
-      
+      setCurrentWeekId(null) // Reset week ID
+
       // 대시보드 모드가 아닐 때만 알림 표시
       if (!showDashboard) {
         alert('데이터 로드 중 오류가 발생했습니다. 새로운 데이터를 입력해주세요.')
@@ -641,6 +647,7 @@ function App() {
                           setShowDashboard(false)
                           setShowGoals(false)
                           setShowWeaknesses(false)
+                          setShowWeeklyPlanner(false)
                         }}
                         className="bg-indigo-600 hover:bg-indigo-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
@@ -650,10 +657,25 @@ function App() {
                       </Button>
                       <Button
                         onClick={() => {
+                          setShowWeeklyPlanner(!showWeeklyPlanner)
+                          setShowDashboard(false)
+                          setShowGoals(false)
+                          setShowWeaknesses(false)
+                          setShowMandala(false)
+                        }}
+                        className="bg-teal-600 hover:bg-teal-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
+                      >
+                        <Calendar className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="hidden lg:inline">{showWeeklyPlanner ? '습관 추적' : '주간 계획'}</span>
+                        <span className="text-xs lg:hidden">계획</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
                           setShowDashboard(!showDashboard)
                           setShowGoals(false)
                           setShowWeaknesses(false)
                           setShowMandala(false)
+                          setShowWeeklyPlanner(false)
                         }}
                         className="bg-purple-600 hover:bg-purple-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
@@ -747,6 +769,15 @@ function App() {
             ) : showMandala ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
                 <MandalaChart childName={selectedChild} />
+              </div>
+            ) : showWeeklyPlanner ? (
+              <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+                <WeeklyPlannerManager
+                  childId={selectedChild}
+                  childName={childName}
+                  weekId={currentWeekId}
+                  weekStartDate={weekStartDate}
+                />
               </div>
             ) : showDashboard ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
