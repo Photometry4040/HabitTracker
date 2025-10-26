@@ -147,46 +147,61 @@ function App() {
 
       const data = await loadChildData(childName, weekStartDateISO)
       if (data) {
-        // 대시보드 모드가 아닐 때만 현재 입력 중인 데이터 확인
-        if (!showDashboard) {
-          const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
-                                theme || reflection.bestDay || reflection.easiestHabit || 
-                                reflection.nextWeekGoal || reward
-          
-          if (hasCurrentData) {
-            const confirmLoad = window.confirm(
-              '현재 입력 중인 데이터가 있습니다. 기존 데이터로 덮어쓰시겠습니까?'
-            )
-            if (!confirmLoad) return
-          }
-        }
-        
-        // 데이터 로드 (새로고침 없이)
-        setTheme(data.theme || '')
-        setHabits(data.habits || habits)
-        setReflection(data.reflection || reflection)
-        setReward(data.reward || '')
-        setCurrentWeekId(data.id || null) // Store week ID for Weekly Planner
-        setCurrentChildId(data.child_id || null) // Store child UUID for Weekly Planner
+        // Check if week data exists or only child info returned
+        if (data.week_not_found) {
+          // Only child info returned (no week data yet)
+          console.log('해당 주간에 저장된 데이터가 없습니다. child_id는 유지합니다.')
+          resetDataKeepDate()
+          setCurrentWeekId(null) // No week yet
+          setCurrentChildId(data.child_id) // Keep child UUID for creating weekly plan
 
-        // 주간 시작일 설정 (새 필드 우선, 기존 데이터에서 추출은 백업)
-        if (data.week_start_date) {
-          setWeekStartDate(data.week_start_date)
-        } else if (data.week_period) {
-          const match = data.week_period.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
-          if (match) {
-            const year = match[1]
-            const month = match[2].padStart(2, '0')
-            const day = match[3].padStart(2, '0')
-            setWeekStartDate(`${year}-${month}-${day}`)
+          // 대시보드 모드가 아닐 때만 알림 표시
+          if (!showDashboard) {
+            alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
           }
+        } else {
+          // Full week data loaded
+          // 대시보드 모드가 아닐 때만 현재 입력 중인 데이터 확인
+          if (!showDashboard) {
+            const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
+                                  theme || reflection.bestDay || reflection.easiestHabit ||
+                                  reflection.nextWeekGoal || reward
+
+            if (hasCurrentData) {
+              const confirmLoad = window.confirm(
+                '현재 입력 중인 데이터가 있습니다. 기존 데이터로 덮어쓰시겠습니까?'
+              )
+              if (!confirmLoad) return
+            }
+          }
+
+          // 데이터 로드 (새로고침 없이)
+          setTheme(data.theme || '')
+          setHabits(data.habits || habits)
+          setReflection(data.reflection || reflection)
+          setReward(data.reward || '')
+          setCurrentWeekId(data.id || null) // Store week ID for Weekly Planner
+          setCurrentChildId(data.child_id || null) // Store child UUID for Weekly Planner
+
+          // 주간 시작일 설정 (새 필드 우선, 기존 데이터에서 추출은 백업)
+          if (data.week_start_date) {
+            setWeekStartDate(data.week_start_date)
+          } else if (data.week_period) {
+            const match = data.week_period.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
+            if (match) {
+              const year = match[1]
+              const month = match[2].padStart(2, '0')
+              const day = match[3].padStart(2, '0')
+              setWeekStartDate(`${year}-${month}-${day}`)
+            }
+          }
+
+          // 성공 메시지
+          console.log('주간 데이터를 성공적으로 불러왔습니다!')
         }
-        
-        // 성공 메시지
-        console.log('주간 데이터를 성공적으로 불러왔습니다!')
       } else {
         // 데이터가 없을 경우 초기화 (날짜는 유지)
-        console.log('해당 주간에 저장된 데이터가 없습니다. 초기화합니다.')
+        console.log('child를 찾을 수 없습니다. 초기화합니다.')
         resetDataKeepDate()
         setCurrentWeekId(null) // Reset week ID
         setCurrentChildId(null) // Reset child ID

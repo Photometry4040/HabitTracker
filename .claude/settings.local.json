@@ -39,7 +39,8 @@
       "Bash(git push:*)",
       "Bash(git log:*)",
       "Bash(supabase projects:*)",
-      "Bash(supabase functions deploy:*)"
+      "Bash(supabase functions deploy:*)",
+      "Bash(env)"
     ],
     "deny": [],
     "ask": []

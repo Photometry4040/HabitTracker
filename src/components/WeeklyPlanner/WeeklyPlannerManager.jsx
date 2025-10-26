@@ -39,6 +39,12 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
   const loadWeeklyPlan = async () => {
     try {
       setLoading(true)
+      // Only load if both childId and weekId are available
+      if (!childId || !weekId) {
+        console.log('[Weekly Planner] childId or weekId not available yet')
+        setCurrentPlan(null)
+        return
+      }
       const plan = await getWeeklyPlan(childId, weekId)
       setCurrentPlan(plan)
     } catch (error) {
@@ -50,6 +56,12 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
 
   const loadRecentPlans = async () => {
     try {
+      // Only load if childId is available
+      if (!childId) {
+        console.log('[Weekly Planner] childId not available yet')
+        setRecentPlans([])
+        return
+      }
       const plans = await getChildWeeklyPlans(childId, 10)
       setRecentPlans(plans)
     } catch (error) {

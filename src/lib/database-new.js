@@ -76,7 +76,12 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
 
     if (!week) {
       console.log('Week not found in new schema:', adjustedDateStr)
-      return null
+      // Return child info even if week doesn't exist (for Weekly Planner creation)
+      return {
+        child_id: child.id,
+        child_name: childName,
+        week_not_found: true // Flag to indicate no week data
+      }
     }
 
     // Step 3: Load habits for this week
