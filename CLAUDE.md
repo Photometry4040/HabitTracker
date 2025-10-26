@@ -761,9 +761,23 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ## Known Issues & Considerations
 
-### Recent Fixes (2025-10-19)
+### Recent Fixes
 
-#### ✅ Fixed: Supabase `.single()` 406 Error
+#### ✅ Fixed: Weekly Planner UUID null Error (2025-10-27)
+- **Issue**: WeeklyPlannerManager crashed with `invalid input syntax for type uuid: "null"`
+- **Root Cause**:
+  1. `database-new.js` returned null when week data didn't exist → lost child_id
+  2. App.jsx reset currentChildId to null when no data
+  3. WeeklyPlannerManager queried with null UUIDs
+- **Solution**:
+  1. Modified `loadWeekDataNew()` to return child info with `week_not_found` flag
+  2. App.jsx handles flag and preserves currentChildId
+  3. WeeklyPlannerManager checks for null before querying
+- **Impact**: Weekly Planner now works even without existing week data, can create new plans
+- **Files Modified**: `database-new.js`, `App.jsx`, `WeeklyPlannerManager.jsx`
+- **Commit**: `3f240ac`
+
+#### ✅ Fixed: Supabase `.single()` 406 Error (2025-10-19)
 - **Issue**: All Supabase queries using `.single()` returned `406 (Not Acceptable)` errors
 - **Root Cause**: `.single()` requires `Accept: application/vnd.pgrst.object+json` header, which may not be allowed in some Supabase project configurations
 - **Solution**: Replaced all `.single()` with `.maybeSingle()` across the codebase (16 instances)
@@ -879,9 +893,9 @@ console.log('childId type check:', typeof childId, childId)
 
 ## 📋 Project Status Summary
 
-**Last Updated**: 2025-10-27 00:15 KST
-**Current Phase**: 🎉 **Phase 5.2 Complete (95%)** 🚀
-**Latest Commit**: `e3b4131` - Integrate Weekly Planner into App.jsx
+**Last Updated**: 2025-10-27 01:30 KST
+**Current Phase**: 🎉 **Phase 5.3 Complete (100%)** 🚀
+**Latest Commit**: `3f240ac` - Fix Weekly Planner UUID null error
 
 ### Database Architecture
 - **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (11 migrations)
@@ -915,9 +929,17 @@ console.log('childId type check:', typeof childId, childId)
 - ✅ Weekly Planner components (3 components, 966 lines)
 - ✅ App.jsx integration (currentWeekId state, button, rendering)
 
+**Phase 5.3 (Completed ✅ - 2025-10-27):**
+- ✅ Advanced reward triggers (4 new types: streak_21, habit_mastery, weekly_planner_perfect, first_weakness_resolved)
+- ✅ Database migration (20251027_012_phase5_advanced_reward_triggers.sql)
+- ✅ API layer (4 new functions in learning-mode.js)
+- ✅ Streak calculator (cross-week habit tracking with 60-day lookback)
+- ✅ UI integration (WeaknessLogger, WeeklyPlanEditor, App.jsx)
+- ✅ UUID null error fix (database-new.js returns child info even without week data)
+- ✅ Comprehensive test guide (PHASE_5_3_TEST_GUIDE.md)
+
 ### Next Priority Actions
-1. **Phase 5.3**: Expand Mandala to 81칸 (3-level hierarchy: 9→27→81)
-2. **Phase 5.3**: Add advanced reward triggers (streak_21, first_weakness_resolved)
-3. **Optional**: Weekly Planner template manager UI
-4. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
-5. **Optional**: Drop `habit_tracker_old` table (backup verified)
+1. **Future**: Expand Mandala to 81칸 (3-level hierarchy: 9→27→81)
+2. **Optional**: Weekly Planner template manager UI
+3. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
+4. **Optional**: Drop `habit_tracker_old` table (backup verified)
