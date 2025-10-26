@@ -590,10 +590,7 @@ function App() {
                   </Button>
                   <CardTitle className="text-2xl md:text-3xl font-bold text-purple-800 flex items-center justify-center gap-2 text-center">
                     <Star className="text-yellow-500 hidden sm:block" />
-                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
-                      <span>주간 습관 성장 챌린지</span>
-                      <span className="text-sm md:text-base text-purple-600 font-medium">(주간 목표 달성)</span>
-                    </div>
+                    <span>주간 습관 성장 챌린지</span>
                     <Star className="text-yellow-500 hidden sm:block" />
                   </CardTitle>
                   <div className="flex flex-col sm:flex-row items-center gap-2 no-print">
@@ -604,13 +601,13 @@ function App() {
                         <span className="sm:hidden">저장중</span>
                       </div>
                     )}
-                    <div className="grid grid-cols-3 md:flex gap-2">
+                    <div className="grid grid-cols-3 lg:flex gap-2">
                       <Button
                         onClick={() => setShowTemplateManager(!showTemplateManager)}
-                        className="bg-indigo-600 hover:bg-indigo-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-indigo-600 hover:bg-indigo-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
-                        <BookTemplate className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="text-xs md:text-sm">템플릿</span>
+                        <BookTemplate className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="text-xs lg:text-sm">템플릿</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -619,11 +616,11 @@ function App() {
                           setShowWeaknesses(false)
                           setShowMandala(false)
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-blue-600 hover:bg-blue-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
-                        <Target className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="hidden md:inline">{showGoals ? '습관 추적' : '목표 관리'}</span>
-                        <span className="text-xs md:hidden">{showGoals ? '추적' : '목표'}</span>
+                        <Target className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="hidden lg:inline">{showGoals ? '습관 추적' : '목표 관리'}</span>
+                        <span className="text-xs lg:hidden">{showGoals ? '추적' : '목표'}</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -632,11 +629,11 @@ function App() {
                           setShowGoals(false)
                           setShowMandala(false)
                         }}
-                        className="bg-orange-600 hover:bg-orange-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-orange-600 hover:bg-orange-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
-                        <AlertCircle className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="hidden md:inline">{showWeaknesses ? '습관 추적' : '약점 관리'}</span>
-                        <span className="text-xs md:hidden">{showWeaknesses ? '추적' : '약점'}</span>
+                        <AlertCircle className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="hidden lg:inline">{showWeaknesses ? '습관 추적' : '약점 관리'}</span>
+                        <span className="text-xs lg:hidden">{showWeaknesses ? '추적' : '약점'}</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -645,11 +642,11 @@ function App() {
                           setShowGoals(false)
                           setShowWeaknesses(false)
                         }}
-                        className="bg-indigo-600 hover:bg-indigo-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-indigo-600 hover:bg-indigo-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
-                        <LayoutGrid className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="hidden md:inline">{showMandala ? '습관 추적' : '만다라트'}</span>
-                        <span className="text-xs md:hidden">만다라</span>
+                        <LayoutGrid className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="hidden lg:inline">{showMandala ? '습관 추적' : '만다라트'}</span>
+                        <span className="text-xs lg:hidden">만다라</span>
                       </Button>
                       <Button
                         onClick={() => {
@@ -658,19 +655,19 @@ function App() {
                           setShowWeaknesses(false)
                           setShowMandala(false)
                         }}
-                        className="bg-purple-600 hover:bg-purple-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-purple-600 hover:bg-purple-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                       >
-                        <BarChart3 className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="hidden md:inline">{showDashboard ? '습관 추적' : '대시보드'}</span>
-                        <span className="text-xs md:hidden">보드</span>
+                        <BarChart3 className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="hidden lg:inline">{showDashboard ? '습관 추적' : '대시보드'}</span>
+                        <span className="text-xs lg:hidden">보드</span>
                       </Button>
                       <Button
                         onClick={() => saveData(false)}
-                        className="bg-green-600 hover:bg-green-700 h-14 md:h-9 text-sm px-2 md:px-3 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1"
+                        className="bg-green-600 hover:bg-green-700 h-14 lg:h-9 text-sm px-2 lg:px-3 flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1"
                         disabled={saving}
                       >
-                        <Save className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />
-                        <span className="text-xs md:text-sm">저장</span>
+                        <Save className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />
+                        <span className="text-xs lg:text-sm">저장</span>
                       </Button>
                     </div>
                   </div>

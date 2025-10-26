@@ -234,8 +234,8 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                            <h3 className="font-semibold text-base sm:text-lg text-gray-900 break-words">
+                          <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-2 mb-1">
+                            <h3 className="font-semibold text-base lg:text-lg text-gray-900 break-words">
                               {template.name}
                             </h3>
                             {template.is_default && (
@@ -259,20 +259,20 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                             </span>
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ml-2 sm:ml-4">
+                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 ml-2 lg:ml-4">
                           <Button
                             onClick={() => setPreviewTemplate(template)}
                             variant="outline"
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50 h-10 sm:h-9 text-sm px-3"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50 h-10 lg:h-9 text-sm px-3"
                           >
                             <Eye className="w-4 h-4 mr-1" />
-                            <span className="hidden sm:inline">미리보기</span>
-                            <span className="sm:hidden">보기</span>
+                            <span className="hidden lg:inline">미리보기</span>
+                            <span className="lg:hidden">보기</span>
                           </Button>
                           <Button
                             onClick={() => handleApplyTemplate(template)}
                             variant="outline"
-                            className="text-green-600 border-green-600 hover:bg-green-50 h-10 sm:h-9 text-sm px-3"
+                            className="text-green-600 border-green-600 hover:bg-green-50 h-10 lg:h-9 text-sm px-3"
                           >
                             <Check className="w-4 h-4 mr-1" />
                             적용
@@ -280,17 +280,17 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                           <Button
                             onClick={() => startEdit(template)}
                             variant="outline"
-                            className="h-10 sm:h-9 w-10 sm:w-9 p-0"
+                            className="h-10 lg:h-9 w-10 lg:w-9 p-0"
                           >
-                            <Edit className="w-5 h-5 sm:w-4 sm:h-4" />
+                            <Edit className="w-5 h-5 lg:w-4 lg:h-4" />
                           </Button>
                           <Button
                             onClick={() => handleDeleteTemplate(template.id)}
                             variant="destructive"
                             disabled={deleting}
-                            className="h-10 sm:h-9 w-10 sm:w-9 p-0"
+                            className="h-10 lg:h-9 w-10 lg:w-9 p-0"
                           >
-                            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                            <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
                           </Button>
                         </div>
                       </div>

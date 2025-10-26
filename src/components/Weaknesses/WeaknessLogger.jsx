@@ -510,7 +510,7 @@ export function WeaknessLogger({ childName }) {
           <CardContent className="pt-6 text-center text-gray-500">
             <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>아직 기록된 약점이 없습니다.</p>
-            <p className="text-sm">위의 "새 약점 기록" 버튼을 클릭하여 첫 기록을 남겨보세요!</p>
+            <p className="text-sm">위의 &ldquo;새 약점 기록&rdquo; 버튼을 클릭하여 첫 기록을 남겨보세요!</p>
           </CardContent>
         </Card>
       )}
