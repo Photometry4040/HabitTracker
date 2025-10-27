@@ -528,6 +528,58 @@ function App() {
     }
   }
 
+  // 요일별 일괄 체크 기능
+  const bulkUpdateDay = async (dayIndex, color) => {
+    if (!selectedChild || !weekStartDate) {
+      alert('주간 기간을 먼저 설정해주세요')
+      return
+    }
+
+    if (!confirm(`${days[dayIndex]}의 모든 습관을 ${color === 'green' ? '초록색' : color === 'yellow' ? '노란색' : color === 'red' ? '빨간색' : '지우기'}으로 변경하시겠습니까?`)) {
+      return
+    }
+
+    // Optimistic UI update
+    setHabits(prev => prev.map(habit => ({
+      ...habit,
+      times: habit.times.map((time, index) =>
+        index === dayIndex ? color : time
+      )
+    })))
+
+    // 각 습관에 대해 Edge Function 호출
+    const updatePromises = habits.map(async (habit) => {
+      try {
+        if (color === '') {
+          console.log(`Habit record cleared (UI only): ${habit.name} day ${dayIndex}`)
+          return
+        }
+
+        await updateHabitRecordDualWrite(
+          selectedChild,
+          weekStartDate,
+          habit.name,
+          dayIndex,
+          color
+        )
+
+        console.log(`Bulk update: ${habit.name} day ${dayIndex} = ${color}`)
+      } catch (error) {
+        console.error(`Failed to bulk update ${habit.name}:`, error)
+        throw error
+      }
+    })
+
+    try {
+      await Promise.all(updatePromises)
+      alert(`${days[dayIndex]}의 모든 습관이 업데이트되었습니다!`)
+    } catch (error) {
+      alert('일부 습관 업데이트에 실패했습니다. 다시 시도해주세요.')
+      // Reload data to sync
+      loadWeekData(selectedChild, weekPeriod)
+    }
+  }
+
   const addHabit = () => {
     const newHabit = {
       id: Date.now(),
@@ -901,6 +953,32 @@ function App() {
                     </div>
                   </CardHeader>
                   <CardContent>
+                    {/* 모바일용 일괄 체크 */}
+                    <div className="block md:hidden mb-4 p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-semibold text-purple-800 mb-2">📅 요일별 일괄 체크</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {days.map((day, dayIndex) => (
+                          <select
+                            key={day}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                bulkUpdateDay(dayIndex, e.target.value)
+                                e.target.value = '' // Reset dropdown
+                              }
+                            }}
+                            className="text-xs px-2 py-1.5 rounded border border-purple-300 bg-white"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>{day}</option>
+                            <option value="green">✅ 전체 초록</option>
+                            <option value="yellow">⚠️ 전체 노랑</option>
+                            <option value="red">❌ 전체 빨강</option>
+                            <option value="">🗑️ 전체 지우기</option>
+                          </select>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* 모바일용 카드 레이아웃 */}
                     <div className="block md:hidden space-y-4">
                       {habits.map((habit) => (
@@ -957,8 +1035,28 @@ function App() {
                         <thead>
                           <tr>
                             <th className="border p-3 bg-purple-100 text-left habit-name-cell">시간대 / 습관</th>
-                            {days.map((day) => (
-                              <th key={day} className="border p-3 bg-purple-100 text-center day-column">{day}</th>
+                            {days.map((day, dayIndex) => (
+                              <th key={day} className="border p-2 bg-purple-100 text-center day-column">
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="font-semibold">{day}</span>
+                                  <select
+                                    onChange={(e) => {
+                                      if (e.target.value) {
+                                        bulkUpdateDay(dayIndex, e.target.value)
+                                        e.target.value = '' // Reset dropdown
+                                      }
+                                    }}
+                                    className="text-xs px-1 py-0.5 rounded border border-purple-300 bg-white hover:bg-purple-50 cursor-pointer"
+                                    defaultValue=""
+                                  >
+                                    <option value="" disabled>일괄 체크</option>
+                                    <option value="green">✅ 전체 초록</option>
+                                    <option value="yellow">⚠️ 전체 노랑</option>
+                                    <option value="red">❌ 전체 빨강</option>
+                                    <option value="">🗑️ 전체 지우기</option>
+                                  </select>
+                                </div>
+                              </th>
                             ))}
                             <th className="border p-3 bg-purple-100 text-center weekly-total-column">주간 합계</th>
                             <th className="border p-3 bg-purple-100 text-center delete-column">삭제</th>
