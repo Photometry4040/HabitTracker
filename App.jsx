@@ -417,12 +417,12 @@ function App() {
       }
 
       const habitData = data.habits.find(h => h.name === habitName)
-      if (!habitData || !habitData.id) {
+      if (!habitData || !habitData.db_id) {
         console.log(`[Streak Check] Habit "${habitName}" not found in database`)
         return
       }
 
-      const habitId = habitData.id // This is the database UUID
+      const habitId = habitData.db_id // This is the database UUID (not UI id)
 
       // Fetch habit records for streak calculation
       const records = await getHabitRecordsForStreak(habitId)

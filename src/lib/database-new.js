@@ -119,6 +119,7 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
 
         return {
           id: habit.display_order,
+          db_id: habit.id, // Store database UUID for streak calculations
           name: habit.name,
           times
         }
