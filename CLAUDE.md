@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - RLS enabled on all tables (user isolation at DB level)
 - Monday-only week start dates (enforced by CHECK constraint)
 
-**Current Focus:** Phase 5.4 - 81칸 Mandala 확장 (진행 중) - 데이터베이스 스키마 완료, 마이그레이션 대기 중!
+**Current Focus:** 🎉 **Phase 5.4 Complete!** 81칸 Mandala expansion fully operational.
 
 ## Project Overview
 
@@ -34,7 +34,7 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - Achievement badge system
 - **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards, Weekly Planner
 
-**Project Status:** 🔄 **Phase 5.4 In Progress** (99%) - 81칸 Mandala expansion. Database schema ready, migration pending. Advanced Reward Triggers, Weekly Planner, Goals, Weaknesses operational.
+**Project Status:** 🎉 **Phase 5.4 Complete** (100%) - 81칸 Mandala expansion fully operational! Goals, Mandala (9/27/81칸), Weaknesses, Weekly Planner all working.
 
 **Monitoring Period:** OLD SCHEMA monitoring ended 2025-10-25. `habit_tracker_old` can be safely dropped if no issues detected.
 
@@ -234,14 +234,19 @@ Idempotency: idempotency_log table
   - `checkWeeklyPlannerPerfect()` - Integrated in WeeklyPlanEditor.jsx:64
 - ✅ All triggers fully tested and operational
 
-**Phase 5.4: 81칸 Mandala Expansion (In Progress 🔄 - 2025-10-29):**
+**Phase 5.4: 81칸 Mandala Expansion (Complete ✅ - 2025-10-29):**
 - ✅ Database schema: mandala_nodes table (normalized, 3-level hierarchy)
-- ✅ Migration scripts: JSONB → mandala_nodes table migration
+- ✅ Migration scripts: JSONB → mandala_nodes table migration (FIXED: position → node_position)
 - ✅ Helper functions: get_node_hierarchy, get_child_nodes, get_all_descendants
-- ✅ API layer: mandala-nodes.js (29 functions for node CRUD, hierarchy, completion)
-- ⏳ **MIGRATION REQUIRED**: Run 2 SQL files in Supabase (see `docs/02-active/PHASE_5.4_MIGRATION_GUIDE.md`)
-- ⏳ UI components: Update MandalaChart.jsx for 81칸 visualization
-- ⏳ Expand button: Add "확장" button for level 1/2 nodes
+- ✅ API layer: mandala-expansion.js (9 functions: expand, hierarchy, CRUD, canExpand, collapse)
+- ✅ Data migration: Existing mandala charts migrated to mandala_nodes table
+- ✅ UI components: MandalaChart.jsx fully updated for 3-level hierarchy
+- ✅ Expand button: "확장" (Maximize2) creates 8 child nodes for level 1/2
+- ✅ View children: "자식 보기" (Eye) navigates to child level
+- ✅ Collapse: "축소" (Minimize2) hides children without deleting
+- ✅ Level badges: Level 1 (9칸), Level 2 (27칸), Level 3 (81칸)
+- ✅ Breadcrumb navigation: Shows current position in hierarchy
+- ✅ Instructions card: Complete usage guide for all UI controls
 
 **Future Enhancements:**
 - ⏳ Weekly Planner template manager UI (optional)
