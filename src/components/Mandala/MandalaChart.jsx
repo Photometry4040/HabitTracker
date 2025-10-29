@@ -698,7 +698,7 @@ export function MandalaChart({ childName }) {
         )}
 
         {/* 3x3 Grid */}
-        <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
+        <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto">
           {grid.map((cell, index) => {
             if (!cell) {
               // Empty cell
@@ -707,7 +707,7 @@ export function MandalaChart({ childName }) {
                   key={index}
                   className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
                 >
-                  <span className="text-gray-400 text-xs">빈 칸</span>
+                  <span className="text-gray-400 text-sm">빈 칸</span>
                 </div>
               )
             }
@@ -723,20 +723,20 @@ export function MandalaChart({ childName }) {
               return (
                 <div
                   key={index}
-                  className="aspect-square border-4 rounded-lg flex flex-col items-center justify-center p-3"
+                  className="aspect-square border-4 rounded-lg flex flex-col items-center justify-center p-4"
                   style={{
                     borderColor: centerContent.color || '#3B82F6',
                     backgroundColor: `${centerContent.color || '#3B82F6'}10`
                   }}
                 >
                   <div className="text-center">
-                    <div className="text-xs font-semibold mb-1" style={{ color: centerContent.color }}>
+                    <div className="text-sm font-semibold mb-2" style={{ color: centerContent.color }}>
                       {selectedParentNode ? `Level ${currentLevel - 1}` : '중심 목표'}
                     </div>
                     {centerContent.emoji && (
-                      <div className="text-3xl mb-2">{centerContent.emoji}</div>
+                      <div className="text-4xl md:text-5xl mb-3">{centerContent.emoji}</div>
                     )}
-                    <div className="font-bold text-sm sm:text-base break-words">
+                    <div className="font-bold text-base md:text-lg break-words">
                       {centerContent.title}
                     </div>
                   </div>
@@ -751,7 +751,7 @@ export function MandalaChart({ childName }) {
               return (
                 <div
                   key={index}
-                  className="aspect-square border-2 rounded-lg flex flex-col p-2"
+                  className="aspect-square border-2 rounded-lg flex flex-col p-3"
                   style={{
                     borderColor: node.color || '#3B82F6',
                     backgroundColor: `${node.color || '#3B82F6'}10`
@@ -762,16 +762,16 @@ export function MandalaChart({ childName }) {
                       <Input
                         value={nodeFormData.title}
                         onChange={(e) => setNodeFormData({ ...nodeFormData, title: e.target.value })}
-                        className="text-xs mb-1"
+                        className="text-sm mb-2"
                         placeholder="제목"
                         autoFocus
                       />
                       <div className="flex gap-1">
                         <Button
                           onClick={handleSaveNode}
-                          className="flex-1 h-8 md:h-7 text-xs"
+                          className="flex-1 h-9 text-sm"
                         >
-                          <Check className="w-4 h-4 md:w-3 md:h-3" />
+                          <Check className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -779,9 +779,9 @@ export function MandalaChart({ childName }) {
                             setEditingNode(null)
                             setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
                           }}
-                          className="flex-1 h-8 md:h-7 text-xs"
+                          className="flex-1 h-9 text-sm"
                         >
-                          <X className="w-4 h-4 md:w-3 md:h-3" />
+                          <X className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -791,20 +791,20 @@ export function MandalaChart({ childName }) {
                         {/* Badges */}
                         <div className="absolute top-0 right-0 flex gap-1 flex-col items-end">
                           {node.completed && (
-                            <Badge className="h-4 text-xs bg-green-500">✓</Badge>
+                            <Badge className="h-5 text-xs bg-green-500">✓</Badge>
                           )}
                           {node.completion_rate > 0 && (
-                            <Badge variant="outline" className="h-4 text-xs">
+                            <Badge variant="outline" className="h-5 text-xs">
                               {node.completion_rate}%
                             </Badge>
                           )}
                           {nodeHasChildren(node.id) && (
-                            <Badge className="h-4 text-xs bg-blue-500">확장됨</Badge>
+                            <Badge className="h-5 text-xs bg-blue-500">확장됨</Badge>
                           )}
                         </div>
 
-                        {node.emoji && <div className="text-2xl mb-1">{node.emoji}</div>}
-                        <p className="text-xs sm:text-sm font-medium break-words">
+                        {node.emoji && <div className="text-3xl md:text-4xl mb-2">{node.emoji}</div>}
+                        <p className="text-sm md:text-base font-medium break-words">
                           {node.title || '(제목 없음)'}
                         </p>
 
@@ -821,14 +821,14 @@ export function MandalaChart({ childName }) {
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex gap-1 justify-center mt-1 flex-wrap">
+                      <div className="flex gap-1 justify-center mt-2 flex-wrap">
                         <Button
                           variant="ghost"
                           onClick={() => handleEditNode(node)}
-                          className="h-8 w-8 md:h-7 md:w-7 p-0"
+                          className="h-9 w-9 p-0"
                           title="수정"
                         >
-                          <Palette className="w-4 h-4 md:w-3 md:h-3" />
+                          <Palette className="w-4 h-4" />
                         </Button>
 
                         {/* Expand button - only for level 1 and 2 */}
@@ -836,10 +836,10 @@ export function MandalaChart({ childName }) {
                           <Button
                             variant="ghost"
                             onClick={() => handleExpandNode(node)}
-                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-blue-600"
+                            className="h-9 w-9 p-0 text-blue-600"
                             title="확장"
                           >
-                            <Maximize2 className="w-4 h-4 md:w-3 md:h-3" />
+                            <Maximize2 className="w-4 h-4" />
                           </Button>
                         )}
 
@@ -848,10 +848,10 @@ export function MandalaChart({ childName }) {
                           <Button
                             variant="ghost"
                             onClick={() => handleViewChildNodes(node)}
-                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-green-600"
+                            className="h-9 w-9 p-0 text-green-600"
                             title="자식 보기"
                           >
-                            <Eye className="w-4 h-4 md:w-3 md:h-3" />
+                            <Eye className="w-4 h-4" />
                           </Button>
                         )}
 
@@ -860,20 +860,20 @@ export function MandalaChart({ childName }) {
                           <Button
                             variant="ghost"
                             onClick={() => handleCollapseNode(node)}
-                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-orange-600"
+                            className="h-9 w-9 p-0 text-orange-600"
                             title="축소"
                           >
-                            <Minimize2 className="w-4 h-4 md:w-3 md:h-3" />
+                            <Minimize2 className="w-4 h-4" />
                           </Button>
                         )}
 
                         <Button
                           variant="ghost"
                           onClick={() => handleDeleteNode(node.id)}
-                          className="h-8 w-8 md:h-7 md:w-7 p-0 text-red-600"
+                          className="h-9 w-9 p-0 text-red-600"
                           title="삭제"
                         >
-                          <Trash2 className="w-4 h-4 md:w-3 md:h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </>
