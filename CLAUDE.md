@@ -951,9 +951,9 @@ console.log('childId type check:', typeof childId, childId)
 
 ### Database Architecture
 - **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (11 migrations)
-- **Total Migrations**: 37 SQL files (core + Phase 5.1 + Phase 5.2)
+- **Total Migrations**: 38 SQL files (core + Phase 5 + cleanup)
 - **RLS Status**: ✅ Enabled on all tables
-- **OLD SCHEMA**: Monitoring completed (2025-10-25), safe to drop
+- **OLD SCHEMA**: ✅ Dropped (2025-10-30) - Backup preserved
 
 ### Edge Functions Status
 - **dual-write-habit**: ✅ Operational (new_only mode)
@@ -1004,6 +1004,10 @@ console.log('childId type check:', typeof childId, childId)
 - ✅ Usage count tracking and sorting
 - ✅ Apply templates to weekly plans
 
+**Cleanup (Completed ✅ - 2025-10-30):**
+- ✅ OLD SCHEMA (habit_tracker_old) dropped after 12-day monitoring
+- ✅ Migration: 20251030_001_drop_old_schema.sql
+- ✅ Backup preserved: backups/habit_tracker_backup_2025-10-18T09-40-06-279Z.json (71KB)
+
 ### Next Priority Actions
-1. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
-2. **Optional**: Drop `habit_tracker_old` table (backup verified)
+1. **Optional**: Debug and restore `dashboard-aggregation` Edge Function (currently bypassed, stable)
