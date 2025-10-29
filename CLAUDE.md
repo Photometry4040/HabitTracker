@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - RLS enabled on all tables (user isolation at DB level)
 - Monday-only week start dates (enforced by CHECK constraint)
 
-**Current Focus:** Phase 5 Learning Mode (95% complete) - Phase 5.2 Weekly Planner completed!
+**Current Focus:** Phase 5 Learning Mode (98% complete) - Phase 5.3 Advanced Reward Triggers completed!
 
 ## Project Overview
 
@@ -34,7 +34,7 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - Achievement badge system
 - **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards, Weekly Planner
 
-**Project Status:** 🎉 **Phase 5.2 Complete** (95%) - Weekly Planner fully integrated. Goals, Mandala, Weaknesses operational. Template system ready.
+**Project Status:** 🎉 **Phase 5.3 Complete** (98%) - Advanced Reward Triggers fully integrated. Weekly Planner, Goals, Mandala, Weaknesses operational.
 
 **Monitoring Period:** OLD SCHEMA monitoring ended 2025-10-25. `habit_tracker_old` can be safely dropped if no issues detected.
 
@@ -189,7 +189,7 @@ Idempotency: idempotency_log table
 - ⚠️ **Temporary**: Edge Function bypassed due to 500 errors (see `EDGE_FUNCTION_500_FIX.md`)
 - 📚 **Current Status**: All dashboards operational, using direct database queries for stability
 
-### Phase 5: Learning Mode (95% Complete - 2025-10-26)
+### Phase 5: Learning Mode (98% Complete - 2025-10-29)
 **Phase 5.1: Goals, Mandala, Weaknesses (Completed ✅):**
 - ✅ Database schema: 10 migrations (goals, mandala_charts, weaknesses, rewards system)
 - ✅ Frontend components: GoalsManager, MandalaChart, WeaknessLogger
@@ -219,8 +219,21 @@ Idempotency: idempotency_log table
   - Progress tracking (total tasks, completed, completion rate, time spent)
   - Template system for reusable weekly plans
 
-**Pending (Phase 5.3+):**
-- ⏳ Advanced reward triggers (streak_21, first_weakness_resolved, habit_mastery, weekly_planner_perfect)
+**Phase 5.3: Advanced Reward Triggers (Completed ✅ - 2025-10-29):**
+- ✅ Database migration: 20251027_012_phase5_advanced_reward_triggers.sql
+- ✅ 4 new reward triggers (13 total):
+  - `streak_21` - 21-day habit streak (habit formation milestone)
+  - `first_weakness_resolved` - First weakness overcome
+  - `habit_mastery` - 30 consecutive green days (mastery achievement)
+  - `weekly_planner_perfect` - 100% weekly plan completion
+- ✅ API functions in learning-mode.js:
+  - `checkStreak21()` - Integrated in App.jsx:442
+  - `checkHabitMastery()` - Integrated in App.jsx:447
+  - `checkFirstWeaknessResolved()` - Integrated in WeaknessLogger.jsx:131
+  - `checkWeeklyPlannerPerfect()` - Integrated in WeeklyPlanEditor.jsx:64
+- ✅ All triggers fully tested and operational
+
+**Pending (Phase 5.4+):**
 - ⏳ 81칸 Mandala expansion (3-level hierarchy: 9칸 → 27칸 → 81칸)
 - ⏳ Weekly Planner template manager UI (optional enhancement)
 - ⏳ Edge Function debugging (restore dashboard-aggregation)
