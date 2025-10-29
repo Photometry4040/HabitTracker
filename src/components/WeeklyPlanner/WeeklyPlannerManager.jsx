@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Plus, Edit2, Trash2, CheckCircle2, Clock, Target, List } from 'lucide-react'
+import { Calendar, Plus, Edit2, Trash2, CheckCircle2, Clock, Target, List, BookTemplate } from 'lucide-react'
 import {
   createWeeklyPlan,
   getWeeklyPlan,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/weekly-planner.js'
 import { WeeklyPlanEditor } from './WeeklyPlanEditor.jsx'
 import { DailyTaskCalendar } from './DailyTaskCalendar.jsx'
+import { WeeklyPlanTemplateManager } from './WeeklyPlanTemplateManager.jsx'
 
 export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate }) {
   const [currentPlan, setCurrentPlan] = useState(null)
@@ -23,7 +24,7 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
   const [progress, setProgress] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
-  const [activeView, setActiveView] = useState('current') // 'current', 'history', 'calendar'
+  const [activeView, setActiveView] = useState('current') // 'current', 'history', 'calendar', 'templates'
 
   useEffect(() => {
     loadWeeklyPlan()
@@ -167,6 +168,14 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
           >
             <Calendar className="w-4 h-4 mr-1" />
             캘린더
+          </Button>
+          <Button
+            variant={activeView === 'templates' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveView('templates')}
+          >
+            <BookTemplate className="w-4 h-4 mr-1" />
+            템플릿
           </Button>
           <Button
             variant={activeView === 'history' ? 'default' : 'outline'}
@@ -338,6 +347,16 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Templates View */}
+      {activeView === 'templates' && (
+        <WeeklyPlanTemplateManager
+          childId={childId}
+          childName={childName}
+          weeklyPlanId={currentPlan?.id}
+          weekStartDate={weekStartDate}
+        />
       )}
 
       {/* Plan Editor Modal */}
