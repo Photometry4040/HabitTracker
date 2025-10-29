@@ -147,7 +147,12 @@ Idempotency: idempotency_log table
      - `Goals/GoalsManager.jsx` - Goal creation, editing, hierarchical view, ICE scoring
      - `Mandala/MandalaChart.jsx` - 3x3 grid visualization, node editor, goal integration
      - `Weaknesses/WeaknessLogger.jsx` - Weakness tracking, retry system, badges
+     - `WeeklyPlanner/WeeklyPlannerManager.jsx` - 4 views (Current, Calendar, Templates, History)
+     - `WeeklyPlanner/WeeklyPlanTemplateManager.jsx` - Template CRUD interface with preview
+     - `WeeklyPlanner/DailyTaskCalendar.jsx` - 7-day calendar with task management
+     - `WeeklyPlanner/WeeklyPlanEditor.jsx` - Plan editing and completion form
      - `lib/learning-mode.js` - API layer (29 functions for goals/mandala/weaknesses/rewards)
+     - `lib/weekly-planner.js` - API layer (22 functions for plans/tasks/templates)
 
 ## Migration History
 
@@ -248,8 +253,28 @@ Idempotency: idempotency_log table
 - ✅ Breadcrumb navigation: Shows current position in hierarchy
 - ✅ Instructions card: Complete usage guide for all UI controls
 
+**Phase 5.5: Weekly Planner Template Manager (Complete ✅ - 2025-10-30):**
+- ✅ Component: WeeklyPlanTemplateManager.jsx (583 lines)
+- ✅ Integration: Added 'Templates' view tab to WeeklyPlannerManager
+- ✅ Features:
+  - Template CRUD with visual interface (create, edit, delete, preview)
+  - Day-of-week task assignment (일-토)
+  - Priority system (1-5: 긴급-최저)
+  - Estimated time tracking per task
+  - Template categories for organization
+  - Usage count tracking (sorts by popularity)
+  - Template preview modal before applying
+  - Apply template to current weekly plan
+  - Confirmation before overwriting existing tasks
+- ✅ UI/UX:
+  - Grid layout for template cards
+  - Modal editors for all CRUD operations
+  - Badge system for categories and usage stats
+  - Responsive design (mobile + desktop)
+  - Empty states with helpful prompts
+- ✅ Database: Uses existing weekly_plan_templates table (Phase 5.2)
+
 **Future Enhancements:**
-- ⏳ Weekly Planner template manager UI (optional)
 - ⏳ Edge Function debugging (restore dashboard-aggregation)
 
 ## Development Commands
@@ -920,9 +945,9 @@ console.log('childId type check:', typeof childId, childId)
 
 ## 📋 Project Status Summary
 
-**Last Updated**: 2025-10-27 01:30 KST
-**Current Phase**: 🎉 **Phase 5.3 Complete (100%)** 🚀
-**Latest Commit**: `3f240ac` - Fix Weekly Planner UUID null error
+**Last Updated**: 2025-10-30
+**Current Phase**: 🎉 **Phase 5.5 Complete (100%)** 🚀
+**Latest Commit**: `0ff5d74` - Phase 5.5 Weekly Planner Template Manager UI
 
 ### Database Architecture
 - **Schema Version**: NEW SCHEMA (v2) + Learning Mode Tables (11 migrations)
@@ -965,8 +990,20 @@ console.log('childId type check:', typeof childId, childId)
 - ✅ UUID null error fix (database-new.js returns child info even without week data)
 - ✅ Comprehensive test guide (PHASE_5_3_TEST_GUIDE.md)
 
+**Phase 5.4 (Completed ✅ - 2025-10-29):**
+- ✅ 81칸 Mandala expansion (3-level hierarchy: 9→27→81)
+- ✅ Database schema: mandala_nodes table (normalized structure)
+- ✅ API layer: mandala-expansion.js (9 functions)
+- ✅ UI components: Expand, View Children, Collapse buttons
+- ✅ Breadcrumb navigation and level badges
+
+**Phase 5.5 (Completed ✅ - 2025-10-30):**
+- ✅ Weekly Planner Template Manager UI
+- ✅ Component: WeeklyPlanTemplateManager.jsx (583 lines)
+- ✅ Template CRUD with preview modal
+- ✅ Usage count tracking and sorting
+- ✅ Apply templates to weekly plans
+
 ### Next Priority Actions
-1. **Future**: Expand Mandala to 81칸 (3-level hierarchy: 9→27→81)
-2. **Optional**: Weekly Planner template manager UI
-3. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
-4. **Optional**: Drop `habit_tracker_old` table (backup verified)
+1. **Optional**: Debug and restore `dashboard-aggregation` Edge Function
+2. **Optional**: Drop `habit_tracker_old` table (backup verified)
