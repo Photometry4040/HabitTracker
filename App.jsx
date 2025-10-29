@@ -1,22 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, Shield, BookTemplate, AlertCircle, LayoutGrid } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
-import { Dashboard } from '@/components/Dashboard.jsx'
-import DashboardHub from '@/components/Dashboard/DashboardHub'
 import { Auth } from '@/components/Auth.jsx'
-import { TemplateManager } from '@/components/TemplateManager.jsx'
-import { GoalsManager } from '@/components/Goals/GoalsManager.jsx'
 import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
-import { WeaknessLogger } from '@/components/Weaknesses/WeaknessLogger.jsx'
-import { MandalaChart } from '@/components/Mandala/MandalaChart.jsx'
-import { WeeklyPlannerManager } from '@/components/WeeklyPlanner/WeeklyPlannerManager.jsx'
-import { loadWeekDataNew as loadChildData, loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
+
+// Lazy load heavy components for code splitting
+const DashboardHub = lazy(() => import('@/components/Dashboard/DashboardHub'))
+const TemplateManager = lazy(() => import('@/components/TemplateManager.jsx').then(m => ({ default: m.TemplateManager })))
+const GoalsManager = lazy(() => import('@/components/Goals/GoalsManager.jsx').then(m => ({ default: m.GoalsManager })))
+const WeaknessLogger = lazy(() => import('@/components/Weaknesses/WeaknessLogger.jsx').then(m => ({ default: m.WeaknessLogger })))
+const MandalaChart = lazy(() => import('@/components/Mandala/MandalaChart.jsx').then(m => ({ default: m.MandalaChart })))
+const WeeklyPlannerManager = lazy(() => import('@/components/WeeklyPlanner/WeeklyPlannerManager.jsx').then(m => ({ default: m.WeeklyPlannerManager })))
+import { loadWeekDataNew as loadChildData } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
@@ -877,37 +878,49 @@ function App() {
             {/* 템플릿 관리자, 대시보드 또는 습관 추적 */}
             {showTemplateManager ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <TemplateManager
-                  onApplyTemplate={handleApplyTemplate}
-                  currentHabits={habits}
-                  childName={childName}
-                  onClose={() => setShowTemplateManager(false)}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <TemplateManager
+                    onApplyTemplate={handleApplyTemplate}
+                    currentHabits={habits}
+                    childName={childName}
+                    onClose={() => setShowTemplateManager(false)}
+                  />
+                </Suspense>
               </div>
             ) : showGoals ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <GoalsManager childName={selectedChild} />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <GoalsManager childName={selectedChild} />
+                </Suspense>
               </div>
             ) : showWeaknesses ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <WeaknessLogger childName={selectedChild} />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <WeaknessLogger childName={selectedChild} />
+                </Suspense>
               </div>
             ) : showMandala ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <MandalaChart childName={selectedChild} />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <MandalaChart childName={selectedChild} />
+                </Suspense>
               </div>
             ) : showWeeklyPlanner ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <WeeklyPlannerManager
-                  childId={currentChildId}
-                  childName={childName}
-                  weekId={currentWeekId}
-                  weekStartDate={weekStartDate}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <WeeklyPlannerManager
+                    childId={currentChildId}
+                    childName={childName}
+                    weekId={currentWeekId}
+                    weekStartDate={weekStartDate}
+                  />
+                </Suspense>
               </div>
             ) : showDashboard ? (
               <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
-                <DashboardHub />
+                <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-purple-600">로딩 중...</div></div>}>
+                  <DashboardHub />
+                </Suspense>
               </div>
             ) : (
               <>
