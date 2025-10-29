@@ -580,6 +580,19 @@ export function MandalaChart({ childName }) {
       )
     }
 
+    // Calculate which nodes have children (for button display)
+    const nodeHasChildren = (nodeId) => {
+      const level1Node = hierarchyNodes.level1Nodes.find(n => n.id === nodeId)
+      if (level1Node) {
+        return hierarchyNodes.level2Nodes.some(n => n.parent_node_id === nodeId)
+      }
+      const level2Node = hierarchyNodes.level2Nodes.find(n => n.id === nodeId)
+      if (level2Node) {
+        return hierarchyNodes.level3Nodes.some(n => n.parent_node_id === nodeId)
+      }
+      return false
+    }
+
     // Create 3x3 grid with center + 8 positions
     const grid = Array(9).fill(null)
     grid[4] = { type: 'center' } // Center position
@@ -785,7 +798,7 @@ export function MandalaChart({ childName }) {
                               {node.completion_rate}%
                             </Badge>
                           )}
-                          {node.expanded && (
+                          {nodeHasChildren(node.id) && (
                             <Badge className="h-4 text-xs bg-blue-500">확장됨</Badge>
                           )}
                         </div>
@@ -819,7 +832,7 @@ export function MandalaChart({ childName }) {
                         </Button>
 
                         {/* Expand button - only for level 1 and 2 */}
-                        {node.level < 3 && !node.expanded && (
+                        {node.level < 3 && !nodeHasChildren(node.id) && (
                           <Button
                             variant="ghost"
                             onClick={() => handleExpandNode(node)}
@@ -830,8 +843,8 @@ export function MandalaChart({ childName }) {
                           </Button>
                         )}
 
-                        {/* View children button - if expanded */}
-                        {node.expanded && (
+                        {/* View children button - if has children */}
+                        {nodeHasChildren(node.id) && (
                           <Button
                             variant="ghost"
                             onClick={() => handleViewChildNodes(node)}
@@ -843,7 +856,7 @@ export function MandalaChart({ childName }) {
                         )}
 
                         {/* Collapse button */}
-                        {node.expanded && (
+                        {nodeHasChildren(node.id) && (
                           <Button
                             variant="ghost"
                             onClick={() => handleCollapseNode(node)}

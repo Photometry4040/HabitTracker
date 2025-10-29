@@ -37,8 +37,15 @@ export const expandMandalaNode = async (parentNodeId, childrenTitles = []) => {
       throw new Error('레벨 3 노드는 더 이상 확장할 수 없습니다.')
     }
 
-    if (parentNode.expanded) {
-      throw new Error('이미 확장된 노드입니다.')
+    // Check if already has children (more reliable than expanded flag)
+    const { data: existingChildren } = await supabase
+      .from('mandala_nodes')
+      .select('id')
+      .eq('parent_node_id', parentNodeId)
+      .eq('is_active', true)
+
+    if (existingChildren && existingChildren.length > 0) {
+      throw new Error('이미 확장된 노드입니다. 기존 자식 노드가 존재합니다.')
     }
 
     const childLevel = parentNode.level + 1
@@ -223,7 +230,7 @@ export const canExpandNode = async (nodeId) => {
   try {
     const { data: node, error } = await supabase
       .from('mandala_nodes')
-      .select('level, expanded')
+      .select('level')
       .eq('id', nodeId)
       .maybeSingle()
 
@@ -235,8 +242,15 @@ export const canExpandNode = async (nodeId) => {
       return { canExpand: false, reason: '레벨 3 노드는 더 이상 확장할 수 없습니다.' }
     }
 
-    if (node.expanded) {
-      return { canExpand: false, reason: '이미 확장된 노드입니다.' }
+    // Check if already has children (more reliable than expanded flag)
+    const { data: existingChildren } = await supabase
+      .from('mandala_nodes')
+      .select('id')
+      .eq('parent_node_id', nodeId)
+      .eq('is_active', true)
+
+    if (existingChildren && existingChildren.length > 0) {
+      return { canExpand: false, reason: '이미 확장된 노드입니다. 기존 자식 노드가 존재합니다.' }
     }
 
     return { canExpand: true, reason: '확장 가능' }
