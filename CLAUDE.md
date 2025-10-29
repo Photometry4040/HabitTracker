@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - RLS enabled on all tables (user isolation at DB level)
 - Monday-only week start dates (enforced by CHECK constraint)
 
-**Current Focus:** Phase 5 Learning Mode (98% complete) - Phase 5.3 Advanced Reward Triggers completed!
+**Current Focus:** Phase 5.4 - 81칸 Mandala 확장 (진행 중) - 데이터베이스 스키마 완료, 마이그레이션 대기 중!
 
 ## Project Overview
 
@@ -34,7 +34,7 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 - Achievement badge system
 - **Learning Mode** (Phase 5): Goals, Mandala Charts, Weaknesses, Rewards, Weekly Planner
 
-**Project Status:** 🎉 **Phase 5.3 Complete** (98%) - Advanced Reward Triggers fully integrated. Weekly Planner, Goals, Mandala, Weaknesses operational.
+**Project Status:** 🔄 **Phase 5.4 In Progress** (99%) - 81칸 Mandala expansion. Database schema ready, migration pending. Advanced Reward Triggers, Weekly Planner, Goals, Weaknesses operational.
 
 **Monitoring Period:** OLD SCHEMA monitoring ended 2025-10-25. `habit_tracker_old` can be safely dropped if no issues detected.
 
@@ -51,7 +51,8 @@ This is a **Habit Tracker for Kids** - a visual habit tracking web application b
 
 **Learning Mode Tables (Phase 5):**
 - `goals` - Learning goals with hierarchical structure (parent_goal_id, depth, ICE scoring)
-- `mandala_charts` - Mandala charts (9칸/27칸 support, 81칸 disabled)
+- `mandala_charts` - Mandala charts metadata (9칸/27칸/81칸 support, max_level)
+- `mandala_nodes` - **NEW Phase 5.4**: Normalized mandala nodes (3-level hierarchy, 81칸 support)
 - `weaknesses` - Weakness tracking with retry system and badge rewards
 - `reward_definitions` - Reward definitions (badge, sticker, achievement, theme, level_up)
 - `progress_events` - Progress event log (goal_completed, weakness_resolved, streaks, etc.)
@@ -233,9 +234,17 @@ Idempotency: idempotency_log table
   - `checkWeeklyPlannerPerfect()` - Integrated in WeeklyPlanEditor.jsx:64
 - ✅ All triggers fully tested and operational
 
-**Pending (Phase 5.4+):**
-- ⏳ 81칸 Mandala expansion (3-level hierarchy: 9칸 → 27칸 → 81칸)
-- ⏳ Weekly Planner template manager UI (optional enhancement)
+**Phase 5.4: 81칸 Mandala Expansion (In Progress 🔄 - 2025-10-29):**
+- ✅ Database schema: mandala_nodes table (normalized, 3-level hierarchy)
+- ✅ Migration scripts: JSONB → mandala_nodes table migration
+- ✅ Helper functions: get_node_hierarchy, get_child_nodes, get_all_descendants
+- ✅ API layer: mandala-nodes.js (29 functions for node CRUD, hierarchy, completion)
+- ⏳ **MIGRATION REQUIRED**: Run 2 SQL files in Supabase (see `docs/02-active/PHASE_5.4_MIGRATION_GUIDE.md`)
+- ⏳ UI components: Update MandalaChart.jsx for 81칸 visualization
+- ⏳ Expand button: Add "확장" button for level 1/2 nodes
+
+**Future Enhancements:**
+- ⏳ Weekly Planner template manager UI (optional)
 - ⏳ Edge Function debugging (restore dashboard-aggregation)
 
 ## Development Commands
