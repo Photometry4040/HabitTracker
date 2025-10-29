@@ -4,22 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.j
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Palette } from 'lucide-react'
+import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Palette, Maximize2, Minimize2 } from 'lucide-react'
 import {
   createMandalaChart,
   getAllMandalaCharts,
   getMandalaChart,
-  updateMandalaNode,
-  addNodeToMandala,
-  deleteNodeFromMandala,
   deleteMandalaChart,
-  calculateMandalaCompletion,
-  createNodeWithGoal,
-  linkGoalToNode,
   getGoal,
   updateGoalProgress,
   completeGoal
 } from '@/lib/learning-mode.js'
+import {
+  expandMandalaNode,
+  getMandalaNodesHierarchy,
+  updateMandalaNodeData,
+  deleteMandalaNodeData,
+  canExpandNode,
+  collapseMandalaNode
+} from '@/lib/mandala-expansion.js'
 
 const COLORS = [
   { name: '파란색', value: '#3B82F6' },
@@ -41,6 +43,11 @@ export function MandalaChart({ childName }) {
   const [currentChart, setCurrentChart] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
 
+  // Hierarchy state for 81칸 expansion
+  const [currentLevel, setCurrentLevel] = useState(1) // 1, 2, or 3
+  const [selectedParentNode, setSelectedParentNode] = useState(null) // For level 2/3 viewing
+  const [hierarchyNodes, setHierarchyNodes] = useState({ level1Nodes: [], level2Nodes: [], level3Nodes: [] })
+
   // Create form state
   const [centerGoal, setCenterGoal] = useState('')
   const [centerEmoji, setCenterEmoji] = useState(null)
@@ -48,17 +55,15 @@ export function MandalaChart({ childName }) {
   const [initialNodes, setInitialNodes] = useState([])
 
   // Node editor state
-  const [editingNode, setEditingNode] = useState(null) // { position, mode: 'edit' | 'create' }
+  const [editingNode, setEditingNode] = useState(null) // { id, mode: 'edit' | 'create' }
   const [nodeFormData, setNodeFormData] = useState({
     title: '',
     color: '#3B82F6',
-    emoji: null,
-    createGoal: true // 목표 자동 생성 여부
+    emoji: null
   })
 
   // Goal detail state
   const [selectedGoal, setSelectedGoal] = useState(null)
-  const [goalDetailLoading, setGoalDetailLoading] = useState(false)
 
   useEffect(() => {
     loadCharts()
@@ -73,6 +78,16 @@ export function MandalaChart({ childName }) {
       console.error('만다라트 목록 로드 실패:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadHierarchy = async (chartId) => {
+    try {
+      const hierarchy = await getMandalaNodesHierarchy(chartId, 3)
+      setHierarchyNodes(hierarchy)
+      console.log('📊 Hierarchy loaded:', hierarchy)
+    } catch (error) {
+      console.error('계층 노드 로드 실패:', error)
     }
   }
 
@@ -141,6 +156,9 @@ export function MandalaChart({ childName }) {
     try {
       const fullChart = await getMandalaChart(chart.id)
       setCurrentChart(fullChart)
+      await loadHierarchy(chart.id)
+      setCurrentLevel(1) // Start at level 1
+      setSelectedParentNode(null)
       setViewMode('chart')
     } catch (error) {
       console.error('만다라트 조회 실패:', error)
@@ -162,7 +180,7 @@ export function MandalaChart({ childName }) {
   }
 
   const handleEditNode = (node) => {
-    setEditingNode(node)
+    setEditingNode({ ...node, mode: 'edit' })
     setNodeFormData({
       title: node.title || '',
       color: node.color || '#3B82F6',
@@ -177,92 +195,104 @@ export function MandalaChart({ childName }) {
         return
       }
 
-      if (editingNode.mode === 'create') {
-        // CREATE mode: Add new node with optional goal
-        if (nodeFormData.createGoal) {
-          // Create node with goal
-          await createNodeWithGoal(
-            currentChart.id,
-            childName,
-            {
-              position: editingNode.position,
-              title: nodeFormData.title,
-              color: nodeFormData.color,
-              emoji: nodeFormData.emoji
-            },
-            {
-              metric_type: 'boolean' // Default to boolean goal
-            }
-          )
-        } else {
-          // Create node without goal
-          await addNodeToMandala(currentChart.id, {
-            position: editingNode.position,
-            title: nodeFormData.title,
-            color: nodeFormData.color || '#3B82F6',
-            emoji: nodeFormData.emoji || null
-          })
-        }
-        alert('노드가 추가되었습니다!')
-      } else {
-        // EDIT mode: Update existing node
-        await updateMandalaNode(currentChart.id, editingNode.position, {
-          title: nodeFormData.title,
-          color: nodeFormData.color,
-          emoji: nodeFormData.emoji
-        })
-        alert('노드가 수정되었습니다!')
-      }
+      await updateMandalaNodeData(editingNode.id, {
+        title: nodeFormData.title,
+        color: nodeFormData.color,
+        emoji: nodeFormData.emoji
+      })
 
-      // Reload chart
-      const updated = await getMandalaChart(currentChart.id)
-      setCurrentChart(updated)
+      alert('노드가 수정되었습니다!')
 
-      // Recalculate completion
-      await calculateMandalaCompletion(currentChart.id)
+      // Reload hierarchy
+      await loadHierarchy(currentChart.id)
 
       setEditingNode(null)
-      setNodeFormData({ title: '', color: '#3B82F6', emoji: null, createGoal: true })
+      setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
     } catch (error) {
       console.error('노드 저장 실패:', error)
       alert('노드 저장 중 오류가 발생했습니다.')
     }
   }
 
-  const handleAddNode = async () => {
-    try {
-      const title = prompt('새 노드 제목을 입력하세요:')
-      if (!title || title.trim().length === 0) return
-
-      await addNodeToMandala(currentChart.id, {
-        title,
-        color: '#3B82F6',
-        emoji: null
-      })
-
-      const updated = await getMandalaChart(currentChart.id)
-      setCurrentChart(updated)
-
-      alert('노드가 추가되었습니다!')
-    } catch (error) {
-      console.error('노드 추가 실패:', error)
-      alert(error.message || '노드 추가 중 오류가 발생했습니다.')
-    }
-  }
-
-  const handleDeleteNode = async (position) => {
+  const handleDeleteNode = async (nodeId) => {
     if (!confirm('이 노드를 삭제하시겠습니까?')) return
 
     try {
-      await deleteNodeFromMandala(currentChart.id, position)
-
-      const updated = await getMandalaChart(currentChart.id)
-      setCurrentChart(updated)
-
+      await deleteMandalaNodeData(nodeId)
+      await loadHierarchy(currentChart.id)
       alert('노드가 삭제되었습니다.')
     } catch (error) {
       console.error('노드 삭제 실패:', error)
       alert('노드 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 81칸 Expansion - NEW
+  const handleExpandNode = async (node) => {
+    try {
+      const { canExpand, reason } = await canExpandNode(node.id)
+
+      if (!canExpand) {
+        alert(reason)
+        return
+      }
+
+      const titles = []
+      for (let i = 1; i <= 8; i++) {
+        const title = prompt(`자식 노드 ${i} 제목 (취소하면 자동 생성):`)
+        if (title === null) break // User cancelled
+        titles.push(title || `${node.title} - ${i}`)
+      }
+
+      await expandMandalaNode(node.id, titles)
+      await loadHierarchy(currentChart.id)
+
+      alert(`노드가 확장되었습니다! ${titles.length || 8}개의 자식 노드가 생성되었습니다.`)
+    } catch (error) {
+      console.error('노드 확장 실패:', error)
+      alert('노드 확장 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleCollapseNode = async (node) => {
+    try {
+      await collapseMandalaNode(node.id)
+      await loadHierarchy(currentChart.id)
+      alert('노드가 축소되었습니다.')
+    } catch (error) {
+      console.error('노드 축소 실패:', error)
+      alert('노드 축소 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleViewChildNodes = async (parentNode) => {
+    try {
+      setSelectedParentNode(parentNode)
+      setCurrentLevel(parentNode.level + 1)
+    } catch (error) {
+      console.error('자식 노드 조회 실패:', error)
+      alert('자식 노드 조회 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleBackToParent = () => {
+    if (currentLevel === 1) return
+
+    if (currentLevel === 2) {
+      setSelectedParentNode(null)
+      setCurrentLevel(1)
+    } else if (currentLevel === 3) {
+      // Find parent's parent (level 1 node)
+      const parentOfParent = hierarchyNodes.level1Nodes.find(
+        n => n.id === selectedParentNode.parent_node_id
+      )
+      if (parentOfParent) {
+        setSelectedParentNode(parentOfParent)
+        setCurrentLevel(2)
+      } else {
+        setSelectedParentNode(null)
+        setCurrentLevel(1)
+      }
     }
   }
 
@@ -271,14 +301,11 @@ export function MandalaChart({ childName }) {
     if (!goalId) return
 
     try {
-      setGoalDetailLoading(true)
       const goal = await getGoal(goalId)
       setSelectedGoal(goal)
     } catch (error) {
       console.error('목표 조회 실패:', error)
       alert('목표 정보를 불러올 수 없습니다.')
-    } finally {
-      setGoalDetailLoading(false)
     }
   }
 
@@ -286,12 +313,10 @@ export function MandalaChart({ childName }) {
     try {
       await updateGoalProgress(goalId, currentValue)
 
-      // Reload goal and chart
       const updatedGoal = await getGoal(goalId)
       setSelectedGoal(updatedGoal)
 
-      const updatedChart = await getMandalaChart(currentChart.id)
-      setCurrentChart(updatedChart)
+      await loadHierarchy(currentChart.id)
 
       alert('목표 진행률이 업데이트되었습니다!')
     } catch (error) {
@@ -306,12 +331,10 @@ export function MandalaChart({ childName }) {
     try {
       await completeGoal(goalId)
 
-      // Reload goal and chart
       const updatedGoal = await getGoal(goalId)
       setSelectedGoal(updatedGoal)
 
-      const updatedChart = await getMandalaChart(currentChart.id)
-      setCurrentChart(updatedChart)
+      await loadHierarchy(currentChart.id)
 
       alert('목표가 완료되었습니다! 🎉')
     } catch (error) {
@@ -340,7 +363,7 @@ export function MandalaChart({ childName }) {
             <CardTitle className="text-xl font-bold text-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <LayoutGrid className="w-5 h-5" />
-                {childName}의 만다라트 차트
+                {childName}의 만다라트 차트 (81칸 지원)
               </div>
               {!showCreateForm && (
                 <Button
@@ -537,30 +560,39 @@ export function MandalaChart({ childName }) {
     )
   }
 
-  // CHART VIEW (3x3 Grid)
+  // CHART VIEW (3x3 Grid with 81칸 Support)
   if (viewMode === 'chart' && currentChart) {
+    // Determine which nodes to display based on currentLevel
+    let nodesToDisplay = []
+
+    if (currentLevel === 1) {
+      // Show level 1 nodes (8 nodes around center)
+      nodesToDisplay = hierarchyNodes.level1Nodes
+    } else if (currentLevel === 2 && selectedParentNode) {
+      // Show children of selected level 1 node
+      nodesToDisplay = hierarchyNodes.level2Nodes.filter(
+        n => n.parent_node_id === selectedParentNode.id
+      )
+    } else if (currentLevel === 3 && selectedParentNode) {
+      // Show children of selected level 2 node
+      nodesToDisplay = hierarchyNodes.level3Nodes.filter(
+        n => n.parent_node_id === selectedParentNode.id
+      )
+    }
+
     // Create 3x3 grid with center + 8 positions
     const grid = Array(9).fill(null)
     grid[4] = { type: 'center' } // Center position
 
-    // Map nodes to grid positions (1-8 → 0,1,2,3,5,6,7,8)
+    // Map nodes to grid positions (node_position 1-8 → grid index 0,1,2,3,5,6,7,8)
     const positionMap = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 5, 6: 6, 7: 7, 8: 8 }
-    const reversePositionMap = { 0: 1, 1: 2, 2: 3, 3: 4, 5: 5, 6: 6, 7: 7, 8: 8 }
 
-    currentChart.nodes?.forEach((node) => {
-      const gridIndex = positionMap[node.position]
+    nodesToDisplay.forEach((node) => {
+      const gridIndex = positionMap[node.node_position]
       if (gridIndex !== undefined) {
         grid[gridIndex] = { type: 'node', data: node }
       }
     })
-
-    const handleEmptyCellClick = (gridIndex) => {
-      const position = reversePositionMap[gridIndex]
-      if (position) {
-        setEditingNode({ position, mode: 'create' })
-        setNodeFormData({ title: '', color: '#3B82F6', emoji: null, createGoal: true })
-      }
-    }
 
     return (
       <div className="space-y-4">
@@ -574,23 +606,30 @@ export function MandalaChart({ childName }) {
                   <span className="text-2xl">{currentChart.center_goal_emoji}</span>
                 )}
                 {currentChart.center_goal}
+                <Badge className="ml-2">
+                  Level {currentLevel}
+                  {currentLevel === 1 && ' (9칸)'}
+                  {currentLevel === 2 && ' (27칸)'}
+                  {currentLevel === 3 && ' (81칸)'}
+                </Badge>
               </div>
               <div className="flex gap-2">
-                {currentChart.nodes?.length < 8 && (
+                {currentLevel > 1 && (
                   <Button
-                    onClick={handleAddNode}
+                    onClick={handleBackToParent}
                     variant="outline"
                     className="h-10 md:h-9 text-sm px-3"
                   >
-                    <Plus className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                    <span className="hidden sm:inline">노드 추가</span>
-                    <span className="sm:hidden">추가</span>
+                    <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-1" />
+                    상위 레벨
                   </Button>
                 )}
                 <Button
                   onClick={() => {
                     setViewMode('list')
                     setCurrentChart(null)
+                    setCurrentLevel(1)
+                    setSelectedParentNode(null)
                   }}
                   variant="outline"
                   className="h-10 md:h-9 text-sm px-3"
@@ -603,8 +642,26 @@ export function MandalaChart({ childName }) {
           </CardHeader>
         </Card>
 
+        {/* Breadcrumb */}
+        {selectedParentNode && (
+          <Card className="bg-gray-50">
+            <CardContent className="pt-4">
+              <div className="text-sm text-gray-700">
+                <span className="font-semibold">현재 위치:</span>{' '}
+                {currentChart.center_goal}
+                {selectedParentNode && (
+                  <>
+                    {' → '}
+                    {selectedParentNode.title}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress */}
-        {currentChart.overall_completion_rate > 0 && (
+        {currentChart.overall_completion_rate > 0 && currentLevel === 1 && (
           <Card className="bg-indigo-50 border-indigo-200">
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
@@ -631,41 +688,43 @@ export function MandalaChart({ childName }) {
         <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
           {grid.map((cell, index) => {
             if (!cell) {
-              // Empty cell - clickable to add node
+              // Empty cell
               return (
                 <div
                   key={index}
-                  onClick={() => handleEmptyCellClick(index)}
-                  className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
+                  className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
                 >
-                  <div className="text-center">
-                    <Plus className="w-6 h-6 mx-auto text-gray-400 mb-1" />
-                    <span className="text-gray-400 text-xs">노드 추가</span>
-                  </div>
+                  <span className="text-gray-400 text-xs">빈 칸</span>
                 </div>
               )
             }
 
             if (cell.type === 'center') {
-              // Center goal
+              // Center goal OR selected parent node
+              const centerContent = selectedParentNode || {
+                title: currentChart.center_goal,
+                color: currentChart.center_goal_color,
+                emoji: currentChart.center_goal_emoji
+              }
+
               return (
                 <div
                   key={index}
                   className="aspect-square border-4 rounded-lg flex flex-col items-center justify-center p-3"
                   style={{
-                    borderColor: currentChart.center_goal_color || '#3B82F6',
-                    backgroundColor: `${currentChart.center_goal_color || '#3B82F6'}10`
+                    borderColor: centerContent.color || '#3B82F6',
+                    backgroundColor: `${centerContent.color || '#3B82F6'}10`
                   }}
                 >
                   <div className="text-center">
-                    <div className="text-xs font-semibold mb-1" style={{ color: currentChart.center_goal_color }}>
-                      중심 목표
+                    <div className="text-xs font-semibold mb-1" style={{ color: centerContent.color }}>
+                      {selectedParentNode ? `Level ${currentLevel - 1}` : '중심 목표'}
                     </div>
-                    {currentChart.center_goal_emoji && (
-                      <div className="text-3xl mb-2">{currentChart.center_goal_emoji}</div>
+                    {centerContent.emoji && (
+                      <div className="text-3xl mb-2">{centerContent.emoji}</div>
                     )}
                     <div className="font-bold text-sm sm:text-base break-words">
-                      {currentChart.center_goal}
+                      {centerContent.title}
                     </div>
                   </div>
                 </div>
@@ -674,7 +733,7 @@ export function MandalaChart({ childName }) {
 
             if (cell.type === 'node') {
               const node = cell.data
-              const isEditing = editingNode?.position === node.position
+              const isEditing = editingNode?.id === node.id
 
               return (
                 <div
@@ -716,37 +775,40 @@ export function MandalaChart({ childName }) {
                   ) : (
                     <>
                       <div className="flex-1 flex flex-col items-center justify-center text-center relative">
-                        {/* Goal status badges */}
-                        {node.goal_id && (
-                          <div className="absolute top-0 right-0 flex gap-1">
-                            {node.completed && (
-                              <Badge className="h-4 text-xs bg-green-500">✓</Badge>
-                            )}
-                            {node.completion_rate > 0 && (
-                              <Badge variant="outline" className="h-4 text-xs">
-                                {node.completion_rate}%
-                              </Badge>
-                            )}
-                          </div>
-                        )}
+                        {/* Badges */}
+                        <div className="absolute top-0 right-0 flex gap-1 flex-col items-end">
+                          {node.completed && (
+                            <Badge className="h-4 text-xs bg-green-500">✓</Badge>
+                          )}
+                          {node.completion_rate > 0 && (
+                            <Badge variant="outline" className="h-4 text-xs">
+                              {node.completion_rate}%
+                            </Badge>
+                          )}
+                          {node.expanded && (
+                            <Badge className="h-4 text-xs bg-blue-500">확장됨</Badge>
+                          )}
+                        </div>
 
                         {node.emoji && <div className="text-2xl mb-1">{node.emoji}</div>}
                         <p className="text-xs sm:text-sm font-medium break-words">
                           {node.title || '(제목 없음)'}
                         </p>
 
-                        {/* Goal indicator - clickable */}
+                        {/* Goal indicator */}
                         {node.goal_id && (
                           <button
                             onClick={() => handleViewGoal(node.goal_id)}
                             className="mt-1 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer hover:underline"
                           >
                             <span>🎯</span>
-                            <span>목표 상세보기</span>
+                            <span>목표</span>
                           </button>
                         )}
                       </div>
-                      <div className="flex gap-1 justify-center mt-1">
+
+                      {/* Action buttons */}
+                      <div className="flex gap-1 justify-center mt-1 flex-wrap">
                         <Button
                           variant="ghost"
                           onClick={() => handleEditNode(node)}
@@ -755,9 +817,46 @@ export function MandalaChart({ childName }) {
                         >
                           <Palette className="w-4 h-4 md:w-3 md:h-3" />
                         </Button>
+
+                        {/* Expand button - only for level 1 and 2 */}
+                        {node.level < 3 && !node.expanded && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleExpandNode(node)}
+                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-blue-600"
+                            title="확장"
+                          >
+                            <Maximize2 className="w-4 h-4 md:w-3 md:h-3" />
+                          </Button>
+                        )}
+
+                        {/* View children button - if expanded */}
+                        {node.expanded && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleViewChildNodes(node)}
+                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-green-600"
+                            title="자식 보기"
+                          >
+                            <Eye className="w-4 h-4 md:w-3 md:h-3" />
+                          </Button>
+                        )}
+
+                        {/* Collapse button */}
+                        {node.expanded && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleCollapseNode(node)}
+                            className="h-8 w-8 md:h-7 md:w-7 p-0 text-orange-600"
+                            title="축소"
+                          >
+                            <Minimize2 className="w-4 h-4 md:w-3 md:h-3" />
+                          </Button>
+                        )}
+
                         <Button
                           variant="ghost"
-                          onClick={() => handleDeleteNode(node.position)}
+                          onClick={() => handleDeleteNode(node.id)}
                           className="h-8 w-8 md:h-7 md:w-7 p-0 text-red-600"
                           title="삭제"
                         >
@@ -780,7 +879,7 @@ export function MandalaChart({ childName }) {
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <Palette className="w-4 h-4" />
-                노드 편집: Position {editingNode.position}
+                노드 편집: {editingNode.title}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -824,22 +923,6 @@ export function MandalaChart({ childName }) {
                   ))}
                 </div>
               </div>
-
-              {/* Goal creation option (only in CREATE mode) */}
-              {editingNode.mode === 'create' && (
-                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <input
-                    type="checkbox"
-                    id="createGoal"
-                    checked={nodeFormData.createGoal}
-                    onChange={(e) => setNodeFormData({ ...nodeFormData, createGoal: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  <Label htmlFor="createGoal" className="cursor-pointer text-sm">
-                    목표 자동 생성 (습관 추적 연동)
-                  </Label>
-                </div>
-              )}
 
               <div className="flex gap-2">
                 <Button
@@ -955,19 +1038,6 @@ export function MandalaChart({ childName }) {
                 )}
               </div>
 
-              {/* ICE Score */}
-              {selectedGoal.ice_score > 0 && (
-                <div>
-                  <Label className="text-sm font-semibold">ICE 점수</Label>
-                  <div className="flex gap-4 mt-1">
-                    <span className="text-xs">Impact: {selectedGoal.impact || 0}</span>
-                    <span className="text-xs">Confidence: {selectedGoal.confidence || 0}</span>
-                    <span className="text-xs">Ease: {selectedGoal.ease || 0}</span>
-                    <Badge>{selectedGoal.ice_score}</Badge>
-                  </div>
-                </div>
-              )}
-
               {/* Actions */}
               <div className="flex gap-2 pt-2 border-t">
                 {selectedGoal.status !== 'completed' && (
@@ -994,10 +1064,19 @@ export function MandalaChart({ childName }) {
         {/* Instructions */}
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-4">
-            <p className="text-sm text-blue-900">
-              <strong>만다라트 차트 사용법:</strong> 중심 목표를 중심으로 8개의 세부 목표를 배치합니다.
-              각 노드는 position (1-8)에 따라 배치되며, 색상과 이모지로 시각화할 수 있습니다.
-            </p>
+            <div className="space-y-2 text-sm text-blue-900">
+              <p>
+                <strong>81칸 만다라트 사용법:</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>Level 1 (9칸):</strong> 중심 목표 주변 8개 세부 목표</li>
+                <li><strong>확장 버튼 (⤢):</strong> 노드를 클릭하여 8개 하위 노드 생성 (Level 2 → 27칸)</li>
+                <li><strong>Level 2:</strong> 각 Level 1 노드를 8개로 세분화</li>
+                <li><strong>Level 3 (81칸):</strong> Level 2 노드를 더 확장하여 최대 81칸 달성</li>
+                <li><strong>자식 보기 (👁):</strong> 확장된 노드의 하위 레벨로 이동</li>
+                <li><strong>축소 (⤓):</strong> 노드를 축소하여 하위 노드 숨기기 (삭제 아님)</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
