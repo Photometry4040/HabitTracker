@@ -28,12 +28,12 @@ export default function TrendTable({ data }) {
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 border-b-2 border-gray-200">
-            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">주차</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">기간</th>
-            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">습관 수</th>
-            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">완료</th>
-            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">달성률</th>
-            <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">상태</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-700">주차</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-700">기간</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-semibold text-gray-700">습관 수</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-semibold text-gray-700">완료</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-semibold text-gray-700">달성률</th>
+            <th className="px-3 py-2 sm:px-6 sm:py-3 text-center text-xs font-semibold text-gray-700">상태</th>
           </tr>
         </thead>
         <tbody>
@@ -74,19 +74,19 @@ export default function TrendTable({ data }) {
                     : 'bg-gray-50 opacity-60 hover:opacity-80'
                 }`}
               >
-                <td className={`px-6 py-4 text-sm ${hasData ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
+                <td className={`px-3 py-3 sm:px-6 sm:py-4 text-sm ${hasData ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
                   {weekLabel}
                 </td>
-                <td className={`px-6 py-4 text-sm ${hasData ? 'text-gray-700' : 'text-gray-400'}`}>
+                <td className={`px-3 py-3 sm:px-6 sm:py-4 text-sm ${hasData ? 'text-gray-700' : 'text-gray-400'}`}>
                   {format(startDate, 'M/d')} ~ {format(endDate, 'M/d')}
                 </td>
-                <td className={`px-6 py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                <td className={`px-3 py-3 sm:px-6 sm:py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
                   {hasData ? week.total_habits : '-'}
                 </td>
-                <td className={`px-6 py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                <td className={`px-3 py-3 sm:px-6 sm:py-4 text-sm text-right ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
                   {hasData ? week.completed_habits : '-'}
                 </td>
-                <td className="px-6 py-4 text-sm text-right">
+                <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-right">
                   {hasData ? (
                     <span className="font-bold text-lg text-blue-600">
                       {Math.round(week.completion_rate)}%
@@ -95,7 +95,7 @@ export default function TrendTable({ data }) {
                     <span className="text-gray-400 text-sm">기록 없음</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm text-center">
+                <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-center">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
                     {statusText}
                   </span>
@@ -107,8 +107,8 @@ export default function TrendTable({ data }) {
       </table>
 
       {/* Summary Footer */}
-      <div className="bg-gray-50 px-6 py-4 border-t-2 border-gray-200">
-        <div className="grid grid-cols-4 gap-6">
+      <div className="bg-gray-50 px-3 py-3 sm:px-6 sm:py-4 border-t-2 border-gray-200">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           <SummaryItem
             label="평균"
             value={dataWithValues.length > 0 ? `${Math.round(

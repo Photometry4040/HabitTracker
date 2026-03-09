@@ -46,7 +46,6 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
     const adjustedDate = adjustToMonday(new Date(weekStartDate));
     const adjustedDateStr = adjustedDate.toISOString().split('T')[0];
 
-    console.log(`loadWeekDataNew: ${weekStartDate} → ${adjustedDateStr}`);
 
     // Step 1: Find child
     const { data: child, error: childError } = await supabase
@@ -57,7 +56,6 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
       .maybeSingle()
 
     if (childError || !child) {
-      console.log('Child not found in new schema:', childName)
       return null
     }
 
@@ -75,7 +73,6 @@ export const loadWeekDataNew = async (childName, weekStartDate) => {
     }
 
     if (!week) {
-      console.log('Week not found in new schema:', adjustedDateStr)
       // Return child info even if week doesn't exist (for Weekly Planner creation)
       return {
         child_id: child.id,
@@ -272,7 +269,6 @@ export const loadChildWeeksNew = async (childName) => {
       .maybeSingle()
 
     if (childError || !child) {
-      console.log('Child not found:', childName)
       return []
     }
 
@@ -320,7 +316,6 @@ export const loadChildMultipleWeeksNew = async (childName, weeksCount = 4) => {
       .maybeSingle()
 
     if (childError || !child) {
-      console.log('Child not found:', childName)
       return []
     }
 

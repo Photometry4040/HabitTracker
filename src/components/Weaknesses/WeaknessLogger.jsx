@@ -128,10 +128,7 @@ export function WeaknessLogger({ childName }) {
 
       // Phase 5.3: Check for first weakness resolved achievement
       try {
-        const event = await checkFirstWeaknessResolved(childName)
-        if (event) {
-          console.log('🎉 First weakness resolved achievement unlocked!')
-        }
+        await checkFirstWeaknessResolved(childName)
       } catch (rewardError) {
         console.error('보상 체크 실패 (계속 진행):', rewardError)
         // Don't block the main flow if reward check fails

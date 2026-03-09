@@ -85,7 +85,7 @@ export default function TrendChart({ data }) {
 
   return (
     <div className="w-full">
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 280 : 400}>
         <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">

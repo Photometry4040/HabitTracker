@@ -3,13 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// 환경변수 디버깅
-console.log('🔍 환경변수 확인:')
-console.log('VITE_SUPABASE_URL:', supabaseUrl)
-console.log('VITE_SUPABASE_ANON_KEY exists:', !!supabaseAnonKey)
-console.log('VITE_SUPABASE_ANON_KEY length:', supabaseAnonKey ? supabaseAnonKey.length : 0)
-console.log('VITE_SUPABASE_ANON_KEY starts with:', supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'N/A')
-
 // URL 유효성 검증
 let isValidUrl = false
 try {
@@ -51,7 +44,6 @@ if (!supabaseUrl || !supabaseAnonKey || !isValidUrl) {
     window.SUPABASE_CONFIG_ERROR = true
   }
 } else {
-  console.log('✅ Supabase 환경변수 정상')
   supabase = createClient(supabaseUrl, supabaseAnonKey)
 }
 

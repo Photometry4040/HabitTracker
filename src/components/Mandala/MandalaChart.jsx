@@ -85,7 +85,6 @@ export function MandalaChart({ childName }) {
     try {
       const hierarchy = await getMandalaNodesHierarchy(chartId, 3)
       setHierarchyNodes(hierarchy)
-      console.log('📊 Hierarchy loaded:', hierarchy)
     } catch (error) {
       console.error('계층 노드 로드 실패:', error)
     }

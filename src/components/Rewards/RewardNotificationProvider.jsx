@@ -23,7 +23,6 @@ export function RewardNotificationProvider({ children, childName }) {
       const newRewards = await getNewRewards(childName)
 
       if (newRewards.length > 0) {
-        console.log(`✨ Found ${newRewards.length} new rewards!`)
         setNotifications(newRewards)
 
         // Show first notification
@@ -77,7 +76,6 @@ export function RewardNotificationProvider({ children, childName }) {
   }
 
   const handleViewReward = (reward) => {
-    console.log('View reward:', reward)
     // You can implement navigation to rewards page here
     // For now, just close the notification
   }

@@ -46,7 +46,6 @@ export const toggleLearningMode = async (childName, enabled) => {
 
     if (error) throw error
 
-    console.log(`✅ Learning mode ${enabled ? 'enabled' : 'disabled'} for ${childName}`)
     return data
   } catch (error) {
     console.error('학습 모드 토글 실패:', error)
@@ -123,7 +122,6 @@ export const updateChildLearningSettings = async (childName, settings) => {
 
     if (error) throw error
 
-    console.log(`✅ Learning settings updated for ${childName}`)
     return data
   } catch (error) {
     console.error('학습 설정 업데이트 실패:', error)
@@ -180,7 +178,6 @@ export const createGoal = async (childName, goalData) => {
 
     if (error) throw error
 
-    console.log(`✅ Goal created for ${childName}:`, goalData.title)
 
     // Trigger "first_goal" event if this is the first goal
     if (isFirstGoal) {
@@ -286,7 +283,6 @@ export const updateGoal = async (goalId, updates) => {
 
     if (error) throw error
 
-    console.log(`✅ Goal updated:`, goalId)
     return data
   } catch (error) {
     console.error('목표 업데이트 실패:', error)
@@ -308,7 +304,6 @@ export const deleteGoal = async (goalId) => {
 
     if (error) throw error
 
-    console.log(`✅ Goal deleted:`, goalId)
     return true
   } catch (error) {
     console.error('목표 삭제 실패:', error)
@@ -345,7 +340,6 @@ export const completeGoal = async (goalId) => {
 
     if (error) throw error
 
-    console.log(`✅ Goal completed:`, goalId)
 
     // 3. Create progress event to trigger rewards
     const childName = goal.children.name
@@ -412,7 +406,6 @@ export const createProgressEvent = async (childName, eventType, payload = {}) =>
 
     if (error) throw error
 
-    console.log(`✅ Progress event created:`, eventType)
     return data
   } catch (error) {
     console.error('진행 이벤트 생성 실패:', error)
@@ -560,7 +553,6 @@ export const markRewardsAsViewed = async (rewardIds) => {
 
     if (error) throw error
 
-    console.log(`✅ ${rewardIds.length} rewards marked as viewed`)
     return true
   } catch (error) {
     console.error('보상 확인 실패:', error)
@@ -628,7 +620,6 @@ export const createWeakness = async (childName, weaknessData) => {
 
     if (error) throw error
 
-    console.log(`✅ Weakness created for ${childName}`)
     return data
   } catch (error) {
     console.error('약점 생성 실패:', error)
@@ -704,7 +695,6 @@ export const updateWeakness = async (weaknessId, updates) => {
 
     if (error) throw error
 
-    console.log(`✅ Weakness updated:`, weaknessId)
     return data
   } catch (error) {
     console.error('약점 업데이트 실패:', error)
@@ -726,7 +716,6 @@ export const deleteWeakness = async (weaknessId) => {
 
     if (error) throw error
 
-    console.log(`✅ Weakness deleted:`, weaknessId)
     return true
   } catch (error) {
     console.error('약점 삭제 실패:', error)
@@ -755,7 +744,6 @@ export const resolveWeakness = async (weaknessId, resolutionNote = '') => {
 
     if (error) throw error
 
-    console.log(`✅ Weakness resolved:`, weaknessId)
     return data
   } catch (error) {
     console.error('약점 해결 실패:', error)
@@ -830,7 +818,6 @@ export const createMandalaChart = async (childName, centerGoal, nodes = [], opti
 
     if (error) throw error
 
-    console.log(`✅ Mandala chart created: ${centerGoal}`)
 
     // Check if this is the first mandala chart for this child
     const { data: allCharts } = await supabase
@@ -975,7 +962,6 @@ export const updateMandalaNode = async (chartId, position, nodeData) => {
 
     if (error) throw error
 
-    console.log(`✅ Mandala node updated: position ${position}`)
     return data
   } catch (error) {
     console.error('만다라트 노드 업데이트 실패:', error)
@@ -1029,7 +1015,6 @@ export const addNodeToMandala = async (chartId, nodeData) => {
 
     if (error) throw error
 
-    console.log(`✅ Node added to mandala at position ${nextPosition}`)
     return data
   } catch (error) {
     console.error('만다라트 노드 추가 실패:', error)
@@ -1058,7 +1043,6 @@ export const deleteNodeFromMandala = async (chartId, position) => {
 
     if (error) throw error
 
-    console.log(`✅ Node deleted from mandala at position ${position}`)
     return data
   } catch (error) {
     console.error('만다라트 노드 삭제 실패:', error)
@@ -1080,7 +1064,6 @@ export const deleteMandalaChart = async (chartId) => {
 
     if (error) throw error
 
-    console.log(`✅ Mandala chart deleted: ${chartId}`)
     return true
   } catch (error) {
     console.error('만다라트 삭제 실패:', error)
@@ -1114,7 +1097,6 @@ export const calculateMandalaCompletion = async (chartId) => {
       .update({ overall_completion_rate: overallRate })
       .eq('id', chartId)
 
-    console.log(`✅ Mandala completion calculated: ${overallRate}%`)
 
     // If just reached 100% completion, create progress event
     if (overallRate === 100 && previousRate < 100) {
@@ -1131,7 +1113,6 @@ export const calculateMandalaCompletion = async (chartId) => {
           center_goal: chart.center_goal,
           completion_type: 'mandala_completed'
         })
-        console.log(`🎉 Mandala 100% completed! Reward event created.`)
       }
     }
 
@@ -1186,7 +1167,6 @@ export const createNodeWithGoal = async (chartId, childName, nodeData, goalOptio
       completion_rate: 0
     })
 
-    console.log(`✅ Node with goal created: ${title} (goal_id: ${goal.id})`)
     return { node: nodeData, goal, chart: updatedChart }
   } catch (error) {
     console.error('노드+목표 생성 실패:', error)
@@ -1281,7 +1261,6 @@ export const syncGoalToMandala = async (goalId) => {
     // 5. Recalculate chart overall completion
     await calculateMandalaCompletion(chart.id)
 
-    console.log(`✅ Goal synced to mandala: ${goal.title} (${completionRate}%)`)
     return updatedChart
   } catch (error) {
     console.error('Goal → Mandala 동기화 실패:', error)
@@ -1310,7 +1289,6 @@ export const updateGoalProgress = async (goalId, currentValue) => {
     // 3. Sync to mandala
     const mandalaChart = await syncGoalToMandala(goalId)
 
-    console.log(`✅ Goal progress updated: ${currentValue}/${goal.target_value}`)
     return { goal, mandalaChart }
   } catch (error) {
     console.error('목표 진행률 업데이트 실패:', error)
@@ -1346,7 +1324,6 @@ export const linkGoalToNode = async (chartId, position, goalId) => {
     // 4. Sync goal progress to mandala
     await syncGoalToMandala(goalId)
 
-    console.log(`✅ Goal linked to mandala node: ${goal.title}`)
     return updatedChart
   } catch (error) {
     console.error('목표 연결 실패:', error)
@@ -1392,7 +1369,6 @@ export const checkStreak21 = async (childName, habitId, streakDays) => {
       .maybeSingle()
 
     if (existing) {
-      console.log('✅ streak_21 already recorded for this habit')
       return null
     }
 
@@ -1402,7 +1378,6 @@ export const checkStreak21 = async (childName, habitId, streakDays) => {
       streak_count: streakDays
     })
 
-    console.log(`✅ streak_21 achievement recorded for ${childName}`)
     return event
   } catch (error) {
     console.error('streak_21 체크 실패:', error)
@@ -1443,7 +1418,6 @@ export const checkHabitMastery = async (childName, habitId, greenDays) => {
       .maybeSingle()
 
     if (existing) {
-      console.log('✅ habit_mastery already recorded for this habit')
       return null
     }
 
@@ -1453,7 +1427,6 @@ export const checkHabitMastery = async (childName, habitId, greenDays) => {
       green_days: greenDays
     })
 
-    console.log(`✅ habit_mastery achievement recorded for ${childName}`)
     return event
   } catch (error) {
     console.error('habit_mastery 체크 실패:', error)
@@ -1494,7 +1467,6 @@ export const checkWeeklyPlannerPerfect = async (childName, weeklyPlanId, complet
       .maybeSingle()
 
     if (existing) {
-      console.log('✅ weekly_planner_perfect already recorded for this plan')
       return null
     }
 
@@ -1504,7 +1476,6 @@ export const checkWeeklyPlannerPerfect = async (childName, weeklyPlanId, complet
       completion_rate: completionRate
     })
 
-    console.log(`✅ weekly_planner_perfect achievement recorded for ${childName}`)
     return event
   } catch (error) {
     console.error('weekly_planner_perfect 체크 실패:', error)
@@ -1553,7 +1524,6 @@ export const checkFirstWeaknessResolved = async (childName) => {
       .maybeSingle()
 
     if (existing) {
-      console.log('✅ first_weakness_resolved already recorded')
       return null
     }
 
@@ -1562,7 +1532,6 @@ export const checkFirstWeaknessResolved = async (childName) => {
       weakness_id: resolvedWeaknesses[0].id
     })
 
-    console.log(`✅ first_weakness_resolved achievement recorded for ${childName}`)
     return event
   } catch (error) {
     console.error('first_weakness_resolved 체크 실패:', error)

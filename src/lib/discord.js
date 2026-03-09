@@ -25,7 +25,6 @@ async function callEdgeFunction(type, data) {
       return { success: false, error };
     }
 
-    console.log('Discord notification sent:', result);
     return { success: true, data: result };
   } catch (error) {
     console.error('Failed to send Discord notification:', error);
@@ -52,7 +51,6 @@ export function isDiscordEnabled() {
  */
 export async function notifyHabitCheck(childName, habitName, color, dayOfWeek = null) {
   if (!isDiscordEnabled()) {
-    console.log('Discord notifications disabled (no webhook URL)');
     return { success: false, message: 'Discord not configured' };
   }
 
@@ -85,7 +83,6 @@ export async function notifyHabitCheck(childName, habitName, color, dayOfWeek = 
  */
 export async function notifyWeekSave(childName, weekPeriod, habitCount) {
   if (!isDiscordEnabled()) {
-    console.log('Discord notifications disabled (no webhook URL)');
     return { success: false, message: 'Discord not configured' };
   }
 
@@ -107,7 +104,6 @@ export async function notifyWeekSave(childName, weekPeriod, habitCount) {
  */
 export async function notifyWeekComplete(childName, weekPeriod, stats) {
   if (!isDiscordEnabled()) {
-    console.log('Discord notifications disabled (no webhook URL)');
     return { success: false, message: 'Discord not configured' };
   }
 
@@ -145,30 +141,24 @@ export function calculateWeekStats(habits) {
  * @param {string} childName - 아이 이름
  */
 export async function testDiscordNotifications(childName = '테스트') {
-  console.log('🧪 Discord 알림 테스트 시작...');
 
   // 1. 습관 체크 알림 (초록)
-  console.log('1️⃣ 습관 체크 알림 (완료)');
   await notifyHabitCheck(childName, '책 읽기', 'green');
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // 2. 습관 체크 알림 (노랑)
-  console.log('2️⃣ 습관 체크 알림 (보통)');
   await notifyHabitCheck(childName, '운동하기', 'yellow');
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // 3. 주간 저장 알림
-  console.log('3️⃣ 주간 저장 알림');
   await notifyWeekSave(childName, '2025년 1월 13일 ~ 2025년 1월 19일', 5);
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // 4. 주간 목표 달성 알림
-  console.log('4️⃣ 주간 목표 달성 알림');
   await notifyWeekComplete(childName, '2025년 1월 13일 ~ 2025년 1월 19일', {
     total: 35,
     completed: 30,
     successRate: 86,
   });
 
-  console.log('✅ Discord 알림 테스트 완료!');
 }

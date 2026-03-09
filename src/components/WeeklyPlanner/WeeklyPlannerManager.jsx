@@ -42,7 +42,6 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
       setLoading(true)
       // Only load if both childId and weekId are available
       if (!childId || !weekId) {
-        console.log('[Weekly Planner] childId or weekId not available yet')
         setCurrentPlan(null)
         return
       }
@@ -59,7 +58,6 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
     try {
       // Only load if childId is available
       if (!childId) {
-        console.log('[Weekly Planner] childId not available yet')
         setRecentPlans([])
         return
       }

@@ -61,10 +61,7 @@ export function WeeklyPlanEditor({ plan, weekStartDate, childName, onClose, onUp
         try {
           const progress = await getWeeklyPlanProgress(plan.id)
           if (progress && progress.completion_rate === 100) {
-            const event = await checkWeeklyPlannerPerfect(childName, plan.id, 100)
-            if (event) {
-              console.log('🎉 Weekly planner perfect achievement unlocked!')
-            }
+            await checkWeeklyPlannerPerfect(childName, plan.id, 100)
           }
         } catch (rewardError) {
           console.error('보상 체크 실패 (계속 진행):', rewardError)

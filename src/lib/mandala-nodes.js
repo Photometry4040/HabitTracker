@@ -232,7 +232,6 @@ export const createNode = async (chartId, nodeData) => {
 
     if (error) throw error
 
-    console.log(`✅ Node created: ${title} (level ${level}, position ${position})`)
     return data
   } catch (error) {
     console.error('노드 생성 실패:', error)
@@ -276,7 +275,6 @@ export const updateNode = async (nodeId, updates) => {
 
     if (error) throw error
 
-    console.log(`✅ Node updated: ${nodeId}`)
     return data
   } catch (error) {
     console.error('노드 업데이트 실패:', error)
@@ -310,7 +308,6 @@ export const deleteNode = async (nodeId) => {
         .in('id', descendantIds)
     }
 
-    console.log(`✅ Node deleted (soft): ${nodeId} and ${descendants.length} descendants`)
     return true
   } catch (error) {
     console.error('노드 삭제 실패:', error)
@@ -375,7 +372,6 @@ export const expandNode = async (nodeId, childrenData = []) => {
     // Mark parent as expanded
     await updateNode(nodeId, { expanded: true })
 
-    console.log(`✅ Node expanded: ${nodeId} → ${createdNodes.length} children created`)
     return createdNodes
   } catch (error) {
     console.error('노드 확장 실패:', error)
@@ -545,7 +541,6 @@ export const recalculateChartCompletion = async (chartId) => {
         .update({ overall_completion_rate: overallRate })
         .eq('id', chartId)
 
-      console.log(`✅ Chart completion recalculated: ${overallRate}%`)
 
       return {
         overall: overallRate,
@@ -587,7 +582,6 @@ export const linkGoalToNode = async (nodeId, goalId) => {
 
     if (error) throw error
 
-    console.log(`✅ Goal linked to node: ${goalId} → ${nodeId}`)
     return data
   } catch (error) {
     console.error('목표 연결 실패:', error)
@@ -652,7 +646,6 @@ export const syncGoalProgressToNode = async (goalId) => {
       }
     }
 
-    console.log(`✅ Goal synced to node: ${goalId} → ${completionRate}%`)
     return updatedNode
   } catch (error) {
     console.error('목표 동기화 실패:', error)
