@@ -60,7 +60,6 @@ export const createTemplate = async (name, habits, childId = null, description =
       throw error
     }
 
-    console.log('Template created:', data)
     return data
   } catch (error) {
     console.error('Failed to create template:', error)
@@ -197,7 +196,6 @@ export const updateTemplate = async (templateId, updates) => {
       throw error
     }
 
-    console.log('Template updated:', data)
     return data
   } catch (error) {
     console.error('Failed to update template:', error)
@@ -228,7 +226,6 @@ export const deleteTemplate = async (templateId) => {
       throw error
     }
 
-    console.log('Template deleted:', templateId)
     return true
   } catch (error) {
     console.error('Failed to delete template:', error)

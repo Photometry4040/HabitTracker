@@ -10,16 +10,11 @@ const DASHBOARD_API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/das
  */
 async function generateRealComparisonData(userId: string, period: string = 'current_week', customWeekStart?: string) {
   try {
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`📊 [Comparison] Starting for user: ${userId}`);
-    console.log(`📅 Period: ${period}${customWeekStart ? ` (${customWeekStart})` : ''}`);
-    console.log(`${'='.repeat(60)}\n`);
 
     // Step 1: 비교 기준 주 결정
     const targetWeekStart = customWeekStart || getComparisonWeekStart(period);
     const periodLabel = formatComparisonPeriod(period, targetWeekStart);
 
-    console.log(`🎯 Target week: ${targetWeekStart} (${periodLabel})`);
 
     // Step 2: 모든 children 조회
     const { data: children, error: childrenError } = await supabase
@@ -28,11 +23,9 @@ async function generateRealComparisonData(userId: string, period: string = 'curr
       .eq('user_id', userId);
 
     if (childrenError || !children || children.length === 0) {
-      console.log('❌ No children found');
       return null;
     }
 
-    console.log(`✅ Found ${children.length} children\n`);
 
     // Step 3: 각 아이의 해당 주차 완료율 계산 (동일 기간 비교)
     const childrenData = await Promise.all(
@@ -47,7 +40,6 @@ async function generateRealComparisonData(userId: string, period: string = 'curr
 
         // 지정 주차에 데이터가 없는 경우
         if (!targetWeek) {
-          console.log(`  ⚪ ${child.name}: No data for ${targetWeekStart}`);
           return {
             child_id: child.id,
             child_name: child.name,
@@ -113,7 +105,6 @@ async function generateRealComparisonData(userId: string, period: string = 'curr
           : 'stable';
 
         const statusIcon = currentTotal > 0 ? '✅' : '⚪';
-        console.log(`  ${statusIcon} ${child.name}: ${currentRate}% (prev: ${lastWeekRate ?? 'N/A'}%) ${trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️'}`);
 
         return {
           child_id: child.id,
@@ -133,7 +124,6 @@ async function generateRealComparisonData(userId: string, period: string = 'curr
     const allChildren = childrenData.filter(c => c !== null);
 
     if (allChildren.length === 0) {
-      console.log('\n❌ No children data');
       return null;
     }
 
@@ -148,11 +138,6 @@ async function generateRealComparisonData(userId: string, period: string = 'curr
     const dataCount = rankedData.filter(c => c.has_data).length;
     const noDataCount = rankedData.filter(c => !c.has_data).length;
 
-    console.log(`\n📊 Summary:`);
-    console.log(`  • Total children: ${rankedData.length}`);
-    console.log(`  • With data: ${dataCount}`);
-    console.log(`  • No data: ${noDataCount}`);
-    console.log(`\n${'='.repeat(60)}\n`);
 
     return {
       children: rankedData,
@@ -341,14 +326,9 @@ function createWeekObject(weekStart: Date, hasData = false) {
  */
 async function generateRealTrendData(childId: string, weeksCount: number) {
   try {
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`📊 [Trend Analysis] Starting for child: ${childId}`);
-    console.log(`📅 Requested weeks: ${weeksCount}`);
-    console.log(`${'='.repeat(60)}\n`);
 
     // Step 1: 현재 주(월요일 기준) 계산
     const currentWeekMonday = getMonday(new Date());
-    console.log(`📍 Current week starts: ${currentWeekMonday.toISOString().split('T')[0]}`);
 
     // Step 2: DB에서 아이의 모든 주차 범위 조회
     const { data: dbWeekDates, error: dbError } = await supabase
@@ -378,21 +358,13 @@ async function generateRealTrendData(childId: string, weeksCount: number) {
       // 이렇게 하면 DB에 있는 모든 데이터가 포함됨
       rangeStart = dbOldestDate < requestedStart ? dbOldestDate : requestedStart;
 
-      console.log(`📚 DB data found: ${dbWeekDates.length} weeks`);
-      console.log(`  • Oldest DB week: ${dbWeekDates[0].week_start_date}`);
-      console.log(`  • Newest DB week: ${dbWeekDates[dbWeekDates.length - 1].week_start_date}`);
-      console.log(`  • Requested start: ${requestedStart.toISOString().split('T')[0]}`);
-      console.log(`  ✅ Using start: ${rangeStart.toISOString().split('T')[0]} (${dbOldestDate < requestedStart ? 'DB oldest' : 'requested'})`);
     } else {
       // DB에 데이터가 없는 경우
       rangeStart = new Date(currentWeekMonday);
       rangeStart.setDate(currentWeekMonday.getDate() - ((weeksCount - 1) * 7));
-      console.log(`📚 No DB data found`);
-      console.log(`  ✅ Using requested range: ${weeksCount} weeks from ${rangeStart.toISOString().split('T')[0]}`);
     }
 
     // Step 4: 연속된 모든 주차 생성
-    console.log(`\n🔧 Generating continuous weeks...`);
     const allWeeks = [];
     const iterDate = new Date(rangeStart);
 
@@ -401,11 +373,8 @@ async function generateRealTrendData(childId: string, weeksCount: number) {
       iterDate.setDate(iterDate.getDate() + 7);
     }
 
-    console.log(`  ✅ Generated: ${allWeeks.length} continuous weeks`);
-    console.log(`  📆 Date range: ${allWeeks[0].week_start_date} to ${allWeeks[allWeeks.length - 1].week_start_date}`);
 
     // Step 5: 생성된 범위 내의 실제 데이터 조회
-    console.log(`\n🔍 Fetching actual data from DB...`);
     const { data: weeksWithData, error: fetchError } = await supabase
       .from('weeks')
       .select('id, week_start_date')
@@ -420,14 +389,11 @@ async function generateRealTrendData(childId: string, weeksCount: number) {
     }
 
     if (!weeksWithData || weeksWithData.length === 0) {
-      console.log(`  ℹ️ No data found in range - all weeks will show as empty`);
       return allWeeks;
     }
 
-    console.log(`  ✅ Found ${weeksWithData.length} weeks with data`);
 
     // Step 6: 각 주차별 상세 데이터 조회 및 매칭
-    console.log(`\n📈 Processing weekly data...`);
     for (const weekData of weeksWithData) {
       const targetWeek = allWeeks.find(w => w.week_start_date === weekData.week_start_date);
 
@@ -466,33 +432,23 @@ async function generateRealTrendData(childId: string, weeksCount: number) {
       // 로깅
       const statusIcon = targetWeek.has_data ? '✅' : '⚪';
       const percentage = targetWeek.has_data ? `${targetWeek.completion_rate}%` : 'no records';
-      console.log(`  ${statusIcon} Week ${weekData.week_start_date}: ${percentage} (${greenCount}/${totalRecordCount} green)`);
     }
 
     // Step 7: 최종 통계 및 검증
     const weeksWithRecords = allWeeks.filter(w => w.has_data).length;
     const emptyWeeks = allWeeks.filter(w => !w.has_data).length;
 
-    console.log(`\n📊 Final Statistics:`);
-    console.log(`  • Total weeks: ${allWeeks.length}`);
-    console.log(`  • With data: ${weeksWithRecords} weeks`);
-    console.log(`  • Empty: ${emptyWeeks} weeks`);
 
     // 상세 디버깅 (개발 모드에서만)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`\n🔍 Detailed week list:`);
       allWeeks.forEach((week, index) => {
         const isoWeek = getISOWeekNumber(week.week_start_date);
         const status = week.has_data
           ? `📊 ${week.completion_rate}%`
           : '⚪ empty';
-        console.log(`  [${index.toString().padStart(2, '0')}] Week ${isoWeek} (${week.week_start_date}): ${status}`);
       });
     }
 
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`✅ [Trend Analysis] Complete`);
-    console.log(`${'='.repeat(60)}\n`);
 
     return allWeeks;
   } catch (error) {
@@ -507,7 +463,6 @@ async function generateRealTrendData(childId: string, weeksCount: number) {
  */
 async function generateMockTrendData(childId: string, weeksCount: number) {
   try {
-    console.log(`[Trend] Fetching recent ${weeksCount} weeks for child: ${childId}`);
 
     // 해당 아이의 주 데이터 가져오기 (모든 주 조회)
     let weeks;
@@ -533,7 +488,6 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
         .order('week_start_date', { ascending: true });
 
       weeks = allWeeksResult.data || [];
-      console.log(`[Trend] Found ${weeks.length} weeks from all children`);
 
       if (weeks.length > 0) {
         console.warn(`[Trend] Using weeks from other children - child_ids:`,
@@ -555,26 +509,19 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
         .eq('id', childId)
         .maybeSingle();
 
-      console.log('[Trend] Child info:', childCheck);
       return getDefaultMockTrendData();
     }
 
-    console.log(`[Trend] Found ${weeks.length} actual weeks for child: ${childId}`);
 
     // 실제 데이터 주 로깅
-    console.log('[Trend] All weeks from DB:');
     weeks.forEach((w, idx) => {
-      console.log(`  ${idx + 1}. ${w.week_start_date} (ID: ${w.id})`);
     });
 
     // ✨ 핵심 로직: 최신 N개만 선택 (빈 주차 제외!)
     const recentWeeks = weeks.slice(-Math.min(weeksCount, weeks.length));
 
-    console.log(`[Trend] Selected ${recentWeeks.length} recent weeks (requested: ${weeksCount})`);
-    console.log('[Trend] Selected weeks:');
     recentWeeks.forEach((w, idx) => {
       const isoWeek = getISOWeekNumber(w.week_start_date);
-      console.log(`  ${idx + 1}. ${w.week_start_date} (${isoWeek}주차)`);
     });
 
     // 각 주별 완료율 시뮬레이션 (Mock 데이터)
@@ -597,7 +544,6 @@ async function generateMockTrendData(childId: string, weeksCount: number) {
       };
     });
 
-    console.log(`[Trend] Generated ${trendData.length} trend data points (all with actual data)`);
     return trendData;
   } catch (error) {
     console.error('Error generating mock trend data:', error);
@@ -634,16 +580,13 @@ export function useComparisonData(
 
       // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
       // TODO: Edge Function 문제 해결 후 원래대로 복구
-      console.log('[Comparison] Attempting to fetch real data (direct DB query)');
       const realData = await generateRealComparisonData(userId, period, customWeekStart);
 
       if (realData && realData.children && realData.children.length > 0) {
-        console.log('[Comparison] ✅ Using real comparison data');
         return realData;
       }
 
       // 실제 데이터가 없으면 null 반환 (Empty State 표시)
-      console.log('[Comparison] ⚪ No real comparison data found, returning null');
       return null;
 
       // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
@@ -692,15 +635,12 @@ export function useTrendData(
 
       // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
       // TODO: Edge Function 문제 해결 후 원래대로 복구
-      console.log('[Trend] Attempting to fetch real trend data (direct DB query)');
       const realData = await generateRealTrendData(childId, weeks);
 
       if (realData) {
-        console.log('[Trend] ✅ Using real trend data (continuous weeks)');
         return realData;
       }
 
-      console.log('[Trend] ❌ Error generating trend data, returning null');
       return null;
 
       // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
@@ -742,10 +682,6 @@ export function useTrendData(
  */
 async function generateRealInsightsData(childId: string, weeksCount: number = 4) {
   try {
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`📊 [Insights] Starting analysis for child: ${childId}`);
-    console.log(`📅 Analysis period: ${weeksCount} weeks`);
-    console.log(`${'='.repeat(60)}\n`);
 
     // Step 1: 최근 N주의 weeks 조회
     const { data: weeks, error: weeksError } = await supabase
@@ -761,11 +697,9 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
     }
 
     if (!weeks || weeks.length === 0) {
-      console.log('⚪ [Insights] No weeks found for analysis');
       return null;
     }
 
-    console.log(`✅ Found ${weeks.length} weeks for analysis`);
     const weekIds = weeks.map(w => w.id);
 
     // Step 2: 해당 weeks의 모든 habits 조회
@@ -775,11 +709,9 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
       .in('week_id', weekIds);
 
     if (habitsError || !habits || habits.length === 0) {
-      console.log('⚪ [Insights] No habits found');
       return null;
     }
 
-    console.log(`✅ Found ${habits.length} total habits across all weeks`);
 
     // Step 3: 모든 habit_records 조회
     const habitIds = habits.map(h => h.id);
@@ -793,7 +725,6 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
       return null;
     }
 
-    console.log(`✅ Found ${records?.length || 0} habit records`);
 
     // Step 4: 습관별 통계 계산
     const habitStatsMap = new Map();
@@ -836,13 +767,10 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
       };
     });
 
-    console.log(`\n📊 Habit Statistics:`);
     habitStats.forEach(h => {
-      console.log(`  ${h.completion_rate >= 80 ? '✅' : h.completion_rate >= 50 ? '⚠️' : '❌'} ${h.habit_name}: ${h.completion_rate}% (${h.completed_days}/${h.total_days})`);
     });
 
     if (habitStats.length === 0) {
-      console.log('⚪ [Insights] No habit statistics to analyze');
       return null;
     }
 
@@ -890,9 +818,7 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
       completed: stats.completed,
     }));
 
-    console.log(`\n📅 Day of Week Statistics:`);
     dayOfWeekStats.forEach(d => {
-      console.log(`  ${d.emoji} ${d.day}: ${d.rate}% (${d.completed}/${d.total})`);
     });
 
     // Step 8: 평균 완료율
@@ -912,14 +838,6 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
       feedbackMessage = '🎯 목표 달성을 위해 함께 노력해봅시다!';
     }
 
-    console.log(`\n📊 Summary:`);
-    console.log(`  • Average completion: ${averageCompletion}%`);
-    console.log(`  • Strengths: ${strengths.length} habits`);
-    console.log(`  • Weaknesses: ${weaknesses.length} habits`);
-    console.log(`  • Feedback: ${feedbackMessage}`);
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`✅ [Insights] Analysis complete`);
-    console.log(`${'='.repeat(60)}\n`);
 
     return {
       summary: {
@@ -953,7 +871,6 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
  */
 async function generateMockInsightsData(childId: string, weeksCount: number = 4) {
   try {
-    console.log(`[Insights] Generating insights for child: ${childId}, weeks: ${weeksCount}`);
 
     // 트렌드 데이터 가져오기 (같은 기간)
     const trendData = await generateMockTrendData(childId, weeksCount);
@@ -1031,7 +948,6 @@ async function generateMockInsightsData(childId: string, weeksCount: number = 4)
       feedbackMessage = '🎯 목표 달성을 위해 함께 노력해봅시다!';
     }
 
-    console.log(`[Insights] Generated insights: ${strengths.length} strengths, ${weaknesses.length} weaknesses`);
 
     return {
       summary: {
@@ -1077,18 +993,15 @@ export function useInsights(
 
       // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
       // TODO: Edge Function 문제 해결 후 원래대로 복구
-      console.log('[Insights] Attempting to fetch real insights data (direct DB query)');
 
       // 실제 데이터 생성 시도
       const realData = await generateRealInsightsData(childId, weeks);
 
       if (realData) {
-        console.log('[Insights] ✅ Using real insights data');
         return realData;
       }
 
       // 실제 데이터가 없으면 null 반환 (Empty State 표시)
-      console.log('[Insights] ⚪ No real data found, returning null');
       return null;
 
       // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)
@@ -1128,7 +1041,6 @@ export function useInsights(
  */
 async function generateRealMonthlyData(childId: string, year: number, month: number) {
   try {
-    console.log(`[Real] Fetching real monthly data: ${childId}, ${year}-${month}`);
 
     // Step 1: 해당 월의 실제 weeks 조회
     const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -1150,11 +1062,9 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
     }
 
     if (!weeks || weeks.length === 0) {
-      console.log(`[Real] No weeks found for ${year}-${month}`);
       return null; // ✅ 명시적 null 반환
     }
 
-    console.log(`[Real] Found ${weeks.length} weeks for ${year}-${month}`);
 
     // Step 2: 각 주의 실제 완료율 계산
     const weekStats = await Promise.all(
@@ -1197,7 +1107,6 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
     const validWeeks = weekStats.filter(w => w.has_data);
 
     if (validWeeks.length === 0) {
-      console.log(`[Real] No valid habit records for ${year}-${month}`);
       return null; // ✅ 기록이 없으면 null 반환
     }
 
@@ -1214,7 +1123,6 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
       prev.completion_rate < current.completion_rate ? prev : current
     );
 
-    console.log(`[Real] Calculated stats: avg=${avgCompletion}%, best=${bestWeek.completion_rate}%, worst=${worstWeek.completion_rate}%`);
 
     // Step 4: 지난달 데이터 조회 (비교용)
     const lastMonth = month === 1 ? 12 : month - 1;
@@ -1253,7 +1161,6 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
  */
 async function generateMockMonthlyData(childId: string, year: number, month: number) {
   try {
-    console.log(`[Monthly] Generating monthly stats for child: ${childId}, ${year}-${month}`);
 
     // 월의 주 데이터 생성 (4~5주)
     const monthDays = new Date(year, month, 0).getDate(); // 해당 월의 마지막 날
@@ -1315,7 +1222,6 @@ async function generateMockMonthlyData(childId: string, year: number, month: num
       { month_name: '5월', rate: 88 },
     ];
 
-    console.log(`[Monthly] Generated ${monthlyStats.total_weeks} weeks for ${month}월`);
 
     return {
       summary: monthlyStats,
@@ -1349,15 +1255,12 @@ export function useMonthlyStats(
 
       // TEMPORARY FIX: 프로덕션에서도 직접 DB 조회 사용 (Edge Function 500 에러 우회)
       // TODO: Edge Function 문제 해결 후 원래대로 복구
-      console.log('[Monthly] Attempting to fetch real monthly data (direct DB query)');
       const realData = await generateRealMonthlyData(childId, year, month);
 
       if (realData) {
-        console.log('[Monthly] ✅ Using real monthly data');
         return realData;
       }
 
-      console.log('[Monthly] ⚪ No real data found, returning null');
       return null;
 
       // ORIGINAL CODE (Edge Function 사용 - 현재 500 에러로 비활성화)

@@ -84,7 +84,6 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
 
       if (!weeks || weeks.length === 0) {
         // 아이는 있지만 weeks가 없으면 아이만 삭제
-        console.log(`No weeks found for ${childName}, deleting child only...`)
 
         const { error: deleteError } = await supabase
           .from('children')
@@ -95,7 +94,6 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
           throw deleteError
         }
 
-        console.log(`Successfully deleted child: ${childName}`)
         await loadChildren()
         alert('아이가 삭제되었습니다.')
         return
@@ -104,7 +102,6 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
       // Delete all habit_records -> habits -> weeks -> child (in reverse order)
       // Filter out weeks without valid IDs (from mock/trend data)
       const validWeeks = weeks.filter(w => w.id && w.id !== null && w.id !== 'undefined');
-      console.log(`Deleting ${validWeeks.length} weeks for ${childName}... (${weeks.length - validWeeks.length} invalid entries skipped)`)
 
       for (const week of validWeeks) {
         // Delete habit_records first
@@ -144,7 +141,6 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
         throw finalError
       }
 
-      console.log(`Successfully deleted all data for ${childName}`)
       await loadChildren()
       alert('아이와 모든 데이터가 삭제되었습니다.')
     } catch (error) {
@@ -176,7 +172,6 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
         )
       )
 
-      console.log(`✅ Learning mode ${newStatus ? 'enabled' : 'disabled'} for ${childName}`)
     } catch (error) {
       console.error('학습 모드 토글 실패:', error)
       alert('학습 모드 설정 중 오류가 발생했습니다.')

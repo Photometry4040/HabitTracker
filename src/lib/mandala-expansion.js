@@ -85,7 +85,6 @@ export const expandMandalaNode = async (parentNodeId, childrenTitles = []) => {
 
     if (updateError) throw updateError
 
-    console.log(`✅ Node expanded: ${parentNode.title} → ${createdNodes.length} children`)
     return createdNodes
   } catch (error) {
     console.error('노드 확장 실패:', error)
@@ -191,7 +190,6 @@ export const updateMandalaNodeData = async (nodeId, updates) => {
 
     if (error) throw error
 
-    console.log(`✅ Node updated: ${nodeId}`)
     return data
   } catch (error) {
     console.error('노드 업데이트 실패:', error)
@@ -213,7 +211,6 @@ export const deleteMandalaNodeData = async (nodeId) => {
 
     if (error) throw error
 
-    console.log(`✅ Node deleted (soft): ${nodeId}`)
     return true
   } catch (error) {
     console.error('노드 삭제 실패:', error)
@@ -274,7 +271,6 @@ export const collapseMandalaNode = async (nodeId) => {
 
     if (error) throw error
 
-    console.log(`✅ Node collapsed: ${nodeId}`)
     return true
   } catch (error) {
     console.error('노드 축소 실패:', error)
@@ -341,7 +337,6 @@ export const recalculateMandalaCompletion = async (chartId) => {
       .update({ overall_completion_rate: level1Avg })
       .eq('id', chartId)
 
-    console.log(`✅ Chart completion recalculated: ${level1Avg}%`)
     return {
       overall: level1Avg,
       level1Count: nodesByLevel[1].length,

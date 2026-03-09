@@ -46,8 +46,8 @@ export default function TabNavigation({ activeTab, onTabChange }) {
             aria-selected={isActive}
             onClick={() => onTabChange(tab.id)}
             className={`
-              group relative inline-flex items-center space-x-2 px-3 sm:px-4 py-3 sm:py-4
-              border-b-2 font-medium text-sm
+              group relative inline-flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-3 sm:py-4
+              border-b-2 font-medium text-xs sm:text-sm min-h-[44px]
               transition-colors duration-200
               ${
                 isActive
@@ -58,7 +58,7 @@ export default function TabNavigation({ activeTab, onTabChange }) {
           >
             <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+            <span className="sm:hidden text-xs">{tab.label.replace(/[^\w가-힣]/g, '').slice(0, 3)}</span>
 
             {/* Tooltip on hover */}
             <div

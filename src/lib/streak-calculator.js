@@ -2,6 +2,7 @@
  * Streak Calculator for Habit Tracking
  * Calculates consecutive days and green days for reward triggers
  */
+import { supabase } from './supabase.js'
 
 /**
  * Calculate consecutive days for a habit (any non-null status)
@@ -95,7 +96,6 @@ export function calculateGreenStreak(records) {
  */
 export async function getHabitRecordsForStreak(habitId) {
   try {
-    const { supabase } = await import('./supabase.js')
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -174,7 +174,6 @@ export async function getHabitRecordsForStreak(habitId) {
       return []
     }
 
-    console.log(`[Streak Calculator] Found ${records?.length || 0} records for habit "${currentHabit.name}"`)
     return records || []
 
   } catch (error) {

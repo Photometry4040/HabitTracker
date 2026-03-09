@@ -28,7 +28,7 @@ export default function MonthlyCalendar({ weeks }) {
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex items-center justify-center space-x-6 text-sm">
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
         <div className="flex items-center space-x-2">
           <span className="w-4 h-4 bg-green-100 border border-green-300 rounded"></span>
           <span className="text-gray-700">80% 이상</span>

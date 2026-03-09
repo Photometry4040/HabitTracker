@@ -83,7 +83,7 @@ export default function ComparisonCard({ child, showLastWeek, onViewDetails }) {
         {/* Rank & Name */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <span className="text-3xl opacity-30">{rank_emoji}</span>
+            <span className="text-2xl sm:text-3xl opacity-30">{rank_emoji}</span>
             <div>
               <h3 className="text-xl font-bold text-gray-600">{child_name}</h3>
               <p className="text-sm text-gray-500">{rank}위</p>
