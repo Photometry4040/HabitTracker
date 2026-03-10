@@ -38,7 +38,7 @@ function App() {
     currentWeekId, currentChildId,
     saveData, updateHabitColor, bulkUpdateDay, addHabit, removeHabit, updateHabitName,
     handleApplyTemplate, resetData,
-    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData,
+    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, autoSaveStatus,
     showDashboard, setShowDashboard,
     showTemplateManager, setShowTemplateManager,
     showGoals, setShowGoals,
@@ -190,14 +190,25 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Save button */}
-                  <button
-                    onClick={() => saveData(false)}
-                    disabled={saving}
-                    className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
-                  >
-                    {saving ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
-                  </button>
+                  {/* Auto-save indicator + Save button */}
+                  <div className="flex items-center gap-1.5">
+                    {autoSaveStatus === 'pending' && (
+                      <span className="text-[10px] text-gray-400 animate-pulse">3초...</span>
+                    )}
+                    {autoSaveStatus === 'saving' && (
+                      <Cloud className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <span className="text-[10px] text-green-500 font-medium">저장됨</span>
+                    )}
+                    <button
+                      onClick={() => saveData(false)}
+                      disabled={saving || autoSaveStatus === 'saving'}
+                      className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
+                    >
+                      {saving || autoSaveStatus === 'saving' ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 {/* Row 2: Week period + theme */}
                 <div className="flex items-center justify-between mt-1.5">

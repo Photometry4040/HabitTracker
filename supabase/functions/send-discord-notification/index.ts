@@ -22,7 +22,7 @@ interface DiscordEmbed {
 }
 
 interface NotificationRequest {
-  type: 'habit_check' | 'week_save' | 'week_complete';
+  type: 'habit_check' | 'week_save' | 'week_complete' | 'week_summary';
   childName: string;
   habitName?: string;
   color?: string;
@@ -30,8 +30,13 @@ interface NotificationRequest {
   habitCount?: number;
   stats?: {
     total: number;
-    completed: number;
+    completed?: number;
+    green?: number;
+    yellow?: number;
+    red?: number;
+    empty?: number;
     successRate: number;
+    allFilled?: boolean;
   };
   dayOfWeek?: string;
 }
@@ -204,6 +209,54 @@ function createWeekCompleteEmbed(data: NotificationRequest): DiscordEmbed {
   };
 }
 
+// 주간 습관 요약 알림 생성 (모든 습관 채워졌을 때)
+function createWeekSummaryEmbed(data: NotificationRequest): DiscordEmbed {
+  const stats = data.stats!;
+  const rate = stats.successRate;
+  const emoji = rate >= 90 ? '🌟' : rate >= 70 ? '👍' : '💪';
+
+  return {
+    title: `${emoji} 주간 습관 요약`,
+    description: `**${data.childName}**님의 이번 주 습관 기록이 완성되었어요!`,
+    color: getEmbedColor(rate >= 80 ? 'green' : rate >= 50 ? 'yellow' : 'red'),
+    fields: [
+      {
+        name: '📅 기간',
+        value: data.weekPeriod || '현재 주',
+        inline: false,
+      },
+      {
+        name: '🟢 달성',
+        value: `${stats.green || 0}개`,
+        inline: true,
+      },
+      {
+        name: '🟡 보통',
+        value: `${stats.yellow || 0}개`,
+        inline: true,
+      },
+      {
+        name: '🔴 미달성',
+        value: `${stats.red || 0}개`,
+        inline: true,
+      },
+      {
+        name: '📊 달성률',
+        value: `**${rate}%** (${stats.green || 0}/${stats.total})`,
+        inline: false,
+      },
+    ],
+    timestamp: new Date().toISOString(),
+    footer: {
+      text: rate >= 90
+        ? '대단해요! 완벽한 한 주였어요! 🏆'
+        : rate >= 70
+        ? '잘했어요! 다음 주도 화이팅! 💪'
+        : '괜찮아요! 조금씩 나아지고 있어요! 🌱',
+    },
+  };
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -249,6 +302,13 @@ serve(async (req) => {
           throw new Error('weekPeriod and stats are required for week_complete type');
         }
         embed = createWeekCompleteEmbed(data);
+        break;
+
+      case 'week_summary':
+        if (!data.stats) {
+          throw new Error('stats are required for week_summary type');
+        }
+        embed = createWeekSummaryEmbed(data);
         break;
 
       default:

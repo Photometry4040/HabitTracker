@@ -2,11 +2,11 @@
  * useHabitTracker - Custom hook for habit tracker state management
  * Extracted from App.jsx to reduce monolithic component complexity
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { loadWeekDataNew as loadChildData } from '@/lib/database-new.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
-import { notifyHabitCheck, notifyWeekSave, notifyWeekComplete, calculateWeekStats } from '@/lib/discord.js'
+import { notifyWeekSave, notifyWeekComplete, notifyWeekSummary, calculateWeekStats, calculateDetailedWeekStats } from '@/lib/discord.js'
 import { checkStreak21, checkHabitMastery } from '@/lib/learning-mode.js'
 import { getHabitRecordsForStreak, calculateStreak, calculateGreenStreak } from '@/lib/streak-calculator.js'
 import { createDefaultHabits, DEFAULT_REFLECTION, formatWeekPeriod, DAYS } from '@/lib/app-constants.js'
@@ -28,6 +28,9 @@ export function useHabitTracker() {
   const [pendingSaveData, setPendingSaveData] = useState(null)
   const [currentWeekId, setCurrentWeekId] = useState(null)
   const [currentChildId, setCurrentChildId] = useState(null)
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'pending' | 'saving' | 'saved'
+  const autoSaveTimerRef = useRef(null)
+  const autoSaveClearRef = useRef(null)
 
   // View toggles
   const [showDashboard, setShowDashboard] = useState(false)
@@ -236,6 +239,31 @@ export function useHabitTracker() {
     }
   }, [weekStartDate])
 
+  // Schedule auto-save 3 seconds after habit change
+  const scheduleAutoSave = useCallback(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    if (autoSaveClearRef.current) clearTimeout(autoSaveClearRef.current)
+    setAutoSaveStatus('pending')
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaveStatus('saving')
+      try {
+        await saveData(true)
+        setAutoSaveStatus('saved')
+        autoSaveClearRef.current = setTimeout(() => setAutoSaveStatus(null), 2000)
+      } catch {
+        setAutoSaveStatus(null)
+      }
+    }, 3000)
+  }, [saveData])
+
+  // Cleanup auto-save timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+      if (autoSaveClearRef.current) clearTimeout(autoSaveClearRef.current)
+    }
+  }, [])
+
   // Update habit color
   const updateHabitColor = useCallback(async (habitId, dayIndex, color) => {
     const habit = habits.find(h => h.id === habitId)
@@ -259,8 +287,19 @@ export function useHabitTracker() {
 
       checkStreakAchievements(habit.name, selectedChild).catch(() => {})
 
-      const dayOfWeek = DAYS[dayIndex] || `${dayIndex + 1}일차`
-      notifyHabitCheck(selectedChild, habit.name, newColor, dayOfWeek).catch(() => {})
+      // Check if all habits are fully filled → send weekly summary
+      const updatedHabits = habits.map(h =>
+        h.id === habitId
+          ? { ...h, times: h.times.map((time, index) => index === dayIndex ? newColor : time) }
+          : h
+      )
+      const detailedStats = calculateDetailedWeekStats(updatedHabits)
+      if (detailedStats.allFilled) {
+        notifyWeekSummary(selectedChild, weekPeriod, detailedStats).catch(() => {})
+      }
+
+      // Schedule auto-save 3 seconds after habit update
+      scheduleAutoSave()
     } catch (error) {
       console.error('Failed to update habit record:', error)
       setHabits(prev => prev.map(h =>
@@ -270,7 +309,7 @@ export function useHabitTracker() {
       ))
       alert('습관 기록 저장 중 오류가 발생했습니다.')
     }
-  }, [habits, selectedChild, weekStartDate, checkStreakAchievements])
+  }, [habits, selectedChild, weekStartDate, weekPeriod, checkStreakAchievements, scheduleAutoSave])
 
   // Bulk update day
   const bulkUpdateDay = useCallback(async (dayIndex, color) => {
@@ -295,12 +334,13 @@ export function useHabitTracker() {
 
     try {
       await Promise.all(updatePromises)
+      scheduleAutoSave()
       alert(`${DAYS[dayIndex]}의 모든 습관이 업데이트되었습니다!`)
     } catch (error) {
       alert('일부 습관 업데이트에 실패했습니다. 다시 시도해주세요.')
       loadWeekData(selectedChild, weekPeriod)
     }
-  }, [selectedChild, weekStartDate, habits, weekPeriod, loadWeekData])
+  }, [selectedChild, weekStartDate, habits, weekPeriod, loadWeekData, scheduleAutoSave])
 
   const addHabit = useCallback(() => {
     setHabits(prev => [...prev, {
@@ -386,7 +426,7 @@ export function useHabitTracker() {
     saveData, updateHabitColor, bulkUpdateDay, addHabit, removeHabit, updateHabitName,
     handleApplyTemplate, resetData,
     // Save state
-    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, setPendingSaveData,
+    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, setPendingSaveData, autoSaveStatus,
     // View toggles
     showDashboard, setShowDashboard,
     showTemplateManager, setShowTemplateManager,

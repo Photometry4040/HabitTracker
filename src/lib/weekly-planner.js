@@ -69,6 +69,63 @@ export async function getWeeklyPlan(childId, weekId) {
 }
 
 /**
+ * Get weekly plan by child ID and week start date (joins through weeks table)
+ * @param {string} childId - Child ID
+ * @param {string} weekStartDate - Week start date (YYYY-MM-DD)
+ * @returns {Promise<Object|null>} Weekly plan or null
+ */
+export async function getWeeklyPlanByDate(childId, weekStartDate) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('weekly_plans')
+    .select('*, weeks!inner(week_start_date)')
+    .eq('user_id', user.id)
+    .eq('child_id', childId)
+    .eq('weeks.week_start_date', weekStartDate)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Ensure a week record exists for a child + weekStartDate.
+ * Returns the existing or newly created week ID.
+ * @param {string} childId - Child ID
+ * @param {string} weekStartDate - Week start date (YYYY-MM-DD, must be Monday)
+ * @returns {Promise<string>} Week UUID
+ */
+export async function ensureWeekExists(childId, weekStartDate) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Check if week exists
+  const { data: existingWeek } = await supabase
+    .from('weeks')
+    .select('id')
+    .eq('child_id', childId)
+    .eq('week_start_date', weekStartDate)
+    .maybeSingle();
+
+  if (existingWeek) return existingWeek.id;
+
+  // Create a new week record (minimal: just child_id + date)
+  const { data: newWeek, error } = await supabase
+    .from('weeks')
+    .insert([{
+      child_id: childId,
+      week_start_date: weekStartDate,
+    }])
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return newWeek.id;
+}
+
+/**
  * Get all weekly plans for a child
  * @param {string} childId - Child ID
  * @param {number} [limit=10] - Maximum number of plans to return

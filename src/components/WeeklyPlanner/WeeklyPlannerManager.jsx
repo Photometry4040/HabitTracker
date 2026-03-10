@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge.jsx'
 import { Calendar, Plus, Edit2, Trash2, CheckCircle2, Clock, Target, List, BookTemplate } from 'lucide-react'
 import {
   createWeeklyPlan,
-  getWeeklyPlan,
+  getWeeklyPlanByDate,
   getChildWeeklyPlans,
   updateWeeklyPlan,
   deleteWeeklyPlan,
-  getWeeklyPlanProgress
+  getWeeklyPlanProgress,
+  ensureWeekExists
 } from '@/lib/weekly-planner.js'
 import { WeeklyPlanEditor } from './WeeklyPlanEditor.jsx'
 import { DailyTaskCalendar } from './DailyTaskCalendar.jsx'
@@ -29,7 +30,7 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
   useEffect(() => {
     loadWeeklyPlan()
     loadRecentPlans()
-  }, [childId, weekId])
+  }, [childId, weekStartDate])
 
   useEffect(() => {
     if (currentPlan) {
@@ -40,15 +41,16 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
   const loadWeeklyPlan = async () => {
     try {
       setLoading(true)
-      // Only load if both childId and weekId are available
-      if (!childId || !weekId) {
+      // Load by childId + weekStartDate (independent of habit week data)
+      if (!childId || !weekStartDate) {
         setCurrentPlan(null)
         return
       }
-      const plan = await getWeeklyPlan(childId, weekId)
+      const plan = await getWeeklyPlanByDate(childId, weekStartDate)
       setCurrentPlan(plan)
     } catch (error) {
       console.error('주간 계획 로드 실패:', error)
+      setCurrentPlan(null)
     } finally {
       setLoading(false)
     }
@@ -80,9 +82,17 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
 
   const handleCreatePlan = async () => {
     try {
+      if (!childId || !weekStartDate) {
+        alert('아이와 주간 시작일을 먼저 선택해주세요.')
+        return
+      }
+
+      // Ensure a week record exists (creates one if needed)
+      const resolvedWeekId = await ensureWeekExists(childId, weekStartDate)
+
       const planData = {
         childId,
-        weekId,
+        weekId: resolvedWeekId,
         title: `${childName}의 주간 계획 - ${weekStartDate}`,
         description: '',
         goalTargets: []
@@ -91,6 +101,7 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
       const newPlan = await createWeeklyPlan(planData)
       setCurrentPlan(newPlan)
       setShowEditor(true)
+      await loadRecentPlans()
       alert('주간 계획이 생성되었습니다!')
     } catch (error) {
       console.error('계획 생성 실패:', error)
@@ -311,13 +322,30 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
       )}
 
       {/* Calendar View */}
-      {activeView === 'calendar' && currentPlan && (
-        <DailyTaskCalendar
-          weeklyPlanId={currentPlan.id}
-          weekStartDate={weekStartDate}
-          onTaskUpdate={loadProgress}
-          fullView={true}
-        />
+      {activeView === 'calendar' && (
+        currentPlan ? (
+          <DailyTaskCalendar
+            weeklyPlanId={currentPlan.id}
+            weekStartDate={weekStartDate}
+            onTaskUpdate={loadProgress}
+            fullView={true}
+          />
+        ) : (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="space-y-4">
+                <div className="text-gray-500">
+                  <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg mb-2">캘린더를 보려면 먼저 주간 계획을 만들어주세요</p>
+                </div>
+                <Button onClick={handleCreatePlan} size="lg">
+                  <Plus className="w-5 h-5 mr-2" />
+                  주간 계획 만들기
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* History View */}
