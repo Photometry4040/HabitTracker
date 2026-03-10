@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ClipboardCheck, BarChart3, GraduationCap, Calendar, MoreHorizontal,
-         Target, LayoutGrid, AlertCircle, LogOut, Users, X } from 'lucide-react'
+         Target, LayoutGrid, AlertCircle, LogOut, Users } from 'lucide-react'
 
 /**
  * BottomNav - Mobile-only bottom navigation bar (MyFitnessPal style)

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useComparisonData } from '@/hooks/useDashboardData';
 import { supabase } from '@/lib/supabase';
 import ComparisonDashboard from './ComparisonDashboard/ComparisonDashboard';
 import TrendDashboard from './TrendDashboard/TrendDashboard';
