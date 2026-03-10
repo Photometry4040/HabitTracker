@@ -1,413 +1,625 @@
-# 🎯 아이들을 위한 습관 추적기 (Habit Tracker for Kids)
+# Habit Tracker for Kids
 
-**업데이트**: 2025-10-29
-**상태**: 🎉 **Phase 5.4 Complete (100%)** - 81칸 Mandala 확장 완료!
+![Version](https://img.shields.io/badge/version-v6.0.0-blue)
+![Phase](https://img.shields.io/badge/phase-5.5%20Complete-brightgreen)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![Vite](https://img.shields.io/badge/Vite-4-646CFF?logo=vite)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase)
+![Tailwind](https://img.shields.io/badge/Tailwind-3.3-38BDF8?logo=tailwindcss)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-아이들이 재미있게 습관을 형성하고 학습 목표를 관리할 수 있도록 만든 시각적 습관 추적 웹 애플리케이션입니다.
+**Last Updated**: 2026-03-10 | **Status**: Phase 5.5 Complete + Mobile UX Redesign
 
-> **📚 개발 문서**: 자세한 기술 문서 및 마이그레이션 정보는 [docs/README.md](docs/README.md)를 참고하세요.
+> A visual habit tracking web app for kids to build habits and manage learning goals with parents. Color-coded evaluation system (green/yellow/red), 4-type analytics dashboard, 81-cell Mandala charts, weekly planner, and achievement badges.
 
-## ✨ 주요 기능
+---
 
-### 🎨 **색상 코드 시스템**
-- **녹색** 😊 = 목표 달성!
-- **노랑** 🤔 = 조금 아쉽지만 잘했어! (부분 달성)
-- **빨강** 😔 = 괜찮아, 내일 다시 해보자! (미달성)
+## Table of Contents
 
-### 📊 **습관 추적 기능**
-- 시간대별 습관 관리
-- 주간 점수 자동 계산
-- 습관 추가/삭제 기능
-- 실시간 데이터 저장
+- [Features](#features)
+- [Architecture](#architecture)
+- [Database Schema](#database-schema)
+- [Data Flow](#data-flow)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+- [Version History](#version-history)
+- [Contributing](#contributing)
 
-### 📝 **돌아보기 시스템**
-- 주간 성과 분석
-- 개선점 파악
-- 다음 주 목표 설정
+---
 
-### 🏆 **보상 시스템**
-- 목표 달성 시 보상 설정
-- 동기부여를 위한 보상 아이디어
+## Features
 
-### 📊 **데이터 관리**
-- Supabase를 통한 안전한 클라우드 저장
-- 수동 저장 방식으로 데이터 보안 강화
-- 아이별 개별 데이터 관리
+### Core - Habit Tracking
 
-### 📱 **앱 아이콘 및 PWA 지원**
-- 모든 플랫폼용 앱 아이콘 제공
-- iOS/Android 홈스크린 추가 지원
-- PWA(Progressive Web App) 기능
-- 브라우저 탭 파비콘 최적화
+| Feature | Description |
+|---------|-------------|
+| Color Code System | Green (achieved), Yellow (partial), Red (missed) |
+| Weekly Tracking | Monday-based weekly periods with 7-day habit cards |
+| Reflection & Reward | Weekly review and goal-based reward system |
+| Multi-child Support | Individual profiles per child with theme customization |
+| Manual Save | Explicit save for data safety |
+| Habit Templates | Reusable habit sets with default template support |
 
-### 🎓 **Learning Mode (Phase 5)** ✨ 100% COMPLETE!
-- **목표 관리**: 계층 구조 지원, ICE 우선순위 점수 ✅
-- **만다라트 차트**: 9칸/27칸/81칸 완전 지원 (3단계 계층) ✅
-  - **확장 기능**: "확장" 버튼으로 노드를 8개 하위 노드로 분화 (Level 1→2→3)
-  - **계층 탐색**: "자식 보기" 버튼으로 하위 레벨 탐색, "상위 레벨" 버튼으로 복귀
-  - **정규화 구조**: mandala_nodes 테이블로 무한 확장 가능한 구조
-  - **레벨 표시**: Level 1 (9칸), Level 2 (27칸), Level 3 (81칸) 배지 표시
-- **약점 추적**: 재시도 시스템, 패턴 분석, 배지 보상 ✅
-- **주간 계획표**: 7일 일정 관리, 우선순위 시스템, 진행률 추적 ✅
-- **보상 시스템**: 13가지 Achievement 자동 감지 ✅
-  - streak_21 (21일 연속), habit_mastery (30일 완벽)
-  - first_weakness_resolved, weekly_planner_perfect
-- **Goal-Mandala 연동**: 양방향 동기화, 자동 진행률 업데이트 ✅
-- **모바일 최적화**: 40px 터치 타겟, 반응형 레이아웃 ✅
+### Dashboard - 4 Analytics Views
 
-### ⚡ **성능 최적화** ✨ NEW!
-- **번들 사이즈**: 897KB → 383KB (57% 감소)
-- **코드 스플리팅**: Dashboard와 Learning Mode 필요시 로드
-- **초기 로딩 속도**: 514KB 절감 (Gzip: 144KB 절감)
+| View | Description |
+|------|-------------|
+| Comparison | Multi-child ranking with completion rates |
+| Trends | Weekly trend charts (Recharts ComposedChart) |
+| Self-Awareness | Strengths, weaknesses, day-of-week patterns |
+| Monthly | Calendar view with month-over-month comparison |
 
-### 🎯 **사용성 개선** ✨ NEW!
-- **요일별 일괄 체크**: 하루의 모든 습관을 한 번에 체크
-- **Lazy Loading**: 페이지 로드 속도 개선
-- **Suspense Fallback**: 부드러운 로딩 경험
+### Learning Mode (Phase 5)
 
-## 🚀 실행 방법
+| Module | Description |
+|--------|-------------|
+| Goals | Hierarchical goals with ICE priority scoring |
+| Mandala Chart | 9/27/81-cell expansion (3-level hierarchy) |
+| Weaknesses | Retry tracking, pattern analysis, badge rewards |
+| Weekly Planner | 7-day task management with templates |
+| Achievements | 13 auto-detected reward triggers |
 
-### 1. 저장소 클론
+### Mobile UX (Latest)
+
+| Feature | Description |
+|---------|-------------|
+| Bottom Tab Bar | 5-tab MyFitnessPal-style navigation |
+| Compact Header | Sticky ~80px header (vs ~300px before) |
+| Tap-to-Cycle | Single tap color cycling on mobile |
+| Pill Tab Navigation | Scrollable dashboard tabs |
+| Slide-up Sheets | Learning mode & more options overlay |
+
+---
+
+## Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+  subgraph Client["Frontend (React 18 + Vite)"]
+    APP[App.jsx<br/>Main State]
+    BN[BottomNav<br/>Mobile Navigation]
+    DASH[DashboardHub<br/>4 Analytics Views]
+    LM[Learning Mode<br/>Goals / Mandala / Weaknesses]
+    WP[Weekly Planner<br/>Task Management]
+    TM[Template Manager<br/>Habit Templates]
+  end
+
+  subgraph API["API Layer"]
+    DB_READ[database-new.js<br/>Direct DB Queries]
+    DB_WRITE[dual-write.js<br/>Edge Function Wrapper]
+    LM_API[learning-mode.js<br/>29 Functions]
+    WP_API[weekly-planner.js<br/>22 Functions]
+  end
+
+  subgraph Supabase["Supabase Cloud"]
+    AUTH[Supabase Auth<br/>JWT Sessions]
+    EF[Edge Function<br/>dual-write-habit]
+    PG[(PostgreSQL<br/>+ RLS Enabled)]
+    DISCORD[Discord Webhook<br/>Notifications]
+  end
+
+  APP --> DB_READ
+  APP --> DB_WRITE
+  APP --> LM_API
+  APP --> WP_API
+  DB_READ --> PG
+  DB_WRITE --> EF
+  EF --> PG
+  LM_API --> PG
+  WP_API --> PG
+  APP --> AUTH
+  EF --> DISCORD
+```
+
+### Component Hierarchy
+
+```mermaid
+graph TD
+  APP["App.jsx (Main)"]
+
+  APP --> AUTH_VIEW["Auth.jsx<br/>Login / Signup"]
+  APP --> CS["ChildSelector.jsx<br/>Child Profiles"]
+  APP --> HTV["HabitTrackerView<br/>7-day Habit Cards"]
+  APP --> DASH_HUB["DashboardHub<br/>4 Dashboard Types"]
+  APP --> GOALS["GoalsManager<br/>ICE Scoring"]
+  APP --> MANDALA["MandalaChart<br/>9/27/81 Grid"]
+  APP --> WEAK["WeaknessLogger<br/>Retry System"]
+  APP --> PLANNER["WeeklyPlannerManager<br/>4 Sub-views"]
+  APP --> TMPL["TemplateManager<br/>Habit Templates"]
+  APP --> BN["BottomNav<br/>Mobile Only"]
+
+  DASH_HUB --> COMP["ComparisonDashboard"]
+  DASH_HUB --> TREND["TrendDashboard"]
+  DASH_HUB --> SELF["SelfAwarenessDashboard"]
+  DASH_HUB --> MONTHLY["MonthlyDashboard"]
+
+  PLANNER --> CAL["DailyTaskCalendar"]
+  PLANNER --> EDITOR["WeeklyPlanEditor"]
+  PLANNER --> WPTM["WeeklyPlanTemplateManager"]
+
+  style APP fill:#3B82F6,color:#fff
+  style BN fill:#F59E0B,color:#fff
+  style DASH_HUB fill:#10B981,color:#fff
+```
+
+### View State Machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Tracker : Default
+
+  Tracker --> Dashboard : Tab "보드"
+  Tracker --> Goals : Tab "학습" > 목표
+  Tracker --> Mandala : Tab "학습" > 만다라트
+  Tracker --> Weaknesses : Tab "학습" > 약점
+  Tracker --> Planner : Tab "계획"
+  Tracker --> Templates : Tab "더보기" > 템플릿
+  Tracker --> ChildSelector : Tab "더보기" > 아이 변경
+
+  Dashboard --> Tracker : Tab "습관"
+  Goals --> Tracker : Tab "습관"
+  Mandala --> Tracker : Tab "습관"
+  Weaknesses --> Tracker : Tab "습관"
+  Planner --> Tracker : Tab "습관"
+  Templates --> Tracker : Tab "습관"
+```
+
+---
+
+## Database Schema
+
+### Entity Relationship
+
+```mermaid
+erDiagram
+  USERS ||--o{ CHILDREN : "has"
+  CHILDREN ||--o{ WEEKS : "tracks"
+  WEEKS ||--o{ HABITS : "contains"
+  HABITS ||--o{ HABIT_RECORDS : "evaluated"
+
+  CHILDREN ||--o{ GOALS : "sets"
+  CHILDREN ||--o{ MANDALA_CHARTS : "creates"
+  MANDALA_CHARTS ||--o{ MANDALA_NODES : "contains"
+  CHILDREN ||--o{ WEAKNESSES : "identifies"
+  CHILDREN ||--o{ WEEKLY_PLANS : "schedules"
+  WEEKLY_PLANS ||--o{ DAILY_PLAN_ITEMS : "has"
+
+  USERS ||--o{ HABIT_TEMPLATES : "owns"
+  USERS ||--o{ REWARD_DEFINITIONS : "defines"
+  USERS ||--o{ PROGRESS_EVENTS : "logs"
+  USERS ||--o{ REWARDS_LEDGER : "receives"
+
+  CHILDREN {
+    uuid id PK
+    uuid user_id FK
+    string name
+    string theme
+  }
+
+  WEEKS {
+    uuid id PK
+    uuid child_id FK
+    date week_start_date "Must be Monday"
+    text reflection
+    text reward
+  }
+
+  HABITS {
+    uuid id PK
+    uuid week_id FK
+    string name
+    int display_order
+  }
+
+  HABIT_RECORDS {
+    uuid id PK
+    uuid habit_id FK
+    date record_date
+    string status "green/yellow/red"
+  }
+
+  MANDALA_NODES {
+    uuid id PK
+    uuid chart_id FK
+    uuid parent_node_id FK
+    int level "1-3"
+    int node_position "0-8"
+    string content
+  }
+
+  GOALS {
+    uuid id PK
+    uuid child_id FK
+    uuid parent_goal_id FK
+    int depth
+    float ice_score
+  }
+```
+
+### Table Groups
+
+```mermaid
+graph LR
+  subgraph Core["Core Habit Tracking"]
+    C[children]
+    W[weeks]
+    H[habits]
+    HR[habit_records]
+    HT[habit_templates]
+  end
+
+  subgraph Learning["Learning Mode"]
+    G[goals]
+    MC[mandala_charts]
+    MN[mandala_nodes]
+    WK[weaknesses]
+  end
+
+  subgraph Planning["Weekly Planning"]
+    WP[weekly_plans]
+    DPI[daily_plan_items]
+    WPT[weekly_plan_templates]
+  end
+
+  subgraph Rewards["Reward System"]
+    RD[reward_definitions]
+    PE[progress_events]
+    RL[rewards_ledger]
+  end
+
+  subgraph System["System"]
+    IL[idempotency_log]
+  end
+
+  style Core fill:#DBEAFE,stroke:#3B82F6
+  style Learning fill:#D1FAE5,stroke:#10B981
+  style Planning fill:#FEF3C7,stroke:#F59E0B
+  style Rewards fill:#FCE7F3,stroke:#EC4899
+  style System fill:#F3F4F6,stroke:#6B7280
+```
+
+---
+
+## Data Flow
+
+### Read Operations
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant R as React Component
+  participant DB as database-new.js
+  participant S as Supabase (PostgreSQL)
+
+  U->>R: Navigate to view
+  R->>DB: loadWeekDataNew(childName, weekStartDate)
+  DB->>S: SELECT with RLS filter (user_id)
+  S-->>DB: Rows (children + weeks + habits + records)
+  DB-->>R: Normalized data object
+  R-->>U: Rendered UI
+```
+
+### Write Operations
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant R as React Component
+  participant DW as dual-write.js
+  participant EF as Edge Function
+  participant PG as PostgreSQL
+  participant IL as idempotency_log
+
+  U->>R: Click Save
+  R->>DW: createWeekDualWrite(data)
+  DW->>EF: POST with X-Idempotency-Key
+  EF->>IL: Check duplicate
+  alt New request
+    EF->>PG: INSERT/UPDATE (new_only mode)
+    PG-->>EF: Success
+    EF->>IL: Log operation
+  else Duplicate
+    EF-->>DW: Return cached result
+  end
+  EF-->>DW: Response
+  DW-->>R: Result
+  R-->>U: Save confirmed
+```
+
+### Dashboard Data Pipeline
+
+```mermaid
+flowchart LR
+  subgraph Views["Database Views"]
+    V1[v_weekly_completion]
+    V2[v_daily_completion]
+    V3[v_habit_failure_patterns]
+  end
+
+  subgraph Hooks["React Query Hooks"]
+    H1[useComparisonData]
+    H2[useTrendData]
+    H3[useInsights]
+    H4[useMonthlyStats]
+  end
+
+  subgraph Dashboards["Dashboard Components"]
+    D1[ComparisonDashboard]
+    D2[TrendDashboard]
+    D3[SelfAwarenessDashboard]
+    D4[MonthlyDashboard]
+  end
+
+  V1 --> H1 --> D1
+  V2 --> H2 --> D2
+  V3 --> H3 --> D3
+  V1 --> H4 --> D4
+
+  style Views fill:#E0E7FF
+  style Hooks fill:#FEF3C7
+  style Dashboards fill:#D1FAE5
+```
+
+---
+
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Frontend** | React 18 + Vite 4 |
+| **Styling** | Tailwind CSS 3.3 + Custom Design System |
+| **Icons** | Lucide React |
+| **Charts** | Recharts 3.1 (ComposedChart, Area, Line) |
+| **State** | React Hooks + React Query v5 (5min cache) |
+| **Database** | Supabase PostgreSQL + RLS |
+| **Auth** | Supabase Auth (JWT) |
+| **Edge Functions** | Deno Runtime (Supabase) |
+| **Notifications** | Discord Webhook |
+| **Data Export** | XLSX Library |
+| **PWA** | Web App Manifest + Service Workers |
+| **Build** | Code splitting, Lazy loading (383KB bundle) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+- Supabase account
+
+### Quick Start
+
 ```bash
+# 1. Clone
 git clone https://github.com/Photometry4040/HabitTracker.git
 cd HabitTracker
-```
 
-### 2. 의존성 설치
-```bash
+# 2. Install
 npm install
-```
 
-### 3. 개발 서버 실행
-```bash
+# 3. Environment
+cp .env.example .env
+# Edit .env with your Supabase credentials:
+#   VITE_SUPABASE_URL=https://your-project.supabase.co
+#   VITE_SUPABASE_ANON_KEY=your_anon_key
+
+# 4. Database setup
+# Run migrations in supabase/migrations/ folder in order via Supabase SQL Editor
+
+# 5. Run
 npm run dev
+# Open http://localhost:5173
 ```
 
-### 4. Supabase 설정 (데이터베이스 연동)
+### Supabase Setup
 
-#### 4-1. Supabase 프로젝트 생성
-1. [Supabase](https://supabase.com)에 가입하고 새 프로젝트 생성
-2. 프로젝트 설정에서 API 키 확인
+1. Create project at [supabase.com](https://supabase.com)
+2. Run migrations from `supabase/migrations/` (38 SQL files)
+3. Authentication > Settings:
+   - Site URL: `http://localhost:5173`
+   - Redirect URLs: `http://localhost:5173/**`
 
-#### 4-2. 환경 변수 설정
-```bash
-# .env 파일 생성
-cp env.example .env
-```
+### Commands
 
-`.env` 파일에 Supabase 정보 입력:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server (localhost:5173) |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run lint` | ESLint check |
 
-#### 4-3. 데이터베이스 스키마 설정
-Supabase 대시보드의 SQL Editor에서 다음 순서로 실행:
+---
 
-1. `supabase-schema.sql` - 기본 테이블 생성
-2. `supabase-security-policy.sql` - 보안 정책 설정
-
-### 4-4. 인증 설정
-1. Supabase 대시보드에서 Authentication > Settings
-2. Site URL 설정: `http://localhost:5173` (개발용)
-3. Redirect URLs 설정: `http://localhost:5173/**`
-4. 이메일 템플릿 커스터마이징 (선택사항)
-
-### 5. 개발 서버 실행
-```bash
-npm run dev
-```
-
-### 6. 브라우저에서 확인
-```
-http://localhost:5173
-```
-
-### 7. 앱 아이콘 확인
-개발 서버 실행 후 다음을 확인하세요:
-- **브라우저 탭**: 파비콘 표시 확인
-- **북마크**: 아이콘 표시 확인
-- **모바일**: "홈 화면에 추가" 시 아이콘 확인
-
-## 🛠️ 기술 스택
-
-- **Frontend**: React 18 + Vite
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **State Management**: React Hooks (useState, useEffect)
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Security**: Row Level Security (RLS), Input Validation, Session Management
-- **Storage**: Cloud Database + Local Storage (백업)
-- **PWA**: Web App Manifest, Service Workers
-- **Icons**: Multi-platform app icons (iOS, Android, Desktop)
-
-## 📁 프로젝트 구조
+## Project Structure
 
 ```
 HabitTracker/
-├── public/               # 정적 파일들
-│   ├── favicon.ico       # 기본 파비콘
-│   ├── favicon-16x16.png # 16x16 파비콘
-│   ├── favicon-32x32.png # 32x32 파비콘
-│   ├── apple-touch-icon.png # iOS 홈스크린 아이콘
-│   ├── android-chrome-192x192.png # Android 아이콘
-│   ├── android-chrome-512x512.png # Android 고해상도 아이콘
-│   ├── mask-icon.svg     # Safari 핀 탭 아이콘
-│   ├── site.webmanifest  # PWA 매니페스트
-│   └── robots.txt        # SEO 설정
 ├── src/
 │   ├── components/
-│   │   └── ui/           # UI 컴포넌트들
+│   │   ├── ui/                        # Reusable UI (shadcn-style)
+│   │   ├── BottomNav.jsx              # Mobile bottom tab bar
+│   │   ├── Auth.jsx                   # Login/Signup
+│   │   ├── ChildSelector.jsx          # Child profile picker
+│   │   ├── TemplateManager.jsx        # Habit template CRUD
+│   │   ├── Dashboard/
+│   │   │   ├── DashboardHub.jsx       # Dashboard container
+│   │   │   ├── TabNavigation.jsx      # Pill tabs (mobile) + underline tabs (desktop)
+│   │   │   ├── ComparisonDashboard/   # Multi-child comparison
+│   │   │   ├── TrendDashboard/        # Weekly trend charts
+│   │   │   ├── SelfAwarenessDashboard/# Insights analysis
+│   │   │   └── MonthlyDashboard/      # Monthly calendar view
+│   │   ├── Goals/GoalsManager.jsx     # ICE scoring, hierarchy
+│   │   ├── Mandala/MandalaChart.jsx   # 9/27/81-cell grid
+│   │   ├── Weaknesses/WeaknessLogger.jsx  # Retry tracking
+│   │   └── WeeklyPlanner/
+│   │       ├── WeeklyPlannerManager.jsx   # 4-view container
+│   │       ├── DailyTaskCalendar.jsx      # 7-day calendar
+│   │       ├── WeeklyPlanEditor.jsx       # Plan editor
+│   │       └── WeeklyPlanTemplateManager.jsx  # Plan templates
+│   ├── hooks/
+│   │   ├── useDashboardData.ts        # React Query hooks (4 dashboards)
+│   │   ├── useStatistics.js           # Statistics hooks
+│   │   └── useTemplate.js             # Template hooks
 │   ├── lib/
-│   │   └── utils.js      # 유틸리티 함수
-│   └── main.jsx          # 앱 진입점
-├── App.jsx               # 메인 앱 컴포넌트
-├── App.css               # 스타일시트
-├── index.html            # HTML 템플릿
-├── package.json          # 프로젝트 설정
-├── vite.config.js        # Vite 설정
-├── tailwind.config.js    # Tailwind CSS 설정
-└── README.md             # 프로젝트 설명
+│   │   ├── supabase.js                # Supabase client init
+│   │   ├── auth.js                    # Auth helpers
+│   │   ├── database-new.js            # READ operations (direct DB)
+│   │   ├── dual-write.js              # WRITE operations (Edge Function)
+│   │   ├── learning-mode.js           # Learning Mode API (29 functions)
+│   │   ├── weekly-planner.js          # Planner API (22 functions)
+│   │   ├── templates.js               # Template CRUD
+│   │   ├── mandala-expansion.js       # 81-cell expansion (9 functions)
+│   │   ├── discord.js                 # Discord webhook
+│   │   └── utils.js                   # clsx, tailwind-merge
+│   ├── App.jsx                        # Main component (~580 lines)
+│   ├── App.css                        # Global styles
+│   └── main.jsx                       # Entry point
+├── supabase/
+│   ├── functions/
+│   │   ├── dual-write-habit/          # Write operations Edge Function
+│   │   ├── dashboard-aggregation/     # Dashboard analytics Edge Function
+│   │   └── send-discord-notification/ # Discord Edge Function
+│   └── migrations/                    # 38 SQL migration files
+├── scripts/                           # Analysis and verification scripts
+├── docs/                              # Comprehensive documentation
+│   ├── 00-overview/                   # Project overview, tech spec
+│   ├── 01-architecture/               # Architecture docs
+│   ├── 02-active/                     # Active phase docs
+│   ├── 03-deployment/                 # Deployment guides
+│   ├── 04-completed/                  # Completed phase archive
+│   ├── 05-reviews/                    # Weekly reviews
+│   └── 06-future/                     # Future roadmap
+└── backups/                           # Database backups
 ```
 
-## 🎯 사용 방법
+---
 
-1. **기본 정보 입력**: 아이 이름, 주간 기간, 테마 설정
-2. **습관 설정**: 시간대별 습관 목표 입력
-3. **일일 평가**: 각 습관에 대해 색상으로 평가
-4. **주간 돌아보기**: 성과 분석 및 개선점 파악
-5. **보상 설정**: 목표 달성 시 받을 보상 정하기
+## Deployment
 
-## 💡 특징
+### Netlify (Recommended)
 
-- **🔐 보안 인증**: Supabase Auth를 통한 안전한 로그인 시스템
-- **🛡️ 데이터 보호**: Row Level Security (RLS)로 사용자별 데이터 격리
-- **☁️ 클라우드 저장**: Supabase를 통한 안전한 데이터 저장
-- **👶 아이별 관리**: 여러 아이의 데이터를 개별적으로 관리
-- **⚡ 실시간 동기화**: 여러 기기에서 실시간 데이터 동기화
-- **💾 수동 저장**: 사용자가 직접 저장 버튼을 눌러 데이터 저장
-- **📱 반응형 디자인**: 모바일, 태블릿, 데스크톱 지원
-- **🎨 직관적인 UI**: 아이들이 쉽게 사용할 수 있는 인터페이스
-- **🎯 시각적 피드백**: 색상과 이모지를 통한 명확한 피드백
-- **🔒 세션 관리**: 자동 로그아웃 및 활동 시간 추적
-- **📱 PWA 지원**: 홈스크린 추가, 오프라인 기능 지원
-- **🎨 멀티플랫폼 아이콘**: iOS, Android, 데스크톱 최적화된 앱 아이콘
-
-## 🎨 앱 아이콘 가이드
-
-### 📱 지원되는 아이콘
-- **favicon.ico**: 브라우저 탭, 북마크 (16x16, 32x32)
-- **favicon-16x16.png**: 모던 브라우저용 (16x16)
-- **favicon-32x32.png**: 모던 브라우저용 (32x32)
-- **apple-touch-icon.png**: iOS 홈스크린 (180x180)
-- **android-chrome-192x192.png**: Android 홈스크린 (192x192)
-- **android-chrome-512x512.png**: Android 고해상도 (512x512)
-- **mask-icon.svg**: Safari 핀 탭 (단색 SVG)
-
-### 🎨 디자인 특징
-- **테마**: 습관 추적을 상징하는 달력 아이콘
-- **색상**: 앱 메인 컬러 보라색 (#7C3AED) 활용
-- **스타일**: 아이들이 좋아할 만한 친근한 디자인
-- **호환성**: 모든 플랫폼에서 최적화된 표시
-
-### 🔧 커스터마이징
-아이콘을 변경하려면 `public` 폴더의 해당 파일을 교체하세요:
-```bash
-# 예시: 새로운 파비콘으로 교체
-cp your-new-favicon.ico public/favicon.ico
-cp your-new-icon-192.png public/android-chrome-192x192.png
-```
-
-## 🚀 배포 가이드
-
-### Netlify 배포
-
-#### 1. Netlify 프로젝트 생성
-1. [Netlify](https://netlify.com)에 가입
-2. "New site from Git" 선택
-3. GitHub 저장소 연결: `https://github.com/Photometry4040/HabitTracker.git`
-4. 빌드 설정:
+1. Connect GitHub repo at [netlify.com](https://netlify.com)
+2. Build settings:
    - **Build command**: `npm run build`
    - **Publish directory**: `dist`
-
-#### 2. 환경 변수 설정 (중요!)
-**Netlify 대시보드에서 설정:**
-1. Site settings > Environment variables
-2. 다음 변수 추가:
+3. Environment variables (set in Netlify Dashboard, NOT in netlify.toml):
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   VITE_SUPABASE_ANON_KEY=your_anon_key
    ```
+4. Supabase Auth settings:
+   - Site URL: `https://your-site.netlify.app`
+   - Redirect URLs: `https://your-site.netlify.app/**`
 
-#### 3. Supabase 인증 설정
-1. Supabase 대시보드 > Authentication > Settings
-2. Site URL 추가: `https://your-site.netlify.app`
-3. Redirect URLs 추가: `https://your-site.netlify.app/**`
+### Edge Function Deployment
 
-### GitHub Pages 배포
-
-#### 1. GitHub Actions 설정
-`.github/workflows/deploy.yml` 파일 생성:
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [ main ]
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
-    - name: Install dependencies
-      run: npm install
-    - name: Build
-      run: npm run build
-      env:
-        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-```
-
-#### 2. GitHub Secrets 설정
-1. 저장소 Settings > Secrets and variables > Actions
-2. 다음 secrets 추가:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-
-## 🔧 문제 해결 가이드
-
-### 환경 변수 문제 해결
-
-#### ❌ 문제: 환경 변수가 제대로 로드되지 않음
-**증상:**
-```
-VITE_SUPABASE_URL: your_production_supabase_url
-VITE_SUPABASE_ANON_KEY: your_production_supabase_anon_key
-```
-
-#### ✅ 해결 방법:
-
-**1. netlify.toml 파일 확인**
-```toml
-# ❌ 잘못된 설정 (제거해야 함)
-[context.production.environment]
-  VITE_SUPABASE_URL = "your_production_supabase_url"
-  VITE_SUPABASE_ANON_KEY = "your_production_supabase_anon_key"
-```
-
-**2. 올바른 netlify.toml 설정**
-```toml
-# ✅ 올바른 설정
-# 환경 변수는 Netlify 대시보드에서 설정하세요
-# 이 파일에서는 환경변수를 설정하지 않습니다
-```
-
-**3. 우선순위 확인**
-- **1순위**: Netlify 대시보드 환경 변수
-- **2순위**: netlify.toml 파일 환경 변수
-- **주의**: netlify.toml의 잘못된 설정이 대시보드 설정을 덮어쓸 수 있음
-
-#### 🔍 디버깅 방법:
-
-**1. Console에서 환경 변수 확인**
-```javascript
-console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-```
-
-**2. Netlify 배포 로그 확인**
-- Netlify 대시보드 > Deploys > 최신 배포 > Build log
-- 환경 변수 로드 과정 확인
-
-**3. 로컬 vs 배포 환경 비교**
 ```bash
-# 로컬에서 확인
-npm run dev
-# 브라우저 Console에서 환경 변수 출력
+# Write operations
+supabase functions deploy dual-write-habit
 
-# 배포 후 확인
-# Netlify URL에서 Console 확인
+# Dashboard analytics
+supabase functions deploy dashboard-aggregation
+
+# Discord notifications
+supabase functions deploy send-discord-notification
 ```
 
-### 배포 후 확인 사항
+---
 
-#### ✅ 정상 동작 확인:
-1. **환경 변수 로드**: Console에서 올바른 URL과 Key 확인
-2. **Supabase 연결**: 로그인/회원가입 기능 정상 동작
-3. **데이터 저장**: 습관 데이터 저장 및 불러오기 정상
-4. **인증 리다이렉트**: 로그인 후 올바른 페이지로 이동
+## Version History
 
-#### 🚨 문제 발생 시:
-1. **환경 변수 재설정**: Netlify 대시보드에서 환경 변수 재입력
-2. **캐시 클리어**: 브라우저 캐시 및 Netlify 캐시 클리어
-3. **재배포**: 강제 재배포 실행
+```mermaid
+timeline
+  title Habit Tracker Development Timeline
 
-## 📝 개발 노하우
+  section Phase 0-3 : Database
+    2025-10 : Phase 0 - Schema Design
+             : Phase 1 - Edge Function
+             : Phase 2 - Frontend Migration
+             : Phase 3 - OLD Schema Removal + RLS
 
-### 1. 환경 변수 관리
-- **로컬 개발**: `.env` 파일 사용
-- **배포 환경**: 플랫폼별 환경 변수 설정
-- **보안**: 민감한 정보는 절대 코드에 하드코딩하지 않기
+  section Phase 4 : Dashboard
+    2025-10-19 : 4 Dashboard views (Comparison, Trends, Insights, Monthly)
+               : React Query v5 integration
+               : Database views with Security Invoker
 
-### 2. 배포 전 체크리스트
-- [ ] 환경 변수 올바르게 설정됨
-- [ ] Supabase 인증 설정 완료
-- [ ] 빌드 에러 없음 (`npm run build`)
-- [ ] 로컬에서 정상 동작 확인
+  section Phase 5 : Learning Mode
+    2025-10-25 : 5.1 - Goals, Mandala (9/27), Weaknesses
+    2025-10-26 : 5.2 - Weekly Planner (3 tables, 22 API functions)
+    2025-10-27 : 5.3 - Advanced Reward Triggers (13 total)
+    2025-10-29 : 5.4 - 81-cell Mandala Expansion
+    2025-10-30 : 5.5 - Weekly Planner Template Manager
 
-### 3. 문제 해결 순서
-1. **로컬 테스트**: `npm run dev`로 로컬 동작 확인
-2. **환경 변수 확인**: Console에서 환경 변수 출력 확인
-3. **배포 로그 확인**: 플랫폼별 배포 로그 분석
-4. **캐시 클리어**: 브라우저 및 배포 플랫폼 캐시 클리어
+  section Phase 6 : UX
+    2025-10-30 : Code review, refactoring, test infrastructure
+    2026-03-10 : Mobile UX Redesign (Bottom Nav, Compact Header)
+               : Dashboard calculation fix
+               : Responsive overflow fixes
+```
 
-## 📄 라이선스
+### Release Tags
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
+| Tag | Phase | Key Changes |
+|-----|-------|-------------|
+| `v1.0.0` | Phase 0-3 | Core habit tracking, DB migration, RLS, Edge Functions |
+| `v2.0.0` | Phase 4 | 4-type analytics dashboard, React Query, DB views |
+| `v3.0.0` | Phase 5.1 | Goals, Mandala (9/27), Weaknesses, Reward system |
+| `v4.0.0` | Phase 5.2-5.3 | Weekly Planner, 13 reward triggers, streak tracking |
+| `v5.0.0` | Phase 5.4-5.5 | 81-cell Mandala, Planner templates, bundle optimization |
+| `v6.0.0` | Phase 6 | Mobile UX redesign, bottom nav, compact header, dashboard fix |
 
-## 🤝 기여하기
+### Key Metrics
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+| Metric | Value |
+|--------|-------|
+| Total Migrations | 38 SQL files |
+| API Functions | 51+ (29 learning + 22 planner) |
+| Components | 20+ React components |
+| Bundle Size | 383KB (57% reduction from 897KB) |
+| Edge Functions | 3 deployed |
+| Database Tables | 16 (core + learning + planning + rewards) |
+| RLS Policies | Enabled on all tables |
+
+---
+
+## Security
+
+- **Authentication**: Supabase Auth with JWT
+- **Row Level Security (RLS)**: Enabled on ALL tables - user data isolation at DB level
+- **Edge Functions**: Server-side write operations with idempotency
+- **Input Validation**: Frontend + Edge Function validation
+- **Environment Variables**: Dashboard-only configuration (never hardcoded)
+
+---
+
+## Contributing
+
+1. Fork the project
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📞 문의
+## License
 
-프로젝트에 대한 문의사항이 있으시면 이슈를 생성해주세요.
+MIT License
 
----
+## Documentation
 
-## 📚 문서 구조
-
-이 프로젝트는 체계적인 문서 구조를 갖추고 있습니다:
-
-- **[README.md](README.md)** (이 파일) - 사용자용 프로젝트 소개 및 설치 가이드
-- **[CLAUDE.md](CLAUDE.md)** - Claude Code 작업 지침
-- **[docs/README.md](docs/README.md)** - 개발 문서 색인 (필독!)
-  - `docs/00-overview/` - 전체 기술 명세 및 아키텍처
-  - `docs/01-architecture/` - 설계 문서
-  - `docs/02-active/` - 현재 진행 중인 작업 (Phase 2)
-  - `docs/03-deployment/` - 배포 가이드
-  - `docs/04-completed/` - 완료된 작업 아카이브
-  - `docs/05-reviews/` - 주간 리뷰 및 계획
-  - `docs/06-future/` - 미래 개발 계획
-
-### 개발자를 위한 빠른 링크
-- 🎯 **현재 작업**: [docs/02-active/PHASE_2_PLAN.md](docs/02-active/PHASE_2_PLAN.md)
-- 📖 **기술 명세**: [docs/00-overview/TECH_SPEC.md](docs/00-overview/TECH_SPEC.md)
-- 🚀 **배포 가이드**: [docs/03-deployment/](docs/03-deployment/)
+| Document | Description |
+|----------|-------------|
+| [README.md](README.md) | This file - project overview |
+| [CLAUDE.md](CLAUDE.md) | Claude Code development guide |
+| [docs/README.md](docs/README.md) | Developer documentation index |
+| [docs/00-overview/](docs/00-overview/) | Tech spec & architecture |
+| [docs/03-deployment/](docs/03-deployment/) | Deployment guides |
 
 ---
 
-**아이들과 함께 즐거운 습관 형성을 시작해보세요!** 🎉 
+**Start building great habits with your kids today!**
