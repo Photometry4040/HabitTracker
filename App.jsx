@@ -1,12 +1,13 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
+import { BottomNav } from '@/components/BottomNav.jsx'
 import { Auth } from '@/components/Auth.jsx'
 import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
 import { useHabitTracker } from '@/hooks/useHabitTracker.js'
@@ -93,12 +94,58 @@ function App() {
     return <Auth onAuthSuccess={() => {}} />
   }
 
+  // Determine active view name for BottomNav
+  const getActiveView = () => {
+    if (showDashboard) return 'dashboard'
+    if (showGoals) return 'goals'
+    if (showMandala) return 'mandala'
+    if (showWeaknesses) return 'weaknesses'
+    if (showWeeklyPlanner) return 'planner'
+    if (showTemplateManager) return 'templates'
+    return 'tracker'
+  }
+
+  const handleBottomNavNavigate = (view) => {
+    // Reset all views first
+    setShowDashboard(false)
+    setShowTemplateManager(false)
+    setShowGoals(false)
+    setShowWeaknesses(false)
+    setShowMandala(false)
+    setShowWeeklyPlanner(false)
+
+    // Set the requested view
+    if (view === 'dashboard') setShowDashboard(true)
+    else if (view === 'goals') setShowGoals(true)
+    else if (view === 'mandala') setShowMandala(true)
+    else if (view === 'weaknesses') setShowWeaknesses(true)
+    else if (view === 'planner') setShowWeeklyPlanner(true)
+    else if (view === 'templates') setShowTemplateManager(true)
+    // 'tracker' = all false (default)
+  }
+
+  // Helper: navigate week date by offset days
+  const navigateWeek = (offsetDays) => {
+    if (!weekStartDate) return
+    const d = new Date(weekStartDate)
+    d.setDate(d.getDate() + offsetDays)
+    setWeekStartDate(d.toISOString().split('T')[0])
+  }
+
+  // Format date for mobile header display
+  const formatMobileDate = (dateStr) => {
+    if (!dateStr) return '날짜 선택'
+    const d = new Date(dateStr)
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+    return `${d.getMonth() + 1}/${d.getDate()} (${dayNames[d.getDay()]})`
+  }
+
   return (
     <RewardNotificationProvider childName={selectedChild}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4 pb-20 md:pb-4">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-          {/* Logout button */}
-          <div className="flex justify-end no-print">
+          {/* Desktop logout button */}
+          <div className="hidden md:flex justify-end no-print">
             <Button onClick={handleLogout} variant="outline" size="sm" className="flex items-center gap-2">
               <LogOut className="w-4 h-4" />
               로그아웃
@@ -109,8 +156,60 @@ function App() {
             <ChildSelector onChildSelect={handleChildSelect} onNewChild={handleNewChild} />
           ) : (
             <>
-              {/* Header Card */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+              {/* Mobile Compact Sticky Header */}
+              <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 -mx-2 -mt-2 px-3 py-2 md:hidden no-print">
+                <div className="flex items-center justify-between">
+                  {/* Child avatar */}
+                  <button
+                    onClick={() => { setShowChildSelector(true); resetData() }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center">
+                      {childName ? childName[0] : '?'}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 max-w-[60px] truncate">{childName || '선택'}</span>
+                  </button>
+
+                  {/* Date navigation */}
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => navigateWeek(-7)} className="p-1.5 rounded-full hover:bg-gray-100 active:bg-gray-200">
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <label htmlFor="mobileDate" className="font-semibold text-sm text-gray-800 cursor-pointer">
+                      {formatMobileDate(weekStartDate)}
+                    </label>
+                    <input
+                      id="mobileDate"
+                      type="date"
+                      value={weekStartDate}
+                      onChange={(e) => setWeekStartDate(e.target.value)}
+                      className="sr-only"
+                    />
+                    <button onClick={() => navigateWeek(7)} className="p-1.5 rounded-full hover:bg-gray-100 active:bg-gray-200">
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+
+                  {/* Save button */}
+                  <button
+                    onClick={() => saveData(false)}
+                    disabled={saving}
+                    className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
+                  </button>
+                </div>
+                {/* Row 2: Week period + theme */}
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[11px] text-gray-500 truncate flex-1">{weekPeriod || '시작일을 선택하세요'}</span>
+                  {theme && (
+                    <span className="text-[11px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-2 whitespace-nowrap">{theme}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop Header Card (hidden on mobile) */}
+              <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
                 <CardHeader className="text-center">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <Button
@@ -118,20 +217,18 @@ function App() {
                       variant="outline" size="sm" className="flex items-center gap-2"
                     >
                       <Users className="w-4 h-4" />
-                      <span className="hidden sm:inline">아이 변경</span>
-                      <span className="sm:hidden">변경</span>
+                      아이 변경
                     </Button>
                     <CardTitle className="text-2xl md:text-3xl font-bold text-purple-800 flex items-center justify-center gap-2 text-center">
-                      <Star className="text-yellow-500 hidden sm:block" />
+                      <Star className="text-yellow-500" />
                       <span>주간 습관 성장 챌린지</span>
-                      <Star className="text-yellow-500 hidden sm:block" />
+                      <Star className="text-yellow-500" />
                     </CardTitle>
                     <div className="flex flex-col sm:flex-row items-center gap-2 no-print">
                       {saving && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Cloud className="w-4 h-4 animate-pulse" />
-                          <span className="hidden sm:inline">저장 중...</span>
-                          <span className="sm:hidden">저장중</span>
+                          저장 중...
                         </div>
                       )}
                       <NavigationButtons
@@ -236,6 +333,16 @@ function App() {
             </>
           )}
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        {user && !showChildSelector && (
+          <BottomNav
+            activeView={getActiveView()}
+            onNavigate={handleBottomNavNavigate}
+            onLogout={handleLogout}
+            onSwitchChild={() => { setShowChildSelector(true); resetData() }}
+          />
+        )}
       </div>
     </RewardNotificationProvider>
   )
@@ -243,7 +350,7 @@ function App() {
 
 function ViewWrapper({ children }) {
   return (
-    <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6">
+    <div className="view-enter bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-3 sm:p-6">
       {children}
     </div>
   )
@@ -301,10 +408,56 @@ function HabitTrackerView({
   updateHabitColor, bulkUpdateDay, addHabit, removeHabit, updateHabitName,
   setReflection, setReward,
 }) {
+  const [showReflection, setShowReflection] = useState(false)
+  const [showReward, setShowReward] = useState(false)
+
+  // Cycle color on mobile tap: '' -> 'green' -> 'yellow' -> 'red' -> ''
+  const cycleColor = (habitId, dayIndex, currentValue) => {
+    const cycle = ['', 'green', 'yellow', 'red']
+    const nextIdx = (cycle.indexOf(currentValue) + 1) % cycle.length
+    updateHabitColor(habitId, dayIndex, cycle[nextIdx])
+  }
+
+  // Mobile color circle classes
+  const getMobileColorClass = (value) => {
+    if (value === 'green') return 'bg-green-400 border-green-500'
+    if (value === 'yellow') return 'bg-yellow-400 border-yellow-500'
+    if (value === 'red') return 'bg-red-400 border-red-500'
+    return 'bg-gray-100 border-gray-200'
+  }
+
   return (
     <>
-      {/* Color code */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      {/* Mobile: Summary Stats Bar */}
+      <div className="flex items-center justify-around py-3 px-4 bg-white rounded-xl shadow-sm md:hidden">
+        <div className="flex flex-col items-center">
+          <span className="text-2xl font-bold text-green-600">{getTotalScore(habits)}</span>
+          <span className="text-[10px] text-gray-500 mt-0.5">달성</span>
+        </div>
+        <span className="text-xl text-gray-300">/</span>
+        <div className="flex flex-col items-center">
+          <span className="text-2xl font-bold text-gray-700">{getMaxScore(habits)}</span>
+          <span className="text-[10px] text-gray-500 mt-0.5">전체</span>
+        </div>
+        <span className="text-xl text-gray-300">=</span>
+        <div className="flex flex-col items-center">
+          <span className="text-2xl font-bold text-blue-600">
+            {getMaxScore(habits) > 0 ? Math.round((getTotalScore(habits) / getMaxScore(habits)) * 100) : 0}%
+          </span>
+          <span className="text-[10px] text-gray-500 mt-0.5">달성률</span>
+        </div>
+      </div>
+
+      {/* Mobile: Compact color legend */}
+      <div className="flex items-center justify-center gap-4 py-2 text-xs text-gray-500 md:hidden">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-400 inline-block"></span> 달성</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span> 보통</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400 inline-block"></span> 아쉬움</span>
+        <span className="flex items-center gap-1 text-gray-400">탭하여 변경</span>
+      </div>
+
+      {/* Desktop: Full color code card */}
+      <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             🎨 색상 코드
@@ -328,13 +481,13 @@ function HabitTrackerView({
 
       {/* Habit tracking table */}
       <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-            <Target /> 습관 추적표
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 pb-2 sm:pb-4">
+          <CardTitle className="text-lg sm:text-xl font-bold text-purple-800 flex items-center gap-2">
+            <Target className="w-5 h-5" /> 습관 추적표
           </CardTitle>
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            <Badge variant="outline" className="text-base sm:text-lg px-3 py-1">
-              총점: {getTotalScore(habits)} / {getMaxScore(habits)}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Badge variant="outline" className="text-sm sm:text-lg px-2 sm:px-3 py-0.5 sm:py-1">
+              {getTotalScore(habits)} / {getMaxScore(habits)}
             </Badge>
             <Button onClick={addHabit} size="sm" className="bg-purple-600 hover:bg-purple-700">
               <Plus className="w-4 h-4 mr-1" />
@@ -344,55 +497,34 @@ function HabitTrackerView({
           </div>
         </CardHeader>
         <CardContent>
-          {/* Mobile bulk check */}
-          <div className="block md:hidden mb-4 p-3 bg-purple-50 rounded-lg">
-            <div className="text-sm font-semibold text-purple-800 mb-2">📅 요일별 일괄 체크</div>
-            <div className="grid grid-cols-2 gap-2">
-              {DAYS.map((day, dayIndex) => (
-                <select key={day} onChange={(e) => { if (e.target.value) { bulkUpdateDay(dayIndex, e.target.value); e.target.value = '' } }}
-                  className="text-xs px-2 py-1.5 rounded border border-purple-300 bg-white" defaultValue="">
-                  <option value="" disabled>{day}</option>
-                  <option value="green">✅ 전체 초록</option>
-                  <option value="yellow">⚠️ 전체 노랑</option>
-                  <option value="red">❌ 전체 빨강</option>
-                  <option value="">🗑️ 전체 지우기</option>
-                </select>
-              ))}
-            </div>
-          </div>
-
-          {/* Mobile card layout */}
-          <div className="block md:hidden space-y-4">
+          {/* Mobile: Compact 7-day horizontal habit cards */}
+          <div className="block md:hidden space-y-2">
             {habits.map((habit) => (
-              <div key={habit.id} className="border rounded-lg p-4 bg-white mobile-card-spacing">
-                <div className="mb-3">
+              <div key={habit.id} className="border rounded-xl p-3 bg-white shadow-sm">
+                <div className="flex items-center justify-between mb-2">
                   <Input value={habit.name} onChange={(e) => updateHabitName(habit.id, e.target.value)}
-                    className="border-none bg-transparent font-medium text-sm" placeholder="습관 이름을 입력하세요" />
+                    className="border-none bg-transparent font-medium text-sm p-0 h-auto flex-1" placeholder="습관 이름" />
+                  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                    <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"} className="text-xs px-1.5 py-0">
+                      {getWeeklyScore(habit)}/7
+                    </Badge>
+                    <Button onClick={() => removeHabit(habit.id)} size="sm" variant="ghost" disabled={habits.length <= 1}
+                      className="h-7 w-7 p-0 text-gray-400 hover:text-red-500">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   {DAYS.map((day, dayIndex) => (
-                    <div key={dayIndex} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700 min-w-[60px]">{day}</span>
-                      <div className="flex gap-2">
-                        {COLORS.map((color) => (
-                          <button key={color.value} onClick={() => updateHabitColor(habit.id, dayIndex, color.value)}
-                            className={`w-8 h-8 rounded-full transition-all mobile-touch-target ${
-                              habit.times[dayIndex] === color.value
-                                ? `${getColorClass(color.value)} traffic-light-border border-gray-800 scale-110`
-                                : `${getColorClass(color.value)} border-2 border-gray-300 opacity-50 hover:opacity-100`
-                            }`} title={color.description} />
-                        ))}
-                      </div>
+                    <div key={dayIndex} className="flex flex-col items-center">
+                      <span className="text-[9px] text-gray-400 mb-0.5">{day.replace('요일', '')}</span>
+                      <button
+                        onClick={() => cycleColor(habit.id, dayIndex, habit.times[dayIndex])}
+                        className={`w-9 h-9 rounded-full border-2 transition-all active:scale-90
+                          ${getMobileColorClass(habit.times[dayIndex])}`}
+                      />
                     </div>
                   ))}
-                </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                  <Badge variant={getWeeklyScore(habit) >= 5 ? "default" : "secondary"}>
-                    {getWeeklyScore(habit)} / 7
-                  </Badge>
-                  <Button onClick={() => removeHabit(habit.id)} size="sm" variant="destructive" disabled={habits.length <= 1}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               </div>
             ))}
@@ -463,8 +595,56 @@ function HabitTrackerView({
         </CardContent>
       </Card>
 
-      {/* Reflection section */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      {/* Reflection section - collapsible on mobile */}
+      <div className="md:hidden space-y-2">
+        <button
+          onClick={() => setShowReflection(!showReflection)}
+          className="flex items-center justify-between w-full p-4 bg-white rounded-xl shadow-sm"
+        >
+          <span className="font-semibold text-gray-800">📈 이번 주 돌아보기</span>
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showReflection ? 'rotate-180' : ''}`} />
+        </button>
+        {showReflection && (
+          <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+            <div>
+              <Label htmlFor="bestDayM" className="text-sm">가장 초록색이 많았던 요일과 시간은?</Label>
+              <Textarea id="bestDayM" value={reflection.bestDay}
+                onChange={(e) => setReflection(prev => ({ ...prev, bestDay: e.target.value }))}
+                placeholder="예: 화요일 아침이 좋았어요!" className="text-sm min-h-[50px]" />
+            </div>
+            <div>
+              <Label htmlFor="easiestM" className="text-sm">가장 쉬운/어려운 습관은?</Label>
+              <Textarea id="easiestM" value={reflection.easiestHabit}
+                onChange={(e) => setReflection(prev => ({ ...prev, easiestHabit: e.target.value }))}
+                placeholder="예: 정리정돈이 어려웠어요." className="text-sm min-h-[50px]" />
+            </div>
+            <div>
+              <Label htmlFor="nextWeekM" className="text-sm">다음 주에 더 잘하고 싶은 것은?</Label>
+              <Textarea id="nextWeekM" value={reflection.nextWeekGoal}
+                onChange={(e) => setReflection(prev => ({ ...prev, nextWeekGoal: e.target.value }))}
+                placeholder="예: 저녁 정리를 잘 지키고 싶어요!" className="text-sm min-h-[50px]" />
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowReward(!showReward)}
+          className="flex items-center justify-between w-full p-4 bg-white rounded-xl shadow-sm"
+        >
+          <span className="font-semibold text-gray-800">🏆 이번 주 보상 아이디어</span>
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showReward ? 'rotate-180' : ''}`} />
+        </button>
+        {showReward && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <Label htmlFor="rewardM" className="text-sm">목표 달성 시 받을 보상은?</Label>
+            <Textarea id="rewardM" value={reward} onChange={(e) => setReward(e.target.value)}
+              placeholder="예: 영화, 간식, 보드게임" className="text-sm min-h-[50px]" />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Full reflection section */}
+      <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             📈 이번 주 돌아보기
@@ -475,28 +655,25 @@ function HabitTrackerView({
             <Label htmlFor="bestDay" className="text-sm sm:text-base">가장 초록색이 많았던 요일과 시간은 언제였나요?</Label>
             <Textarea id="bestDay" value={reflection.bestDay}
               onChange={(e) => setReflection(prev => ({ ...prev, bestDay: e.target.value }))}
-              placeholder="예: 화요일 아침 시간대가 가장 좋았어요!"
-              className="text-sm sm:text-base min-h-[60px] sm:min-h-[80px]" />
+              placeholder="예: 화요일 아침 시간대가 가장 좋았어요!" className="min-h-[80px]" />
           </div>
           <div>
-            <Label htmlFor="easiestHabit" className="text-sm sm:text-base">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
+            <Label htmlFor="easiestHabit">어떤 습관이 가장 쉬웠고, 어떤 습관이 가장 어려웠나요?</Label>
             <Textarea id="easiestHabit" value={reflection.easiestHabit}
               onChange={(e) => setReflection(prev => ({ ...prev, easiestHabit: e.target.value }))}
-              placeholder="예: 아침에 일어나기는 쉬웠지만, 정리정돈은 어려웠어요."
-              className="text-sm sm:text-base min-h-[60px] sm:min-h-[80px]" />
+              placeholder="예: 아침에 일어나기는 쉬웠지만, 정리정돈은 어려웠어요." className="min-h-[80px]" />
           </div>
           <div>
-            <Label htmlFor="nextWeekGoal" className="text-sm sm:text-base">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
+            <Label htmlFor="nextWeekGoal">다음 주에 더 잘하고 싶은 것은 무엇인가요?</Label>
             <Textarea id="nextWeekGoal" value={reflection.nextWeekGoal}
               onChange={(e) => setReflection(prev => ({ ...prev, nextWeekGoal: e.target.value }))}
-              placeholder="예: 다음 주에는 저녁 정리 시간을 더 잘 지키고 싶어요!"
-              className="text-sm sm:text-base min-h-[60px] sm:min-h-[80px]" />
+              placeholder="예: 다음 주에는 저녁 정리 시간을 더 잘 지키고 싶어요!" className="min-h-[80px]" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Reward section */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      {/* Desktop: Full reward section */}
+      <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             <Trophy className="text-yellow-500" /> 이번 주 보상 아이디어
@@ -504,28 +681,26 @@ function HabitTrackerView({
         </CardHeader>
         <CardContent>
           <div>
-            <Label htmlFor="reward" className="text-sm sm:text-base">목표 달성 시 받을 보상을 정해보세요!</Label>
+            <Label htmlFor="reward">목표 달성 시 받을 보상을 정해보세요!</Label>
             <Textarea id="reward" value={reward} onChange={(e) => setReward(e.target.value)}
-              placeholder="예: 영화 보기, 특별한 간식 먹기, 보드게임 시간, 공원 가기 등"
-              className="text-sm sm:text-base min-h-[60px] sm:min-h-[80px]" />
+              placeholder="예: 영화 보기, 특별한 간식 먹기, 보드게임 시간, 공원 가기 등" className="min-h-[80px]" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Footer */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      {/* Footer - desktop only */}
+      <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardContent className="pt-6">
           <div className="text-center space-y-2">
-            <div className="text-base sm:text-lg font-semibold">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="text-lg font-semibold">
+              <div className="flex flex-row items-center justify-center gap-4">
                 <div>서명: _________________ (부모님)</div>
                 <div>_________________ ({childName || '나'}!)</div>
               </div>
             </div>
-            <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center gap-2">
+            <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">저장 버튼을 눌러 데이터를 저장하세요</span>
-              <span className="sm:hidden">저장 버튼을 눌러 저장하세요</span>
+              저장 버튼을 눌러 데이터를 저장하세요
             </div>
           </div>
         </CardContent>
