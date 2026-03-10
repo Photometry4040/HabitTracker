@@ -147,7 +147,7 @@ function App() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
                     <div>
                       <Label htmlFor="childName" className="text-sm sm:text-base">아이 이름</Label>
                       <Input id="childName" value={childName} onChange={(e) => setChildName(e.target.value)}
@@ -159,7 +159,7 @@ function App() {
                         onChange={(e) => setWeekStartDate(e.target.value)}
                         className="cursor-pointer text-sm sm:text-base" />
                     </div>
-                    <div>
+                    <div className="hidden sm:block">
                       <Label htmlFor="weekPeriod" className="text-sm sm:text-base">주간 기간</Label>
                       <Input id="weekPeriod" value={weekPeriod} readOnly
                         className="bg-gray-50 cursor-default text-sm sm:text-base"
