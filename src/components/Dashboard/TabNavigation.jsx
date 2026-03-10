@@ -34,47 +34,68 @@ export default function TabNavigation({ activeTab, onTabChange }) {
   ];
 
   return (
-    <nav className="flex space-x-1 sm:space-x-2" role="tablist">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
+    <>
+      {/* Mobile: Scrollable pill tabs */}
+      <nav className="flex overflow-x-auto gap-2 px-1 py-2 no-scrollbar md:hidden" role="tablist">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onTabChange(tab.id)}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium transition-colors
+                ${isActive ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 active:bg-gray-200'}`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
 
-        return (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onTabChange(tab.id)}
-            className={`
-              group relative inline-flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-3 sm:py-4
-              border-b-2 font-medium text-xs sm:text-sm min-h-[44px]
-              transition-colors duration-200
-              ${
-                isActive
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden text-xs">{tab.label.replace(/[^\w가-힣]/g, '').slice(0, 3)}</span>
+      {/* Desktop: Underline tabs */}
+      <nav className="hidden md:flex space-x-1 sm:space-x-2" role="tablist">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
 
-            {/* Tooltip on hover */}
-            <div
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onTabChange(tab.id)}
               className={`
-                absolute bottom-full left-0 mb-2 px-2 py-1 rounded
-                bg-gray-900 text-white text-xs whitespace-nowrap
-                opacity-0 pointer-events-none group-hover:opacity-100
-                transition-opacity duration-200
-                z-10
+                group relative inline-flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-3 sm:py-4
+                border-b-2 font-medium text-xs sm:text-sm min-h-[44px]
+                transition-colors duration-200
+                ${
+                  isActive
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
               `}
             >
-              {tab.description}
-            </div>
-          </button>
-        );
-      })}
-    </nav>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>{tab.label}</span>
+
+              {/* Tooltip on hover */}
+              <div
+                className={`
+                  absolute bottom-full left-0 mb-2 px-2 py-1 rounded
+                  bg-gray-900 text-white text-xs whitespace-nowrap
+                  opacity-0 pointer-events-none group-hover:opacity-100
+                  transition-opacity duration-200
+                  z-10
+                `}
+              >
+                {tab.description}
+              </div>
+            </button>
+          );
+        })}
+      </nav>
+    </>
   );
 }

@@ -63,8 +63,8 @@ export default function DashboardHub() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow sticky top-0 z-40">
+      {/* Header - desktop only */}
+      <header className="hidden md:block bg-white shadow sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -79,7 +79,7 @@ export default function DashboardHub() {
       </header>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
+      <div className="bg-white border-b border-gray-200 sticky top-0 md:top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <TabNavigation
             activeTab={activeTab}
