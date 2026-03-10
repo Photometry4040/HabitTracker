@@ -40,7 +40,7 @@ export async function createWeeklyPlan(planData) {
       status: 'draft'
     }])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -111,15 +111,23 @@ export async function ensureWeekExists(childId, weekStartDate) {
 
   if (existingWeek) return existingWeek.id;
 
-  // Create a new week record (minimal: just child_id + date)
+  // Calculate week_end_date (Sunday = start + 6 days) — required by CHECK constraint
+  const startDate = new Date(weekStartDate);
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 6);
+  const weekEndDate = endDate.toISOString().split('T')[0];
+
+  // Create a new week record with all required fields
   const { data: newWeek, error } = await supabase
     .from('weeks')
     .insert([{
+      user_id: user.id,
       child_id: childId,
       week_start_date: weekStartDate,
+      week_end_date: weekEndDate,
     }])
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return newWeek.id;
@@ -163,7 +171,7 @@ export async function updateWeeklyPlan(planId, updates) {
     .eq('id', planId)
     .eq('user_id', user.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -240,7 +248,7 @@ export async function addDailyTask(taskData) {
       priority: taskData.priority || 3
     }])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -282,7 +290,7 @@ export async function updateDailyTask(taskId, updates) {
     .update(updates)
     .eq('id', taskId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -362,7 +370,7 @@ export async function createWeeklyPlanTemplate(templateData) {
       template_data: templateData.templateData
     }])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -406,7 +414,7 @@ export async function applyTemplate(templateId, weeklyPlanId, weekStartDate) {
     .from('weekly_plan_templates')
     .select('*')
     .eq('id', templateId)
-    .single();
+    .maybeSingle();
 
   if (templateError) throw templateError;
 
@@ -455,7 +463,7 @@ export async function updateWeeklyPlanTemplate(templateId, updates) {
     .eq('id', templateId)
     .eq('user_id', user.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
