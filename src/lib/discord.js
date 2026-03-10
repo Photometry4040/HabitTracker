@@ -137,6 +137,52 @@ export function calculateWeekStats(habits) {
 }
 
 /**
+ * 주간 습관 요약 알림 전송 (모든 습관이 채워졌을 때)
+ * @param {string} childName - 아이 이름
+ * @param {string} weekPeriod - 주간 기간
+ * @param {object} stats - 통계 { total, green, yellow, red, successRate }
+ * @returns {Promise<object>}
+ */
+export async function notifyWeekSummary(childName, weekPeriod, stats) {
+  if (!isDiscordEnabled()) {
+    return { success: false, message: 'Discord not configured' };
+  }
+
+  const data = {
+    childName,
+    weekPeriod,
+    stats,
+  };
+
+  return await callEdgeFunction('week_summary', data);
+}
+
+/**
+ * 주간 습관 데이터로 상세 통계 계산 (green/yellow/red 포함)
+ * @param {Array} habits - 습관 배열 [{ id, name, times: [] }]
+ * @returns {object} { total, green, yellow, red, empty, successRate, allFilled }
+ */
+export function calculateDetailedWeekStats(habits) {
+  const total = habits.length * 7;
+  const allTimes = habits.flatMap((habit) => habit.times);
+  const green = allTimes.filter((t) => t === 'green').length;
+  const yellow = allTimes.filter((t) => t === 'yellow').length;
+  const red = allTimes.filter((t) => t === 'red').length;
+  const empty = allTimes.filter((t) => !t || t === '').length;
+  const successRate = total > 0 ? Math.round((green / total) * 100) : 0;
+
+  return {
+    total,
+    green,
+    yellow,
+    red,
+    empty,
+    successRate,
+    allFilled: empty === 0 && total > 0,
+  };
+}
+
+/**
  * 일괄 테스트용 함수 (개발용)
  * @param {string} childName - 아이 이름
  */

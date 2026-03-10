@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import ComparisonDashboard from './ComparisonDashboard/ComparisonDashboard';
 import TrendDashboard from './TrendDashboard/TrendDashboard';
@@ -35,18 +35,18 @@ export default function DashboardHub() {
   }, []);
 
   // Handle tab change
-  const handleTabChange = (tab) => {
+  const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
-  };
+  }, []);
 
   // Handle child selection (for trend, insights, monthly tabs)
-  const handleChildSelect = (childId) => {
+  const handleChildSelect = useCallback((childId) => {
     setSelectedChildId(childId);
-  };
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -54,14 +54,14 @@ export default function DashboardHub() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-12">
         <p className="text-red-600">인증이 필요합니다</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Header - desktop only */}
       <header className="hidden md:block bg-white shadow sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -125,8 +125,8 @@ export default function DashboardHub() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
+      {/* Footer - desktop only */}
+      <footer className="hidden md:block bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-sm text-gray-600 text-center">
             마지막 업데이트: {new Date().toLocaleString('ko-KR')}
