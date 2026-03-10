@@ -115,15 +115,15 @@ export default function TrendDashboard({ childId, onChildSelect }) {
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between bg-white rounded-lg shadow p-4">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white rounded-lg shadow p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {/* Period Selector */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">기간:</label>
             <select
               value={weeks}
               onChange={(e) => setWeeks(parseInt(e.target.value))}
-              className={`px-3 py-2 rounded border text-sm font-medium ${
+              className={`px-2 sm:px-3 py-2 rounded border text-sm font-medium ${
                 weeks === ytdWeeks
                   ? 'border-green-500 bg-green-50 text-green-700'
                   : 'border-gray-300 bg-white text-gray-700'
@@ -140,17 +140,17 @@ export default function TrendDashboard({ childId, onChildSelect }) {
               ))}
             </select>
             {weeks === ytdWeeks && (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold hidden sm:inline">
                 📅 올해 전체
               </span>
             )}
           </div>
 
           {/* View Type Toggle */}
-          <div className="flex items-center bg-gray-200 rounded-lg p-1 ml-4">
+          <div className="flex items-center bg-gray-200 rounded-lg p-1">
             <button
               onClick={() => setViewType('chart')}
-              className={`flex items-center space-x-1 px-3 py-2 rounded text-sm ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-sm ${
                 viewType === 'chart'
                   ? 'bg-white text-blue-600 shadow-sm font-medium'
                   : 'text-gray-600 hover:text-gray-900'
@@ -161,7 +161,7 @@ export default function TrendDashboard({ childId, onChildSelect }) {
             </button>
             <button
               onClick={() => setViewType('table')}
-              className={`flex items-center space-x-1 px-3 py-2 rounded text-sm ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-sm ${
                 viewType === 'table'
                   ? 'bg-white text-blue-600 shadow-sm font-medium'
                   : 'text-gray-600 hover:text-gray-900'
@@ -174,7 +174,7 @@ export default function TrendDashboard({ childId, onChildSelect }) {
         </div>
 
         {/* Export Button */}
-        <button className="flex items-center space-x-2 px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+        <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
           <Download className="w-4 h-4" />
           <span className="text-sm font-medium">내보내기</span>
         </button>

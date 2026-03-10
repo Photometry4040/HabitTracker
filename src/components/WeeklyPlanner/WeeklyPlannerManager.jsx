@@ -143,45 +143,53 @@ export function WeeklyPlannerManager({ childId, childName, weekId, weekStartDate
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Calendar className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
           주간 학습 계획
         </h2>
 
         {/* View Toggle */}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-4 sm:flex gap-1.5 sm:gap-2 w-full sm:w-auto">
           <Button
             variant={activeView === 'current' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveView('current')}
+            className="text-xs sm:text-sm"
           >
-            <List className="w-4 h-4 mr-1" />
-            현재 계획
+            <List className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">현재 계획</span>
+            <span className="sm:hidden">현재</span>
           </Button>
           <Button
             variant={activeView === 'calendar' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveView('calendar')}
+            className="text-xs sm:text-sm"
           >
-            <Calendar className="w-4 h-4 mr-1" />
-            캘린더
+            <Calendar className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">캘린더</span>
+            <span className="sm:hidden">캘린더</span>
           </Button>
           <Button
             variant={activeView === 'templates' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveView('templates')}
+            className="text-xs sm:text-sm"
           >
-            <BookTemplate className="w-4 h-4 mr-1" />
-            템플릿
+            <BookTemplate className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">템플릿</span>
+            <span className="sm:hidden">템플릿</span>
           </Button>
           <Button
             variant={activeView === 'history' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveView('history')}
+            className="text-xs sm:text-sm"
           >
-            <Clock className="w-4 h-4 mr-1" />
-            이전 계획
+            <Clock className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">이전 계획</span>
+            <span className="sm:hidden">이전</span>
           </Button>
         </div>
       </div>

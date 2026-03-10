@@ -1104,22 +1104,23 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
       })
     );
 
-    const validWeeks = weekStats.filter(w => w.has_data);
+    const weeksWithData = weekStats.filter(w => w.has_data);
 
-    if (validWeeks.length === 0) {
+    if (weeksWithData.length === 0) {
       return null; // ✅ 기록이 없으면 null 반환
     }
 
-    // Step 3: 월간 통계 계산
+    // Step 3: 월간 통계 계산 - 전체 주간 수로 나누어 빈 주간도 0%로 포함
     const avgCompletion = Math.round(
-      validWeeks.reduce((sum, w) => sum + w.completion_rate, 0) / validWeeks.length
+      weekStats.reduce((sum, w) => sum + w.completion_rate, 0) / weekStats.length
     );
 
-    const bestWeek = validWeeks.reduce((prev, current) =>
+    // bestWeek/worstWeek는 데이터 있는 주에서만 선택
+    const bestWeek = weeksWithData.reduce((prev, current) =>
       prev.completion_rate > current.completion_rate ? prev : current
     );
 
-    const worstWeek = validWeeks.reduce((prev, current) =>
+    const worstWeek = weeksWithData.reduce((prev, current) =>
       prev.completion_rate < current.completion_rate ? prev : current
     );
 
@@ -1135,7 +1136,7 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
         year,
         month,
         month_name: `${year}년 ${month}월`,
-        total_weeks: validWeeks.length,
+        total_weeks: weekStats.length,
         average_completion: avgCompletion,
         best_week: bestWeek,
         worst_week: worstWeek,

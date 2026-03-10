@@ -259,38 +259,37 @@ export const TemplateManager = ({ onApplyTemplate, currentHabits = [], childName
                             </span>
                           </div>
                         </div>
-                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 ml-2 lg:ml-4">
+                        <div className="flex flex-row items-center gap-1.5 ml-2 flex-shrink-0">
                           <Button
                             onClick={() => setPreviewTemplate(template)}
                             variant="outline"
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50 h-10 lg:h-9 text-sm px-3"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50 h-9 w-9 sm:w-auto p-0 sm:px-3 text-sm"
                           >
-                            <Eye className="w-4 h-4 mr-1" />
-                            <span className="hidden lg:inline">미리보기</span>
-                            <span className="lg:hidden">보기</span>
+                            <Eye className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">보기</span>
                           </Button>
                           <Button
                             onClick={() => handleApplyTemplate(template)}
                             variant="outline"
-                            className="text-green-600 border-green-600 hover:bg-green-50 h-10 lg:h-9 text-sm px-3"
+                            className="text-green-600 border-green-600 hover:bg-green-50 h-9 w-9 sm:w-auto p-0 sm:px-3 text-sm"
                           >
-                            <Check className="w-4 h-4 mr-1" />
-                            적용
+                            <Check className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">적용</span>
                           </Button>
                           <Button
                             onClick={() => startEdit(template)}
                             variant="outline"
-                            className="h-10 lg:h-9 w-10 lg:w-9 p-0"
+                            className="h-9 w-9 p-0"
                           >
-                            <Edit className="w-5 h-5 lg:w-4 lg:h-4" />
+                            <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             onClick={() => handleDeleteTemplate(template.id)}
                             variant="destructive"
                             disabled={deleting}
-                            className="h-10 lg:h-9 w-10 lg:w-9 p-0"
+                            className="h-9 w-9 p-0"
                           >
-                            <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
