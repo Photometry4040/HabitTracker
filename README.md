@@ -530,6 +530,28 @@ supabase functions deploy dashboard-aggregation
 supabase functions deploy send-discord-notification
 ```
 
+### Troubleshooting
+
+#### PWA Cache Stale After Deploy
+
+This app uses PWA (Service Worker + precache). After deploying a new build, users may see errors (e.g., lazy-loaded components failing to load) because the Service Worker serves stale cached JS chunks whose hashes no longer match.
+
+**Symptoms:**
+- ErrorBoundary error screens on specific pages (e.g., "만다라트 오류")
+- `ChunkLoadError` or network 404 on `.js` assets in browser console
+- Works locally but breaks after deploy
+
+**Fix (for users):**
+- **iOS Safari**: Settings > Safari > Clear History and Website Data
+- **Android Chrome**: Long-press app icon > App info > Clear cache
+- **PWA (installed)**: Remove from home screen, clear browser cache, re-add
+- **Desktop**: Hard refresh (`Ctrl+Shift+R` / `Cmd+Shift+R`)
+
+**Prevention (for developers):**
+- Vite hashes all chunk filenames, so the Service Worker will eventually update
+- `workbox-precaching` will detect new hashes and replace stale entries on the next visit
+- Consider adding a "New version available" toast to prompt users to refresh
+
 ---
 
 ## Version History
