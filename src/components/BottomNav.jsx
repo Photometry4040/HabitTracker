@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ClipboardCheck, BarChart3, GraduationCap, Calendar, MoreHorizontal,
-         Target, LayoutGrid, AlertCircle, LogOut, Users } from 'lucide-react'
+         Target, LayoutGrid, AlertCircle, LogOut, Users, Gamepad2 } from 'lucide-react'
 
 /**
  * BottomNav - Mobile-only bottom navigation bar (MyFitnessPal style)
@@ -42,7 +42,7 @@ export function BottomNav({
   const isActive = (tabId) => {
     if (tabId === 'tracker') return activeView === 'tracker'
     if (tabId === 'dashboard') return activeView === 'dashboard'
-    if (tabId === 'learn') return ['goals', 'mandala', 'weaknesses'].includes(activeView) || showLearnSheet
+    if (tabId === 'learn') return ['goals', 'mandala', 'weaknesses', 'gameArcade'].includes(activeView) || showLearnSheet
     if (tabId === 'planner') return ['planner', 'templates'].includes(activeView)
     if (tabId === 'more') return showMoreSheet
     return false
@@ -114,6 +114,18 @@ export function BottomNav({
               <div>
                 <p className="font-semibold text-gray-900 dark:text-gray-100">약점 관리</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">약점 추적 및 개선 기록</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleNav('gameArcade')}
+              className="flex items-center gap-3 p-4 rounded-xl bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 active:bg-pink-100 w-full text-left transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center">
+                <Gamepad2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">놀이터</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">스트레스 해소 미니 게임</p>
               </div>
             </button>
           </div>

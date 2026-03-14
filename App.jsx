@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid, ChevronLeft, ChevronRight, ChevronDown, Moon, Sun } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid, ChevronLeft, ChevronRight, ChevronDown, Moon, Sun, Gamepad2 } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { BottomNav } from '@/components/BottomNav.jsx'
+import { GameArcade } from '@/components/GameArcade.jsx'
 import { Auth } from '@/components/Auth.jsx'
 import { RewardNotificationProvider } from '@/components/Rewards/RewardNotificationProvider.jsx'
 import { useHabitTracker } from '@/hooks/useHabitTracker.js'
@@ -60,6 +61,7 @@ function App() {
     showWeaknesses, setShowWeaknesses,
     showMandala, setShowMandala,
     showWeeklyPlanner, setShowWeeklyPlanner,
+    showGameArcade, setShowGameArcade,
   } = useHabitTracker()
 
   const { mode: themeMode, toggle: toggleTheme } = useThemeMode()
@@ -118,6 +120,7 @@ function App() {
     if (showMandala) return 'mandala'
     if (showWeaknesses) return 'weaknesses'
     if (showWeeklyPlanner) return 'planner'
+    if (showGameArcade) return 'gameArcade'
     if (showTemplateManager) return 'templates'
     return 'tracker'
   }
@@ -130,6 +133,7 @@ function App() {
     setShowWeaknesses(false)
     setShowMandala(false)
     setShowWeeklyPlanner(false)
+    setShowGameArcade(false)
 
     // Set the requested view
     if (view === 'dashboard') setShowDashboard(true)
@@ -138,6 +142,7 @@ function App() {
     else if (view === 'weaknesses') setShowWeaknesses(true)
     else if (view === 'planner') setShowWeeklyPlanner(true)
     else if (view === 'templates') setShowTemplateManager(true)
+    else if (view === 'gameArcade') setShowGameArcade(true)
     // 'tracker' = all false (default)
   }
 
@@ -274,6 +279,7 @@ function App() {
                         showWeaknesses={showWeaknesses} setShowWeaknesses={setShowWeaknesses}
                         showMandala={showMandala} setShowMandala={setShowMandala}
                         showWeeklyPlanner={showWeeklyPlanner} setShowWeeklyPlanner={setShowWeeklyPlanner}
+                        showGameArcade={showGameArcade} setShowGameArcade={setShowGameArcade}
                         showDashboard={showDashboard} setShowDashboard={setShowDashboard}
                         saving={saving} onSave={() => saveData(false)}
                       />
@@ -348,6 +354,10 @@ function App() {
                         weekId={currentWeekId} weekStartDate={weekStartDate} />
                     </Suspense>
                   </ErrorBoundary>
+                </ViewWrapper>
+              ) : showGameArcade ? (
+                <ViewWrapper>
+                  <GameArcade />
                 </ViewWrapper>
               ) : showDashboard ? (
                 <ViewWrapper>
@@ -428,6 +438,7 @@ function NavigationButtons({
   showWeaknesses, setShowWeaknesses,
   showMandala, setShowMandala,
   showWeeklyPlanner, setShowWeeklyPlanner,
+  showGameArcade, setShowGameArcade,
   showDashboard, setShowDashboard,
   saving, onSave,
 }) {
@@ -437,6 +448,7 @@ function NavigationButtons({
     setShowWeaknesses(false)
     setShowMandala(false)
     setShowWeeklyPlanner(false)
+    setShowGameArcade(false)
     setShowDashboard(false)
     targetSetter(!currentValue)
   }
@@ -449,6 +461,7 @@ function NavigationButtons({
     { setter: setShowWeaknesses, current: showWeaknesses, color: 'bg-orange-600 hover:bg-orange-700', Icon: AlertCircle, label: showWeaknesses ? '습관 추적' : '약점 관리', mobileLabel: showWeaknesses ? '추적' : '약점' },
     { setter: setShowMandala, current: showMandala, color: 'bg-indigo-600 hover:bg-indigo-700', Icon: LayoutGrid, label: showMandala ? '습관 추적' : '만다라트', mobileLabel: '만다라' },
     { setter: setShowWeeklyPlanner, current: showWeeklyPlanner, color: 'bg-teal-600 hover:bg-teal-700', Icon: Calendar, label: showWeeklyPlanner ? '습관 추적' : '주간 계획', mobileLabel: '계획' },
+    { setter: setShowGameArcade, current: showGameArcade, color: 'bg-pink-600 hover:bg-pink-700', Icon: Gamepad2, label: showGameArcade ? '습관 추적' : '놀이터', mobileLabel: '놀이터' },
     { setter: setShowDashboard, current: showDashboard, color: 'bg-purple-600 hover:bg-purple-700', Icon: BarChart3, label: showDashboard ? '습관 추적' : '대시보드', mobileLabel: '보드' },
   ]
 

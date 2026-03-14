@@ -43,6 +43,7 @@ export function useHabitTracker() {
   const [showWeaknesses, setShowWeaknesses] = useState(false)
   const [showMandala, setShowMandala] = useState(false)
   const [showWeeklyPlanner, setShowWeeklyPlanner] = useState(false)
+  const [showGameArcade, setShowGameArcade] = useState(false)
 
   const resetData = useCallback(() => {
     setWeekPeriod('')
@@ -458,5 +459,6 @@ export function useHabitTracker() {
     showWeaknesses, setShowWeaknesses,
     showMandala, setShowMandala,
     showWeeklyPlanner, setShowWeeklyPlanner,
+    showGameArcade, setShowGameArcade,
   }
 }
