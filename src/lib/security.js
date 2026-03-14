@@ -22,26 +22,50 @@ export const updateActivityTime = () => {
   localStorage.setItem('lastActivity', Date.now().toString())
 }
 
+// 필드별 최대 길이 제한
+const FIELD_MAX_LENGTHS = {
+  child_name: 20,
+  habit_name: 50,
+  reflection: 500,
+  goal: 200,
+  weakness: 200,
+  template_name: 50,
+  default: 255,
+}
+
 // 입력 데이터 검증
-export const validateInput = (data) => {
+export const validateInput = (data, options = {}) => {
   const sanitized = {}
-  
+  const errors = []
+
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === 'string') {
       // XSS 방지를 위한 기본적인 이스케이프
-      sanitized[key] = value
+      let cleaned = value
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#x27;')
         .trim()
+
+      // 길이 제한 적용
+      const maxLen = FIELD_MAX_LENGTHS[key] || FIELD_MAX_LENGTHS.default
+      if (cleaned.length > maxLen) {
+        cleaned = cleaned.slice(0, maxLen)
+        errors.push(`${key}은(는) 최대 ${maxLen}자까지 입력 가능합니다.`)
+      }
+
+      sanitized[key] = cleaned
     } else {
       sanitized[key] = value
     }
   }
-  
-  return sanitized
+
+  return { sanitized, errors, isValid: errors.length === 0 }
 }
+
+// 하위 호환: 기존 코드에서 sanitized 객체만 반환하는 래퍼
+export const sanitizeInput = (data) => validateInput(data).sanitized
 
 // 비밀번호 강도 검증
 export const validatePassword = (password) => {

@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase.js'
 import { loadAllChildrenNew as loadAllChildren, loadChildWeeksNew as loadChildWeeks } from '@/lib/database-new.js'
 import { deleteWeekDualWrite } from '@/lib/dual-write.js'
 import { toggleLearningMode } from '@/lib/learning-mode.js'
+import { validateInput } from '@/lib/security.js'
 
 export function ChildSelector({ onChildSelect, onNewChild }) {
   const [children, setChildren] = useState([])
@@ -154,7 +155,12 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
       alert('아이 이름을 입력해주세요.')
       return
     }
-    onNewChild(newChildName.trim())
+    const { sanitized, errors, isValid } = validateInput({ child_name: newChildName.trim() })
+    if (!isValid) {
+      alert(errors.join('\n'))
+      return
+    }
+    onNewChild(sanitized.child_name)
     setNewChildName('')
   }
 

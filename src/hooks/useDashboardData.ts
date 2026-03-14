@@ -762,8 +762,44 @@ async function generateRealInsightsData(childId: string, weeksCount: number = 4)
         completion_rate: completionRate,
         total_days: stats.total_days,
         completed_days: stats.completed_days,
-        trend: 'stable', // TODO: 이전 기간과 비교하여 실제 트렌드 계산
-        trend_value: 0,
+        trend: (() => {
+          // 전반기/후반기 비교로 트렌드 계산
+          const habitWeeks = habits
+            .filter(h => h.name === stats.habit_name)
+            .sort((a, b) => {
+              const weekA = weeks.find(w => w.id === a.week_id);
+              const weekB = weeks.find(w => w.id === b.week_id);
+              return (weekA?.week_start_date || '').localeCompare(weekB?.week_start_date || '');
+            });
+          if (habitWeeks.length < 2) return 'stable';
+          const mid = Math.floor(habitWeeks.length / 2);
+          const firstHalf = habitWeeks.slice(0, mid);
+          const secondHalf = habitWeeks.slice(mid);
+          const calcRate = (hws: typeof habitWeeks) => {
+            const recs = hws.flatMap(h => records?.filter(r => r.habit_id === h.id) || []);
+            return recs.length > 0 ? recs.filter(r => r.status === 'green').length / recs.length * 100 : 0;
+          };
+          const firstRate = calcRate(firstHalf);
+          const secondRate = calcRate(secondHalf);
+          const diff = secondRate - firstRate;
+          return diff > 5 ? 'improving' : diff < -5 ? 'declining' : 'stable';
+        })(),
+        trend_value: (() => {
+          const habitWeeks = habits
+            .filter(h => h.name === stats.habit_name)
+            .sort((a, b) => {
+              const weekA = weeks.find(w => w.id === a.week_id);
+              const weekB = weeks.find(w => w.id === b.week_id);
+              return (weekA?.week_start_date || '').localeCompare(weekB?.week_start_date || '');
+            });
+          if (habitWeeks.length < 2) return 0;
+          const mid = Math.floor(habitWeeks.length / 2);
+          const calcRate = (hws: typeof habitWeeks) => {
+            const recs = hws.flatMap(h => records?.filter(r => r.habit_id === h.id) || []);
+            return recs.length > 0 ? recs.filter(r => r.status === 'green').length / recs.length * 100 : 0;
+          };
+          return Math.round(Math.abs(calcRate(habitWeeks.slice(mid)) - calcRate(habitWeeks.slice(0, mid))));
+        })(),
       };
     });
 
@@ -1149,7 +1185,48 @@ async function generateRealMonthlyData(childId: string, year: number, month: num
         last_month_avg: lastMonthAvg,
         improvement: lastMonthAvg !== null ? avgCompletion - lastMonthAvg : null,
       },
-      top_months: [], // TODO: 상위 월간 성과는 별도 집계 필요 (향후 구현)
+      top_months: await (async () => {
+        try {
+          // 최근 6개월의 월간 평균 완료율 집계
+          const months = [];
+          for (let i = 0; i < 6; i++) {
+            let m = month - i;
+            let y = year;
+            while (m <= 0) { m += 12; y--; }
+            const mStart = `${y}-${String(m).padStart(2, '0')}-01`;
+            const nm = m === 12 ? 1 : m + 1;
+            const ny = m === 12 ? y + 1 : y;
+            const mEnd = `${ny}-${String(nm).padStart(2, '0')}-01`;
+
+            const { data: mWeeks } = await supabase
+              .from('weeks')
+              .select('id')
+              .eq('child_id', childId)
+              .gte('week_start_date', mStart)
+              .lt('week_start_date', mEnd);
+
+            if (!mWeeks || mWeeks.length === 0) continue;
+
+            const mWeekIds = mWeeks.map(w => w.id);
+            const { data: mHabits } = await supabase
+              .from('habits')
+              .select('id, habit_records(status)')
+              .in('week_id', mWeekIds);
+
+            const allRecs = mHabits?.flatMap(h => h.habit_records) || [];
+            if (allRecs.length === 0) continue;
+
+            const greenCount = allRecs.filter(r => r.status === 'green').length;
+            months.push({
+              month_name: `${y}년 ${m}월`,
+              average_completion: Math.round((greenCount / allRecs.length) * 100),
+            });
+          }
+          return months.sort((a, b) => b.average_completion - a.average_completion).slice(0, 3);
+        } catch {
+          return [];
+        }
+      })(),
     };
   } catch (error) {
     console.error('[Real] Error generating real monthly data:', error);

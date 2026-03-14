@@ -26,6 +26,7 @@ const MandalaChart = lazy(() => import('@/components/Mandala/MandalaChart.jsx').
 const WeeklyPlannerManager = lazy(() => import('@/components/WeeklyPlanner/WeeklyPlannerManager.jsx').then(m => ({ default: m.WeeklyPlannerManager })))
 
 import { HabitTableSkeleton, DashboardSkeleton, MandalaSkeleton } from '@/components/common/Skeleton.jsx'
+import { OfflineBanner } from '@/components/common/OfflineBanner.jsx'
 
 const SuspenseFallback = () => (
   <div className="flex items-center justify-center p-8">
@@ -156,6 +157,7 @@ function App() {
 
   return (
     <RewardNotificationProvider childName={selectedChild}>
+      <OfflineBanner />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 p-2 sm:p-4 pb-20 md:pb-4">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
           {/* Desktop top bar */}

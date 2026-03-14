@@ -8,6 +8,7 @@ import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-writ
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyWeekSave, notifyWeekComplete, notifyWeekSummary, calculateWeekStats, calculateDetailedWeekStats } from '@/lib/discord.js'
 import { checkStreak21, checkHabitMastery } from '@/lib/learning-mode.js'
+import { sanitizeInput } from '@/lib/security.js'
 import { getHabitRecordsForStreak, calculateStreak, calculateGreenStreak } from '@/lib/streak-calculator.js'
 import { createDefaultHabits, DEFAULT_REFLECTION, formatWeekPeriod, DAYS } from '@/lib/app-constants.js'
 
@@ -355,8 +356,9 @@ export function useHabitTracker() {
   }, [])
 
   const updateHabitName = useCallback((habitId, newName) => {
+    const { habit_name } = sanitizeInput({ habit_name: newName })
     setHabits(prev => prev.map(habit =>
-      habit.id === habitId ? { ...habit, name: newName } : habit
+      habit.id === habitId ? { ...habit, name: habit_name } : habit
     ))
   }, [])
 
