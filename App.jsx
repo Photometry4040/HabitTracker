@@ -350,12 +350,24 @@ function App() {
                   </ErrorBoundary>
                 </ViewWrapper>
               ) : (
-                <HabitTrackerView
-                  habits={habits} reflection={reflection} reward={reward} childName={childName}
-                  updateHabitColor={updateHabitColor} bulkUpdateDay={bulkUpdateDay}
-                  addHabit={addHabit} removeHabit={removeHabit} updateHabitName={updateHabitName}
-                  setReflection={setReflection} setReward={setReward}
-                />
+                <motion.div
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, { offset, velocity }) => {
+                    const swipe = Math.abs(offset.x) * velocity.x
+                    if (swipe < -3000 || offset.x < -100) navigateWeek(7)
+                    else if (swipe > 3000 || offset.x > 100) navigateWeek(-7)
+                  }}
+                  className="md:cursor-default touch-pan-y"
+                >
+                  <HabitTrackerView
+                    habits={habits} reflection={reflection} reward={reward} childName={childName}
+                    updateHabitColor={updateHabitColor} bulkUpdateDay={bulkUpdateDay}
+                    addHabit={addHabit} removeHabit={removeHabit} updateHabitName={updateHabitName}
+                    setReflection={setReflection} setReward={setReward}
+                  />
+                </motion.div>
               )}
 
               {/* Overwrite confirmation modal */}
