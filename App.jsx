@@ -27,6 +27,8 @@ const WeeklyPlannerManager = lazy(() => import('@/components/WeeklyPlanner/Weekl
 
 import { HabitTableSkeleton, DashboardSkeleton, MandalaSkeleton } from '@/components/common/Skeleton.jsx'
 import { OfflineBanner } from '@/components/common/OfflineBanner.jsx'
+import { HabitCompletionEffect } from '@/components/common/HabitCompletionEffect.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 
 const SuspenseFallback = () => (
   <div className="flex items-center justify-center p-8">
@@ -65,7 +67,7 @@ function App() {
   // Loading screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">로딩 중...</p>
@@ -84,7 +86,7 @@ function App() {
 
   if (!supabaseUrl || !supabaseKey || !isValidUrl) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 flex items-center justify-center p-4">
         <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg p-8 max-w-md text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">환경변수 설정 오류</h1>
@@ -158,7 +160,7 @@ function App() {
   return (
     <RewardNotificationProvider childName={selectedChild}>
       <OfflineBanner />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 p-2 sm:p-4 pb-20 md:pb-4">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 dark:from-gray-950 dark:via-indigo-950/30 dark:to-gray-900 p-2 sm:p-4 pb-20 md:pb-4">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
           {/* Desktop top bar */}
           <div className="hidden md:flex justify-end gap-2 no-print">
@@ -254,7 +256,7 @@ function App() {
                       <Users className="w-4 h-4" />
                       아이 변경
                     </Button>
-                    <CardTitle className="text-2xl md:text-3xl font-bold text-purple-800 dark:text-purple-300 flex items-center justify-center gap-2 text-center">
+                    <CardTitle className="text-2xl md:text-3xl font-bold font-display text-purple-800 dark:text-purple-300 flex items-center justify-center gap-2 text-center">
                       <Star className="text-yellow-500" />
                       <span>주간 습관 성장 챌린지</span>
                       <Star className="text-yellow-500" />
@@ -474,6 +476,7 @@ function HabitTrackerView({
 }) {
   const [showReflection, setShowReflection] = useState(false)
   const [showReward, setShowReward] = useState(false)
+  const [sparkleEffect, setSparkleEffect] = useState(null)
   const shouldReduceMotion = useReducedMotion()
 
   const listContainer = { animate: { transition: { staggerChildren: 0.04 } } }
@@ -482,10 +485,21 @@ function HabitTrackerView({
     : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0, transition: { duration: 0.2 } } }
 
   // Cycle color on mobile tap: '' -> 'green' -> 'yellow' -> 'red' -> ''
-  const cycleColor = (habitId, dayIndex, currentValue) => {
+  const cycleColor = (habitId, dayIndex, currentValue, event) => {
     const cycle = ['', 'green', 'yellow', 'red']
     const nextIdx = (cycle.indexOf(currentValue) + 1) % cycle.length
-    updateHabitColor(habitId, dayIndex, cycle[nextIdx])
+    const nextColor = cycle[nextIdx]
+    updateHabitColor(habitId, dayIndex, nextColor)
+
+    // Trigger sparkle effect on green
+    if (nextColor === 'green' && event) {
+      const rect = event.currentTarget.getBoundingClientRect()
+      setSparkleEffect({
+        key: `${habitId}-${dayIndex}-${Date.now()}`,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      })
+    }
   }
 
   // Mobile color circle classes
@@ -498,8 +512,26 @@ function HabitTrackerView({
 
   return (
     <>
+      {/* Sparkle effect on green completion */}
+      {sparkleEffect && (
+        <HabitCompletionEffect
+          key={sparkleEffect.key}
+          show={true}
+          x={sparkleEffect.x}
+          y={sparkleEffect.y}
+          onComplete={() => setSparkleEffect(null)}
+        />
+      )}
+
       {/* Mobile: Summary Stats Bar */}
-      <div className="flex items-center justify-around py-3 px-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm md:hidden">
+      <div className={`flex items-center justify-around p-3 rounded-xl shadow-sm md:hidden ${
+        (() => {
+          const rate = getMaxScore(habits) > 0 ? (getTotalScore(habits) / getMaxScore(habits)) * 100 : 0
+          if (rate >= 80) return 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
+          if (rate >= 50) return 'bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20'
+          return 'bg-white dark:bg-gray-800/70'
+        })()
+      }`}>
         <div className="flex flex-col items-center">
           <span className="text-2xl font-bold text-green-600">{getTotalScore(habits)}</span>
           <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">달성</span>
@@ -529,14 +561,14 @@ function HabitTrackerView({
       {/* Desktop: Full color code card */}
       <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+          <CardTitle className="text-xl font-bold font-display text-purple-800 dark:text-purple-300 flex items-center gap-2">
             🎨 색상 코드
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {COLORS.map((color) => (
-              <div key={color.value} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <div key={color.value} className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                 <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getColorClass(color.value)}`}></div>
                 <span className="text-xl sm:text-2xl">{color.emoji}</span>
                 <div className="min-w-0 flex-1">
@@ -552,7 +584,7 @@ function HabitTrackerView({
       {/* Habit tracking table */}
       <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 pb-2 sm:pb-4">
-          <CardTitle className="text-lg sm:text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+          <CardTitle className="text-lg sm:text-xl font-bold font-display text-purple-800 dark:text-purple-300 flex items-center gap-2">
             <Target className="w-5 h-5" /> 습관 추적표
           </CardTitle>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -567,10 +599,25 @@ function HabitTrackerView({
           </div>
         </CardHeader>
         <CardContent>
+          {/* Mobile: Guide message when no records yet */}
+          {getTotalScore(habits) === 0 && getMaxScore(habits) === 0 && (
+            <div className="md:hidden mb-3">
+              <EmptyState
+                emoji="🌱"
+                title="오늘도 습관을 기록해볼까?"
+                description="색상 원을 탭해서 시작하세요! 초록은 달성, 노랑은 보통, 빨강은 아쉬움이에요."
+              />
+            </div>
+          )}
+
           {/* Mobile: Compact 7-day horizontal habit cards */}
           <motion.div className="block md:hidden space-y-2" variants={listContainer} initial="initial" animate="animate">
             {habits.map((habit) => (
-              <motion.div key={habit.id} variants={listItem} className="border dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800/50 shadow-sm">
+              <motion.div key={habit.id} variants={listItem} className={`border dark:border-gray-700 rounded-xl p-3 shadow-sm ${
+                getWeeklyScore(habit) >= 5
+                  ? 'bg-green-50/50 dark:bg-green-900/10 border-green-200/50 dark:border-green-800/30'
+                  : 'bg-white dark:bg-gray-800/50'
+              }`}>
                 <div className="flex items-center justify-between mb-2">
                   <Input value={habit.name} onChange={(e) => updateHabitName(habit.id, e.target.value)}
                     className="border-none bg-transparent font-medium text-sm p-0 h-auto flex-1" placeholder="습관 이름" />
@@ -589,7 +636,7 @@ function HabitTrackerView({
                     <div key={dayIndex} className="flex flex-col items-center">
                       <span className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">{day.replace('요일', '')}</span>
                       <button
-                        onClick={() => cycleColor(habit.id, dayIndex, habit.times[dayIndex])}
+                        onClick={(e) => cycleColor(habit.id, dayIndex, habit.times[dayIndex], e)}
                         className={`w-9 h-9 rounded-full border-2 transition-all active:scale-90
                           ${getMobileColorClass(habit.times[dayIndex])}`}
                       />
@@ -671,7 +718,7 @@ function HabitTrackerView({
           onClick={() => setShowReflection(!showReflection)}
           className="flex items-center justify-between w-full p-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm"
         >
-          <span className="font-semibold text-gray-800 dark:text-gray-100">📈 이번 주 돌아보기</span>
+          <span className="font-semibold font-display text-gray-800 dark:text-gray-100">📈 이번 주 돌아보기</span>
           <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${showReflection ? 'rotate-180' : ''}`} />
         </button>
         {showReflection && (
@@ -701,7 +748,7 @@ function HabitTrackerView({
           onClick={() => setShowReward(!showReward)}
           className="flex items-center justify-between w-full p-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm"
         >
-          <span className="font-semibold text-gray-800 dark:text-gray-100">🏆 이번 주 보상 아이디어</span>
+          <span className="font-semibold font-display text-gray-800 dark:text-gray-100">🏆 이번 주 보상 아이디어</span>
           <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${showReward ? 'rotate-180' : ''}`} />
         </button>
         {showReward && (
@@ -716,7 +763,7 @@ function HabitTrackerView({
       {/* Desktop: Full reflection section */}
       <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+          <CardTitle className="text-xl font-bold font-display text-purple-800 dark:text-purple-300 flex items-center gap-2">
             📈 이번 주 돌아보기
           </CardTitle>
         </CardHeader>
@@ -745,7 +792,7 @@ function HabitTrackerView({
       {/* Desktop: Full reward section */}
       <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+          <CardTitle className="text-xl font-bold font-display text-purple-800 dark:text-purple-300 flex items-center gap-2">
             <Trophy className="text-yellow-500" /> 이번 주 보상 아이디어
           </CardTitle>
         </CardHeader>
