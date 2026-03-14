@@ -74,10 +74,16 @@ export function MandalaChart({ childName }) {
   const loadCharts = async () => {
     try {
       setLoading(true)
+      if (!childName) {
+        console.warn('MandalaChart: childName이 없습니다')
+        setCharts([])
+        return
+      }
       const data = await getAllMandalaCharts(childName)
-      setCharts(data)
+      setCharts(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('만다라트 목록 로드 실패:', error)
+      setCharts([])
     } finally {
       setLoading(false)
     }
@@ -86,9 +92,10 @@ export function MandalaChart({ childName }) {
   const loadHierarchy = async (chartId) => {
     try {
       const hierarchy = await getMandalaNodesHierarchy(chartId, 3)
-      setHierarchyNodes(hierarchy)
+      setHierarchyNodes(hierarchy || { level1Nodes: [], level2Nodes: [], level3Nodes: [] })
     } catch (error) {
       console.error('계층 노드 로드 실패:', error)
+      setHierarchyNodes({ level1Nodes: [], level2Nodes: [], level3Nodes: [] })
     }
   }
 
