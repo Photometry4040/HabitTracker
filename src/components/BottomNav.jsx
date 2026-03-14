@@ -170,7 +170,8 @@ export function BottomNav({
 
       {/* Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800
-                      flex justify-around items-center h-16 px-1 md:hidden safe-bottom">
+                      flex justify-around items-center h-16 px-1 md:hidden safe-bottom"
+           role="tablist" aria-label="메인 네비게이션">
         {tabs.map(tab => {
           const Icon = tab.icon
           const active = isActive(tab.id)
@@ -178,6 +179,9 @@ export function BottomNav({
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
+              role="tab"
+              aria-selected={active}
+              aria-label={tab.label}
               className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 min-w-[52px]
                          rounded-lg transition-colors ${active ? 'text-blue-600' : 'text-gray-400'}`}
             >

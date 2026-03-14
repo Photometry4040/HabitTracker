@@ -183,6 +183,7 @@ function App() {
                   <button
                     onClick={() => { setShowChildSelector(true); resetData() }}
                     className="flex items-center gap-2"
+                    aria-label="아이 선택"
                   >
                     <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center">
                       {childName ? childName[0] : '?'}
@@ -192,7 +193,7 @@ function App() {
 
                   {/* Date navigation */}
                   <div className="flex items-center gap-1">
-                    <button onClick={() => navigateWeek(-7)} className="p-1.5 rounded-full hover:bg-gray-100 dark:bg-gray-700 active:bg-gray-200">
+                    <button onClick={() => navigateWeek(-7)} className="p-1.5 rounded-full hover:bg-gray-100 dark:bg-gray-700 active:bg-gray-200" aria-label="이전 주">
                       <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
                     </button>
                     <label htmlFor="mobileDate" className="font-semibold text-sm text-gray-800 dark:text-gray-100 cursor-pointer">
@@ -205,7 +206,7 @@ function App() {
                       onChange={(e) => setWeekStartDate(e.target.value)}
                       className="sr-only"
                     />
-                    <button onClick={() => navigateWeek(7)} className="p-1.5 rounded-full hover:bg-gray-100 dark:bg-gray-700 active:bg-gray-200">
+                    <button onClick={() => navigateWeek(7)} className="p-1.5 rounded-full hover:bg-gray-100 dark:bg-gray-700 active:bg-gray-200" aria-label="다음 주">
                       <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
                     </button>
                   </div>
@@ -225,6 +226,7 @@ function App() {
                       onClick={() => saveData(false)}
                       disabled={saving || autoSaveStatus === 'saving'}
                       className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
+                      aria-label="저장"
                     >
                       {saving || autoSaveStatus === 'saving' ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
                     </button>
