@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary.jsx'
 import { useThemeMode } from '@/hooks/useThemeMode.js'
 import { Button } from '@/components/ui/button.jsx'
@@ -474,6 +474,12 @@ function HabitTrackerView({
 }) {
   const [showReflection, setShowReflection] = useState(false)
   const [showReward, setShowReward] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
+
+  const listContainer = { animate: { transition: { staggerChildren: 0.04 } } }
+  const listItem = shouldReduceMotion
+    ? { initial: {}, animate: {} }
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0, transition: { duration: 0.2 } } }
 
   // Cycle color on mobile tap: '' -> 'green' -> 'yellow' -> 'red' -> ''
   const cycleColor = (habitId, dayIndex, currentValue) => {
@@ -562,9 +568,9 @@ function HabitTrackerView({
         </CardHeader>
         <CardContent>
           {/* Mobile: Compact 7-day horizontal habit cards */}
-          <div className="block md:hidden space-y-2">
+          <motion.div className="block md:hidden space-y-2" variants={listContainer} initial="initial" animate="animate">
             {habits.map((habit) => (
-              <div key={habit.id} className="border dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800/50 shadow-sm">
+              <motion.div key={habit.id} variants={listItem} className="border dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800/50 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <Input value={habit.name} onChange={(e) => updateHabitName(habit.id, e.target.value)}
                     className="border-none bg-transparent font-medium text-sm p-0 h-auto flex-1" placeholder="습관 이름" />
@@ -590,9 +596,9 @@ function HabitTrackerView({
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Desktop table layout */}
           <div className="hidden md:block responsive-table">
@@ -619,9 +625,9 @@ function HabitTrackerView({
                   <th className="border p-3 bg-purple-100 dark:bg-purple-900/30 text-center delete-column">삭제</th>
                 </tr>
               </thead>
-              <tbody>
+              <motion.tbody variants={listContainer} initial="initial" animate="animate">
                 {habits.map((habit) => (
-                  <tr key={habit.id}>
+                  <motion.tr key={habit.id} variants={listItem}>
                     <td className="border p-2 habit-name-cell">
                       <Textarea value={habit.name} onChange={(e) => updateHabitName(habit.id, e.target.value)}
                         className="border-none bg-transparent font-medium text-base resize-none min-h-[60px] max-h-[80px]"
@@ -651,9 +657,9 @@ function HabitTrackerView({
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
-              </tbody>
+              </motion.tbody>
             </table>
           </div>
         </CardContent>
