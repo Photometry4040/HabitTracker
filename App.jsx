@@ -1,11 +1,14 @@
 import { lazy, Suspense, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary.jsx'
+import { useThemeMode } from '@/hooks/useThemeMode.js'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { Calendar, Star, Trophy, Target, Plus, Trash2, Users, Save, Cloud, BarChart3, LogOut, BookTemplate, AlertCircle, LayoutGrid, ChevronLeft, ChevronRight, ChevronDown, Moon, Sun } from 'lucide-react'
 import { ChildSelector } from '@/components/ChildSelector.jsx'
 import { BottomNav } from '@/components/BottomNav.jsx'
 import { Auth } from '@/components/Auth.jsx'
@@ -22,11 +25,20 @@ const WeaknessLogger = lazy(() => import('@/components/Weaknesses/WeaknessLogger
 const MandalaChart = lazy(() => import('@/components/Mandala/MandalaChart.jsx').then(m => ({ default: m.MandalaChart })))
 const WeeklyPlannerManager = lazy(() => import('@/components/WeeklyPlanner/WeeklyPlannerManager.jsx').then(m => ({ default: m.WeeklyPlannerManager })))
 
+import { HabitTableSkeleton, DashboardSkeleton, MandalaSkeleton } from '@/components/common/Skeleton.jsx'
+
 const SuspenseFallback = () => (
   <div className="flex items-center justify-center p-8">
-    <div className="text-purple-600">로딩 중...</div>
+    <div className="text-purple-600 dark:text-purple-400">로딩 중...</div>
   </div>
 )
+
+const pageTransition = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+  transition: { duration: 0.2, ease: 'easeOut' }
+}
 
 function App() {
   const {
@@ -46,6 +58,8 @@ function App() {
     showMandala, setShowMandala,
     showWeeklyPlanner, setShowWeeklyPlanner,
   } = useHabitTracker()
+
+  const { mode: themeMode, toggle: toggleTheme } = useThemeMode()
 
   // Loading screen
   if (loading) {
@@ -142,10 +156,14 @@ function App() {
 
   return (
     <RewardNotificationProvider childName={selectedChild}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-2 sm:p-4 pb-20 md:pb-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 p-2 sm:p-4 pb-20 md:pb-4">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-          {/* Desktop logout button */}
-          <div className="hidden md:flex justify-end no-print">
+          {/* Desktop top bar */}
+          <div className="hidden md:flex justify-end gap-2 no-print">
+            <Button onClick={toggleTheme} variant="outline" size="sm" className="flex items-center gap-2">
+              {themeMode === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {themeMode === 'dark' ? '라이트' : '다크'}
+            </Button>
             <Button onClick={handleLogout} variant="outline" size="sm" className="flex items-center gap-2">
               <LogOut className="w-4 h-4" />
               로그아웃
@@ -157,7 +175,7 @@ function App() {
           ) : (
             <>
               {/* Mobile Compact Sticky Header */}
-              <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 -mx-2 -mt-2 px-3 py-2 md:hidden no-print">
+              <div className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 -mx-2 -mt-2 px-3 py-2 md:hidden no-print">
                 <div className="flex items-center justify-between">
                   {/* Child avatar */}
                   <button
@@ -220,7 +238,7 @@ function App() {
               </div>
 
               {/* Desktop Header Card (hidden on mobile) */}
-              <Card className="hidden md:block bg-white/80 backdrop-blur-sm shadow-lg">
+              <Card className="hidden md:block bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg border border-white/20 dark:border-gray-700/30">
                 <CardHeader className="text-center">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <Button
@@ -289,33 +307,45 @@ function App() {
               {/* Content Views */}
               {showTemplateManager ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}>
-                    <TemplateManager onApplyTemplate={handleApplyTemplate} currentHabits={habits}
-                      childName={childName} onClose={() => setShowTemplateManager(false)} />
-                  </Suspense>
+                  <ErrorBoundary title="템플릿 오류" message="템플릿 관리를 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}>
+                      <TemplateManager onApplyTemplate={handleApplyTemplate} currentHabits={habits}
+                        childName={childName} onClose={() => setShowTemplateManager(false)} />
+                    </Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : showGoals ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}><GoalsManager childName={selectedChild} /></Suspense>
+                  <ErrorBoundary title="목표 관리 오류" message="목표 관리를 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}><GoalsManager childName={selectedChild} /></Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : showWeaknesses ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}><WeaknessLogger childName={selectedChild} /></Suspense>
+                  <ErrorBoundary title="약점 관리 오류" message="약점 관리를 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}><WeaknessLogger childName={selectedChild} /></Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : showMandala ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}><MandalaChart childName={selectedChild} /></Suspense>
+                  <ErrorBoundary title="만다라트 오류" message="만다라트를 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}><MandalaChart childName={selectedChild} /></Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : showWeeklyPlanner ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}>
-                    <WeeklyPlannerManager childId={currentChildId} childName={childName}
-                      weekId={currentWeekId} weekStartDate={weekStartDate} />
-                  </Suspense>
+                  <ErrorBoundary title="주간 계획 오류" message="주간 계획을 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}>
+                      <WeeklyPlannerManager childId={currentChildId} childName={childName}
+                        weekId={currentWeekId} weekStartDate={weekStartDate} />
+                    </Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : showDashboard ? (
                 <ViewWrapper>
-                  <Suspense fallback={<SuspenseFallback />}><DashboardHub /></Suspense>
+                  <ErrorBoundary title="대시보드 오류" message="대시보드를 불러오는 중 문제가 발생했습니다.">
+                    <Suspense fallback={<SuspenseFallback />}><DashboardHub /></Suspense>
+                  </ErrorBoundary>
                 </ViewWrapper>
               ) : (
                 <HabitTrackerView
@@ -361,9 +391,14 @@ function App() {
 
 function ViewWrapper({ children }) {
   return (
-    <div className="view-enter bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-3 sm:p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg rounded-2xl border border-white/20 dark:border-gray-700/30 p-3 sm:p-6"
+    >
       {children}
-    </div>
+    </motion.div>
   )
 }
 
@@ -440,7 +475,7 @@ function HabitTrackerView({
   return (
     <>
       {/* Mobile: Summary Stats Bar */}
-      <div className="flex items-center justify-around py-3 px-4 bg-white rounded-xl shadow-sm md:hidden">
+      <div className="flex items-center justify-around py-3 px-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm md:hidden">
         <div className="flex flex-col items-center">
           <span className="text-2xl font-bold text-green-600">{getTotalScore(habits)}</span>
           <span className="text-[10px] text-gray-500 mt-0.5">달성</span>
@@ -491,7 +526,7 @@ function HabitTrackerView({
       </Card>
 
       {/* Habit tracking table */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 pb-2 sm:pb-4">
           <CardTitle className="text-lg sm:text-xl font-bold text-purple-800 flex items-center gap-2">
             <Target className="w-5 h-5" /> 습관 추적표
@@ -511,7 +546,7 @@ function HabitTrackerView({
           {/* Mobile: Compact 7-day horizontal habit cards */}
           <div className="block md:hidden space-y-2">
             {habits.map((habit) => (
-              <div key={habit.id} className="border rounded-xl p-3 bg-white shadow-sm">
+              <div key={habit.id} className="border dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800/50 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <Input value={habit.name} onChange={(e) => updateHabitName(habit.id, e.target.value)}
                     className="border-none bg-transparent font-medium text-sm p-0 h-auto flex-1" placeholder="습관 이름" />
@@ -610,13 +645,13 @@ function HabitTrackerView({
       <div className="md:hidden space-y-2">
         <button
           onClick={() => setShowReflection(!showReflection)}
-          className="flex items-center justify-between w-full p-4 bg-white rounded-xl shadow-sm"
+          className="flex items-center justify-between w-full p-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm"
         >
           <span className="font-semibold text-gray-800">📈 이번 주 돌아보기</span>
           <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showReflection ? 'rotate-180' : ''}`} />
         </button>
         {showReflection && (
-          <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+          <div className="bg-white dark:bg-gray-800/70 rounded-xl shadow-sm p-4 space-y-3">
             <div>
               <Label htmlFor="bestDayM" className="text-sm">가장 초록색이 많았던 요일과 시간은?</Label>
               <Textarea id="bestDayM" value={reflection.bestDay}
@@ -640,13 +675,13 @@ function HabitTrackerView({
 
         <button
           onClick={() => setShowReward(!showReward)}
-          className="flex items-center justify-between w-full p-4 bg-white rounded-xl shadow-sm"
+          className="flex items-center justify-between w-full p-4 bg-white dark:bg-gray-800/70 rounded-xl shadow-sm"
         >
           <span className="font-semibold text-gray-800">🏆 이번 주 보상 아이디어</span>
           <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showReward ? 'rotate-180' : ''}`} />
         </button>
         {showReward && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white dark:bg-gray-800/70 rounded-xl shadow-sm p-4">
             <Label htmlFor="rewardM" className="text-sm">목표 달성 시 받을 보상은?</Label>
             <Textarea id="rewardM" value={reward} onChange={(e) => setReward(e.target.value)}
               placeholder="예: 영화, 간식, 보드게임" className="text-sm min-h-[50px]" />

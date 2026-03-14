@@ -58,7 +58,7 @@ export function Auth({ onAuthSuccess }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-xl">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">

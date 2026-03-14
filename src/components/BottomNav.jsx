@@ -73,7 +73,7 @@ export function BottomNav({
       )}
 
       {/* Learning Mode Sheet */}
-      <div className={`fixed inset-x-0 bottom-16 z-40 bg-white rounded-t-2xl shadow-2xl
+      <div className={`fixed inset-x-0 bottom-16 z-40 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl
         transform transition-transform duration-300 ease-out md:hidden
         ${showLearnSheet ? 'translate-y-0' : 'translate-y-full'}`}
       >
@@ -88,7 +88,7 @@ export function BottomNav({
                 <Target className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">목표</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">목표</p>
                 <p className="text-xs text-gray-500">학습 목표 관리 및 ICE 분석</p>
               </div>
             </button>
@@ -100,7 +100,7 @@ export function BottomNav({
                 <LayoutGrid className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">만다라트</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">만다라트</p>
                 <p className="text-xs text-gray-500">81칸 목표 확장 차트</p>
               </div>
             </button>
@@ -112,7 +112,7 @@ export function BottomNav({
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">약점 관리</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">약점 관리</p>
                 <p className="text-xs text-gray-500">약점 추적 및 개선 기록</p>
               </div>
             </button>
@@ -121,7 +121,7 @@ export function BottomNav({
       </div>
 
       {/* More Sheet */}
-      <div className={`fixed inset-x-0 bottom-16 z-40 bg-white rounded-t-2xl shadow-2xl
+      <div className={`fixed inset-x-0 bottom-16 z-40 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl
         transform transition-transform duration-300 ease-out md:hidden
         ${showMoreSheet ? 'translate-y-0' : 'translate-y-full'}`}
       >
@@ -136,7 +136,7 @@ export function BottomNav({
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">아이 변경</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">아이 변경</p>
                 <p className="text-xs text-gray-500">다른 아이 프로필로 전환</p>
               </div>
             </button>
@@ -148,7 +148,7 @@ export function BottomNav({
                 <ClipboardCheck className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">습관 템플릿</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">습관 템플릿</p>
                 <p className="text-xs text-gray-500">템플릿 관리 및 적용</p>
               </div>
             </button>
@@ -169,7 +169,7 @@ export function BottomNav({
       </div>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800
                       flex justify-around items-center h-16 px-1 md:hidden safe-bottom">
         {tabs.map(tab => {
           const Icon = tab.icon
