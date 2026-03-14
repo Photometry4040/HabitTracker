@@ -51,7 +51,7 @@ function App() {
     currentWeekId, currentChildId,
     saveData, updateHabitColor, bulkUpdateDay, addHabit, removeHabit, updateHabitName,
     handleApplyTemplate, resetData,
-    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, autoSaveStatus,
+    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, autoSaveStatus, hasChanges,
     showDashboard, setShowDashboard,
     showTemplateManager, setShowTemplateManager,
     showGoals, setShowGoals,
@@ -222,14 +222,16 @@ function App() {
                     {autoSaveStatus === 'saved' && (
                       <span className="text-[10px] text-green-500 font-medium">저장됨</span>
                     )}
-                    <button
-                      onClick={() => saveData(false)}
-                      disabled={saving || autoSaveStatus === 'saving'}
-                      className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
-                      aria-label="저장"
-                    >
-                      {saving || autoSaveStatus === 'saving' ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
-                    </button>
+                    {(hasChanges || saving || autoSaveStatus === 'saving') && (
+                      <button
+                        onClick={() => saveData(false)}
+                        disabled={saving || autoSaveStatus === 'saving'}
+                        className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
+                        aria-label="저장"
+                      >
+                        {saving || autoSaveStatus === 'saving' ? <Cloud className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}
+                      </button>
+                    )}
                   </div>
                 </div>
                 {/* Row 2: Week period + theme */}

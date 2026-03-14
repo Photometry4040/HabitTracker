@@ -30,6 +30,7 @@ export function useHabitTracker() {
   const [currentWeekId, setCurrentWeekId] = useState(null)
   const [currentChildId, setCurrentChildId] = useState(null)
   const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'pending' | 'saving' | 'saved'
+  const [hasChanges, setHasChanges] = useState(false)
   const autoSaveTimerRef = useRef(null)
   const autoSaveClearRef = useRef(null)
 
@@ -127,6 +128,7 @@ export function useHabitTracker() {
           setReward(data.reward || '')
           setCurrentWeekId(data.id || null)
           setCurrentChildId(data.child_id || null)
+          setHasChanges(false)
 
           if (data.week_start_date) {
             setWeekStartDate(data.week_start_date)
@@ -141,6 +143,7 @@ export function useHabitTracker() {
         resetDataKeepDate()
         setCurrentWeekId(null)
         setCurrentChildId(null)
+        setHasChanges(false)
         if (!showDashboard) {
           alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
         }
@@ -211,6 +214,7 @@ export function useHabitTracker() {
       alert('저장 중 오류가 발생했습니다.')
     } finally {
       setSaving(false)
+      setHasChanges(false)
     }
   }, [selectedChild, weekPeriod, weekStartDate, theme, habits, reflection, reward, pendingSaveData])
 
@@ -278,6 +282,7 @@ export function useHabitTracker() {
         ? { ...h, times: h.times.map((time, index) => index === dayIndex ? newColor : time) }
         : h
     ))
+    setHasChanges(true)
 
     if (!selectedChild || !weekStartDate) return
 
@@ -428,7 +433,7 @@ export function useHabitTracker() {
     saveData, updateHabitColor, bulkUpdateDay, addHabit, removeHabit, updateHabitName,
     handleApplyTemplate, resetData,
     // Save state
-    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, setPendingSaveData, autoSaveStatus,
+    saving, showOverwriteConfirm, setShowOverwriteConfirm, pendingSaveData, setPendingSaveData, autoSaveStatus, hasChanges,
     // View toggles
     showDashboard, setShowDashboard,
     showTemplateManager, setShowTemplateManager,
