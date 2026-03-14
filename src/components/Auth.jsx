@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Lock, Mail, User, Eye, EyeOff, Shield } from 'lucide-react'
 import { signIn, signUp, resetPassword } from '@/lib/auth.js'
+import { validatePassword } from '@/lib/security.js'
 
 export function Auth({ onAuthSuccess }) {
   const [mode, setMode] = useState('login') // 'login', 'signup', 'reset'
@@ -31,8 +32,9 @@ export function Auth({ onAuthSuccess }) {
         if (password !== confirmPassword) {
           throw new Error('비밀번호가 일치하지 않습니다.')
         }
-        if (password.length < 6) {
-          throw new Error('비밀번호는 최소 6자 이상이어야 합니다.')
+        const passwordValidation = validatePassword(password)
+        if (!passwordValidation.isValid) {
+          throw new Error(passwordValidation.errors.join(' '))
         }
         await signUp(email, password)
         setMessage('회원가입이 완료되었습니다. 이메일을 확인해주세요.')

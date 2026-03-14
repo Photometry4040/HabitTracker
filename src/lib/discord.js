@@ -33,12 +33,13 @@ async function callEdgeFunction(type, data) {
 }
 
 /**
- * Discord 웹훅 URL이 설정되어 있는지 확인
+ * Discord 알림이 활성화되어 있는지 확인
+ * Edge Function에서 서버 사이드로 웹훅 URL을 관리하므로
+ * 클라이언트에서는 항상 true를 반환합니다.
  * @returns {boolean}
  */
 export function isDiscordEnabled() {
-  const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
-  return !!webhookUrl && webhookUrl.startsWith('https://discord.com/api/webhooks/');
+  return true;
 }
 
 /**
