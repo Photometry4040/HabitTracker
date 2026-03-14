@@ -477,6 +477,7 @@ function HabitTrackerView({
   const [showReflection, setShowReflection] = useState(false)
   const [showReward, setShowReward] = useState(false)
   const [sparkleEffect, setSparkleEffect] = useState(null)
+  const [bulkDay, setBulkDay] = useState(null) // 모바일 일괄 체크: 선택된 요일 인덱스
   const shouldReduceMotion = useReducedMotion()
 
   const listContainer = { animate: { transition: { staggerChildren: 0.04 } } }
@@ -609,6 +610,42 @@ function HabitTrackerView({
               />
             </div>
           )}
+
+          {/* Mobile: Bulk check bar */}
+          <div className="block md:hidden">
+            <div className="flex items-center gap-1 mb-2">
+              {DAYS.map((day, dayIndex) => (
+                <button
+                  key={dayIndex}
+                  onClick={() => setBulkDay(bulkDay === dayIndex ? null : dayIndex)}
+                  className={`flex-1 text-center py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    bulkDay === dayIndex
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {day.replace('요일', '')}
+                </button>
+              ))}
+            </div>
+            {bulkDay !== null && (
+              <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                <span className="text-xs text-purple-700 dark:text-purple-300 font-medium mr-1">
+                  {DAYS[bulkDay]} 일괄:
+                </span>
+                <button onClick={() => { bulkUpdateDay(bulkDay, 'green'); setBulkDay(null) }}
+                  className="w-8 h-8 rounded-full bg-green-400 border-2 border-green-500 active:scale-90 transition-transform" title="전체 초록" />
+                <button onClick={() => { bulkUpdateDay(bulkDay, 'yellow'); setBulkDay(null) }}
+                  className="w-8 h-8 rounded-full bg-yellow-400 border-2 border-yellow-500 active:scale-90 transition-transform" title="전체 노랑" />
+                <button onClick={() => { bulkUpdateDay(bulkDay, 'red'); setBulkDay(null) }}
+                  className="w-8 h-8 rounded-full bg-red-400 border-2 border-red-500 active:scale-90 transition-transform" title="전체 빨강" />
+                <button onClick={() => { bulkUpdateDay(bulkDay, ''); setBulkDay(null) }}
+                  className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 active:scale-90 transition-transform flex items-center justify-center" title="전체 지우기">
+                  <span className="text-gray-400 text-xs">✕</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Mobile: Compact 7-day horizontal habit cards */}
           <motion.div className="block md:hidden space-y-2" variants={listContainer} initial="initial" animate="animate">
