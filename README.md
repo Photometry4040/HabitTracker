@@ -534,36 +534,18 @@ supabase functions deploy send-discord-notification
 
 ## Version History
 
-```mermaid
-timeline
-  title Habit Tracker Development Timeline
-
-  section Phase 0-3 : Database
-    2025-10 : Phase 0 - Schema Design
-             : Phase 1 - Edge Function
-             : Phase 2 - Frontend Migration
-             : Phase 3 - OLD Schema Removal + RLS
-
-  section Phase 4 : Dashboard
-    2025-10-19 : 4 Dashboard views (Comparison, Trends, Insights, Monthly)
-               : React Query v5 integration
-               : Database views with Security Invoker
-
-  section Phase 5 : Learning Mode
-    2025-10-25 : 5.1 - Goals, Mandala (9/27), Weaknesses
-    2025-10-26 : 5.2 - Weekly Planner (3 tables, 22 API functions)
-    2025-10-27 : 5.3 - Advanced Reward Triggers (13 total)
-    2025-10-29 : 5.4 - 81-cell Mandala Expansion
-    2025-10-30 : 5.5 - Weekly Planner Template Manager
-
-  section Phase 6 : UX
-    2025-10-30 : Code review, refactoring, test infrastructure
-    2026-03-10 : Mobile UX Redesign (Bottom Nav, Compact Header)
-               : Dashboard calculation fix
-               : Responsive overflow fixes
-    2026-03-14 : Mandala chart warm design refresh
-               : Weekly planner Monday adjustment fix
-```
+| Phase | Date | Milestone |
+|-------|------|-----------|
+| **Phase 0-3** | 2025-10 | Schema Design, Edge Function, Frontend Migration, OLD Schema Removal + RLS |
+| **Phase 4** | 2025-10-19 | 4 Dashboard views, React Query v5, Database views (Security Invoker) |
+| **Phase 5.1** | 2025-10-25 | Goals, Mandala (9/27), Weaknesses |
+| **Phase 5.2** | 2025-10-26 | Weekly Planner (3 tables, 22 API functions) |
+| **Phase 5.3** | 2025-10-27 | Advanced Reward Triggers (13 total) |
+| **Phase 5.4** | 2025-10-29 | 81-cell Mandala Expansion |
+| **Phase 5.5** | 2025-10-30 | Weekly Planner Template Manager |
+| **Phase 6** | 2025-10-30 | Code review, refactoring, test infrastructure |
+| | 2026-03-10 | Mobile UX Redesign (Bottom Nav, Compact Header), Dashboard fix |
+| | 2026-03-14 | Mandala chart warm design refresh, Weekly planner Monday fix |
 
 ### Release Tags
 
