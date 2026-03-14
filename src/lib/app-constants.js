@@ -74,3 +74,14 @@ export function createDefaultHabits() {
     times: Array(7).fill('')
   }))
 }
+
+/**
+ * 오늘 날짜 기준 이번 주 월요일을 YYYY-MM-DD로 반환
+ */
+export function getCurrentMonday() {
+  const today = new Date()
+  const day = today.getDay()
+  const diff = day === 0 ? 6 : day - 1
+  today.setDate(today.getDate() - diff)
+  return today.toISOString().split('T')[0]
+}

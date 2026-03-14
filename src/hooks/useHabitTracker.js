@@ -12,7 +12,7 @@ import { notifyWeekSave, notifyWeekComplete, notifyWeekSummary, calculateWeekSta
 import { checkStreak21, checkHabitMastery } from '@/lib/learning-mode.js'
 import { sanitizeInput } from '@/lib/security.js'
 import { getHabitRecordsForStreak, calculateStreak, calculateGreenStreak } from '@/lib/streak-calculator.js'
-import { createDefaultHabits, DEFAULT_REFLECTION, formatWeekPeriod, DAYS } from '@/lib/app-constants.js'
+import { createDefaultHabits, DEFAULT_REFLECTION, formatWeekPeriod, getCurrentMonday, DAYS } from '@/lib/app-constants.js'
 
 export function useHabitTracker() {
   const [user, setUser] = useState(null)
@@ -65,6 +65,10 @@ export function useHabitTracker() {
     setChildName(name)
     setShowChildSelector(false)
     resetData()
+    // 이번 주 월요일로 자동 설정 → 데이터 자동 로드
+    const monday = getCurrentMonday()
+    setWeekStartDate(monday)
+    setWeekPeriod(formatWeekPeriod(monday))
   }, [resetData])
 
   const handleNewChild = useCallback((name) => {
@@ -72,6 +76,9 @@ export function useHabitTracker() {
     setChildName(name)
     setShowChildSelector(false)
     resetData()
+    const monday = getCurrentMonday()
+    setWeekStartDate(monday)
+    setWeekPeriod(formatWeekPeriod(monday))
   }, [resetData])
 
   const handleApplyTemplate = useCallback((templateHabits) => {
