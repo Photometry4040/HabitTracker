@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { LayoutGrid, Plus, Trash2, Eye, ArrowLeft, Check, X, Palette, Maximize2, Minimize2 } from 'lucide-react'
+import { LayoutGrid, Plus } from 'lucide-react'
 import {
   createMandalaChart,
   getAllMandalaCharts,
@@ -22,6 +19,11 @@ import {
   canExpandNode,
   collapseMandalaNode
 } from '@/lib/mandala-expansion.js'
+import { MandalaCreateForm } from './MandalaCreateForm.jsx'
+import { MandalaChartsList } from './MandalaChartsList.jsx'
+import { MandalaGridDisplay } from './MandalaGridDisplay.jsx'
+import { MandalaNodeEditor } from './MandalaNodeEditor.jsx'
+import { MandalaGoalDetail } from './MandalaGoalDetail.jsx'
 
 const COLORS = [
   { name: '파란색', value: '#3B82F6' },
@@ -342,6 +344,23 @@ export function MandalaChart({ childName }) {
     }
   }
 
+  const handleCancelNodeEdit = () => {
+    setEditingNode(null)
+    setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
+  }
+
+  const handleCancelCreateForm = () => {
+    setShowCreateForm(false)
+    resetCreateForm()
+  }
+
+  const handleBackToList = () => {
+    setViewMode('list')
+    setCurrentChart(null)
+    setCurrentLevel(1)
+    setSelectedParentNode(null)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -379,182 +398,30 @@ export function MandalaChart({ childName }) {
 
         {/* Create Form */}
         {showCreateForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">새 만다라트 차트 만들기</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Center Goal */}
-              <div>
-                <Label htmlFor="center_goal">중심 목표 * (최소 3자)</Label>
-                <Input
-                  id="center_goal"
-                  value={centerGoal}
-                  onChange={(e) => setCenterGoal(e.target.value)}
-                  placeholder="예: 수학 실력 향상"
-                  maxLength={100}
-                />
-              </div>
-
-              {/* Center Color & Emoji */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>색상</Label>
-                  <div className="grid grid-cols-4 gap-2 mt-2">
-                    {COLORS.slice(0, 8).map((c) => (
-                      <button
-                        key={c.value}
-                        onClick={() => setCenterColor(c.value)}
-                        className={`w-9 h-9 sm:w-8 sm:h-8 rounded-full border-2 ${
-                          centerColor === c.value ? 'border-gray-900' : 'border-gray-300'
-                        }`}
-                        style={{ backgroundColor: c.value }}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>이모지 (선택)</Label>
-                  <div className="grid grid-cols-6 gap-1 mt-2">
-                    {EMOJIS.slice(0, 12).map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => setCenterEmoji(emoji)}
-                        className={`text-xl p-1 rounded ${
-                          centerEmoji === emoji ? 'bg-indigo-100' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Initial Nodes */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>초기 노드 (선택, 최대 8개)</Label>
-                  <Button
-                    variant="outline"
-                    onClick={handleAddInitialNode}
-                    disabled={initialNodes.length >= 8}
-                    className="h-9 md:h-8 text-sm px-3"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    노드 추가
-                  </Button>
-                </div>
-                {initialNodes.map((node, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <Input
-                      value={node.title}
-                      onChange={(e) => handleUpdateInitialNode(index, 'title', e.target.value)}
-                      placeholder={`노드 ${index + 1}`}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => handleRemoveInitialNode(index)}
-                      className="h-10 md:h-9 w-10 md:w-9 p-0"
-                    >
-                      <X className="w-5 h-5 md:w-4 md:h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCreateChart}
-                  className="bg-indigo-600 hover:bg-indigo-700 h-10 md:h-9 text-sm px-4"
-                >
-                  <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                  만다라트 생성
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowCreateForm(false)
-                    resetCreateForm()
-                  }}
-                  variant="outline"
-                  className="h-10 md:h-9 text-sm px-4"
-                >
-                  <X className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                  취소
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MandalaCreateForm
+            centerGoal={centerGoal}
+            setCenterGoal={setCenterGoal}
+            centerEmoji={centerEmoji}
+            setCenterEmoji={setCenterEmoji}
+            centerColor={centerColor}
+            setCenterColor={setCenterColor}
+            initialNodes={initialNodes}
+            handleAddInitialNode={handleAddInitialNode}
+            handleUpdateInitialNode={handleUpdateInitialNode}
+            handleRemoveInitialNode={handleRemoveInitialNode}
+            handleCreateChart={handleCreateChart}
+            onCancel={handleCancelCreateForm}
+            COLORS={COLORS}
+            EMOJIS={EMOJIS}
+          />
         )}
 
         {/* Charts List */}
-        {charts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {charts.map((chart) => (
-              <Card key={chart.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {chart.center_goal_emoji && (
-                          <span className="text-2xl">{chart.center_goal_emoji}</span>
-                        )}
-                        <h3 className="font-semibold text-lg">{chart.center_goal}</h3>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        노드: {chart.nodes?.length || 0}/8개
-                      </p>
-                      {chart.overall_completion_rate > 0 && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-indigo-600 h-2 rounded-full"
-                                style={{ width: `${chart.overall_completion_rate}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-600">
-                              {chart.overall_completion_rate}%
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleViewChart(chart)}
-                          className="bg-indigo-600 hover:bg-indigo-700 h-10 md:h-8 text-sm px-3 md:px-2"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          <span className="hidden sm:inline">보기</span>
-                          <span className="sm:hidden">열기</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="text-red-600 hover:bg-red-50 h-10 md:h-8 text-sm px-3 md:px-2"
-                          onClick={() => handleDeleteChart(chart.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          <span className="hidden sm:inline">삭제</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="pt-6 text-center text-gray-500">
-              <LayoutGrid className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>아직 만다라트 차트가 없습니다.</p>
-              <p className="text-sm">위의 &ldquo;새 만다라트&rdquo; 버튼을 클릭하여 첫 차트를 만들어보세요!</p>
-            </CardContent>
-          </Card>
-        )}
+        <MandalaChartsList
+          charts={charts}
+          handleViewChart={handleViewChart}
+          handleDeleteChart={handleDeleteChart}
+        />
       </div>
     )
   }
@@ -608,489 +475,49 @@ export function MandalaChart({ childName }) {
 
     return (
       <div className="space-y-4">
-        {/* Header */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
-                {currentChart.center_goal_emoji && (
-                  <span className="text-lg sm:text-2xl">{currentChart.center_goal_emoji}</span>
-                )}
-                <span className="truncate max-w-[150px] sm:max-w-none">{currentChart.center_goal}</span>
-                <Badge className="text-[10px] sm:text-xs">
-                  Level {currentLevel}
-                  {currentLevel === 1 && ' (9칸)'}
-                  {currentLevel === 2 && ' (27칸)'}
-                  {currentLevel === 3 && ' (81칸)'}
-                </Badge>
-              </div>
-              <div className="flex gap-1.5 sm:gap-2">
-                {currentLevel > 1 && (
-                  <Button
-                    onClick={handleBackToParent}
-                    variant="outline"
-                    className="h-10 md:h-9 text-sm px-3"
-                  >
-                    <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                    상위 레벨
-                  </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    setViewMode('list')
-                    setCurrentChart(null)
-                    setCurrentLevel(1)
-                    setSelectedParentNode(null)
-                  }}
-                  variant="outline"
-                  className="h-10 md:h-9 text-sm px-3"
-                >
-                  <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                  목록으로
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        {/* Breadcrumb */}
-        {selectedParentNode && (
-          <Card className="bg-gray-50">
-            <CardContent className="pt-4">
-              <div className="text-xs sm:text-sm text-gray-700 break-words">
-                <span className="font-semibold">현재 위치:</span>{' '}
-                <span className="inline-block">{currentChart.center_goal}</span>
-                {selectedParentNode && (
-                  <>
-                    <span className="mx-1">→</span>
-                    <span className="inline-block">{selectedParentNode.title}</span>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Progress */}
-        {currentChart.overall_completion_rate > 0 && currentLevel === 1 && (
-          <Card className="bg-indigo-50 border-indigo-200">
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="text-sm text-indigo-900 mb-1">전체 진행률</div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-indigo-200 rounded-full h-3">
-                      <div
-                        className="bg-indigo-600 h-3 rounded-full transition-all"
-                        style={{ width: `${currentChart.overall_completion_rate}%` }}
-                      />
-                    </div>
-                    <span className="text-lg font-bold text-indigo-900">
-                      {currentChart.overall_completion_rate}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 3x3 Grid */}
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-3 md:gap-4 max-w-2xl md:max-w-6xl mx-auto">
-          {grid.map((cell, index) => {
-            if (!cell) {
-              // Empty cell
-              return (
-                <div
-                  key={index}
-                  className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50"
-                >
-                  <span className="text-gray-400 text-[10px] sm:text-sm">빈 칸</span>
-                </div>
-              )
-            }
-
-            if (cell.type === 'center') {
-              // Center goal OR selected parent node
-              const centerContent = selectedParentNode || {
-                title: currentChart.center_goal,
-                color: currentChart.center_goal_color,
-                emoji: currentChart.center_goal_emoji
-              }
-
-              return (
-                <div
-                  key={index}
-                  className="aspect-square border-4 rounded-lg flex flex-col items-center justify-center p-2 sm:p-3 md:p-4"
-                  style={{
-                    borderColor: centerContent.color || '#3B82F6',
-                    backgroundColor: `${centerContent.color || '#3B82F6'}10`
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="text-[10px] sm:text-sm font-semibold mb-1 sm:mb-2" style={{ color: centerContent.color }}>
-                      {selectedParentNode ? `Level ${currentLevel - 1}` : '중심 목표'}
-                    </div>
-                    {centerContent.emoji && (
-                      <div className="text-2xl sm:text-3xl md:text-5xl mb-1 sm:mb-3">{centerContent.emoji}</div>
-                    )}
-                    <div className="font-bold text-xs sm:text-sm md:text-lg break-words line-clamp-2">
-                      {centerContent.title}
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            if (cell.type === 'node') {
-              const node = cell.data
-              const isEditing = editingNode?.id === node.id
-
-              return (
-                <div
-                  key={index}
-                  className="aspect-square border-2 rounded-lg flex flex-col p-1.5 sm:p-2 md:p-3"
-                  style={{
-                    borderColor: node.color || '#3B82F6',
-                    backgroundColor: `${node.color || '#3B82F6'}10`
-                  }}
-                >
-                  {isEditing ? (
-                    <div className="flex flex-col h-full justify-between">
-                      <Input
-                        value={nodeFormData.title}
-                        onChange={(e) => setNodeFormData({ ...nodeFormData, title: e.target.value })}
-                        className="text-sm mb-2"
-                        placeholder="제목"
-                        autoFocus
-                      />
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={handleSaveNode}
-                          className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
-                        >
-                          <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setEditingNode(null)
-                            setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
-                          }}
-                          className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
-                        >
-                          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex-1 flex flex-col items-center justify-center text-center relative">
-                        {/* Badges */}
-                        <div className="absolute top-0 right-0 flex gap-0.5 sm:gap-1 flex-col items-end">
-                          {node.completed && (
-                            <Badge className="h-4 sm:h-5 text-[9px] sm:text-xs bg-green-500">✓</Badge>
-                          )}
-                          {node.completion_rate > 0 && (
-                            <Badge variant="outline" className="h-4 sm:h-5 text-[9px] sm:text-xs">
-                              {node.completion_rate}%
-                            </Badge>
-                          )}
-                          {nodeHasChildren(node.id) && (
-                            <Badge className="h-4 sm:h-5 text-[9px] sm:text-xs bg-blue-500">확장됨</Badge>
-                          )}
-                        </div>
-
-                        {node.emoji && <div className="text-xl sm:text-2xl md:text-4xl mb-1 sm:mb-2">{node.emoji}</div>}
-                        <p className="text-[10px] sm:text-xs md:text-base font-medium break-words line-clamp-2">
-                          {node.title || '(제목 없음)'}
-                        </p>
-
-                        {/* Goal indicator */}
-                        {node.goal_id && (
-                          <button
-                            onClick={() => handleViewGoal(node.goal_id)}
-                            className="mt-1 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer hover:underline"
-                          >
-                            <span>🎯</span>
-                            <span>목표</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex gap-0.5 sm:gap-1 justify-center mt-1 sm:mt-2 flex-wrap">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleEditNode(node)}
-                          className="h-7 w-7 sm:h-9 sm:w-9 p-0"
-                          title="수정"
-                        >
-                          <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-
-                        {/* Expand button - only for level 1 and 2 */}
-                        {node.level < 3 && !nodeHasChildren(node.id) && (
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleExpandNode(node)}
-                            className="h-7 w-7 sm:h-9 sm:w-9 p-0 text-blue-600"
-                            title="확장"
-                          >
-                            <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          </Button>
-                        )}
-
-                        {/* View children button - if has children */}
-                        {nodeHasChildren(node.id) && (
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleViewChildNodes(node)}
-                            className="h-7 w-7 sm:h-9 sm:w-9 p-0 text-green-600"
-                            title="자식 보기"
-                          >
-                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          </Button>
-                        )}
-
-                        {/* Collapse button */}
-                        {nodeHasChildren(node.id) && (
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleCollapseNode(node)}
-                            className="h-7 w-7 sm:h-9 sm:w-9 p-0 text-orange-600"
-                            title="축소"
-                          >
-                            <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          </Button>
-                        )}
-
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleDeleteNode(node.id)}
-                          className="h-7 w-7 sm:h-9 sm:w-9 p-0 text-red-600"
-                          title="삭제"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )
-            }
-
-            return null
-          })}
-        </div>
+        <MandalaGridDisplay
+          grid={grid}
+          currentChart={currentChart}
+          currentLevel={currentLevel}
+          selectedParentNode={selectedParentNode}
+          editingNode={editingNode}
+          nodeFormData={nodeFormData}
+          setNodeFormData={setNodeFormData}
+          nodeHasChildren={nodeHasChildren}
+          handleEditNode={handleEditNode}
+          handleSaveNode={handleSaveNode}
+          handleExpandNode={handleExpandNode}
+          handleViewChildNodes={handleViewChildNodes}
+          handleCollapseNode={handleCollapseNode}
+          handleDeleteNode={handleDeleteNode}
+          handleViewGoal={handleViewGoal}
+          handleBackToParent={handleBackToParent}
+          onBackToList={handleBackToList}
+          onCancelInlineEdit={handleCancelNodeEdit}
+        />
 
         {/* Edit Node Panel */}
         {editingNode && (
-          <Card className="bg-purple-50 border-purple-200">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Palette className="w-4 h-4" />
-                노드 편집: {editingNode.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label>제목</Label>
-                <Input
-                  value={nodeFormData.title}
-                  onChange={(e) => setNodeFormData({ ...nodeFormData, title: e.target.value })}
-                  placeholder="노드 제목"
-                />
-              </div>
-              <div>
-                <Label>색상</Label>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-2">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c.value}
-                      onClick={() => setNodeFormData({ ...nodeFormData, color: c.value })}
-                      className={`w-9 h-9 sm:w-8 sm:h-8 rounded-full border-2 ${
-                        nodeFormData.color === c.value ? 'border-gray-900' : 'border-gray-300'
-                      }`}
-                      style={{ backgroundColor: c.value }}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>이모지</Label>
-                <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-1 mt-2">
-                  {EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => setNodeFormData({ ...nodeFormData, emoji })}
-                      className={`text-xl p-1 rounded ${
-                        nodeFormData.emoji === emoji ? 'bg-purple-200' : 'hover:bg-purple-100'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveNode}
-                  className="bg-purple-600 hover:bg-purple-700 h-10 md:h-9 text-sm px-4"
-                >
-                  <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                  저장
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditingNode(null)
-                    setNodeFormData({ title: '', color: '#3B82F6', emoji: null })
-                  }}
-                  className="h-10 md:h-9 text-sm px-4"
-                >
-                  <X className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                  취소
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MandalaNodeEditor
+            editingNode={editingNode}
+            nodeFormData={nodeFormData}
+            setNodeFormData={setNodeFormData}
+            handleSaveNode={handleSaveNode}
+            onCancel={handleCancelNodeEdit}
+            COLORS={COLORS}
+            EMOJIS={EMOJIS}
+          />
         )}
 
         {/* Goal Detail Panel */}
         {selectedGoal && (
-          <Card className="bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span>🎯</span>
-                  <span className="break-words">{selectedGoal.title}</span>
-                  <Badge
-                    className={
-                      selectedGoal.status === 'completed'
-                        ? 'bg-green-600'
-                        : selectedGoal.status === 'active'
-                        ? 'bg-blue-600'
-                        : 'bg-gray-600'
-                    }
-                  >
-                    {selectedGoal.status === 'completed' ? '완료' : selectedGoal.status === 'active' ? '진행 중' : selectedGoal.status}
-                  </Badge>
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedGoal(null)}
-                  className="h-9 w-9 md:h-8 md:w-8 p-0"
-                >
-                  <X className="w-5 h-5 md:w-4 md:h-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Description */}
-              {selectedGoal.description && (
-                <div>
-                  <Label className="text-sm font-semibold">설명</Label>
-                  <p className="text-sm text-gray-700">{selectedGoal.description}</p>
-                </div>
-              )}
-
-              {/* Progress */}
-              {selectedGoal.metric_type !== 'boolean' && selectedGoal.target_value && (
-                <div>
-                  <Label className="text-sm font-semibold">진행률</Label>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Input
-                      type="number"
-                      value={selectedGoal.current_value || 0}
-                      onChange={(e) => {
-                        const newValue = parseFloat(e.target.value) || 0
-                        setSelectedGoal({ ...selectedGoal, current_value: newValue })
-                      }}
-                      className="w-20 sm:w-24"
-                    />
-                    <span className="text-sm text-gray-600">/ {selectedGoal.target_value}</span>
-                    <Button
-                      onClick={() => handleUpdateGoalProgress(selectedGoal.id, selectedGoal.current_value)}
-                      className="bg-blue-600 hover:bg-blue-700 h-10 md:h-9 text-sm px-4"
-                    >
-                      업데이트
-                    </Button>
-                  </div>
-                  <div className="mt-2 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, (selectedGoal.current_value / selectedGoal.target_value) * 100)}%`
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {Math.round((selectedGoal.current_value / selectedGoal.target_value) * 100)}% 완료
-                  </p>
-                </div>
-              )}
-
-              {/* Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-                {selectedGoal.start_date && (
-                  <div>
-                    <Label className="text-sm font-semibold">시작일</Label>
-                    <p className="text-sm">{selectedGoal.start_date}</p>
-                  </div>
-                )}
-                {selectedGoal.due_date && (
-                  <div>
-                    <Label className="text-sm font-semibold">목표일</Label>
-                    <p className="text-sm">{selectedGoal.due_date}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-2 border-t">
-                {selectedGoal.status !== 'completed' && (
-                  <Button
-                    onClick={() => handleCompleteGoalFromDetail(selectedGoal.id)}
-                    className="bg-green-600 hover:bg-green-700 h-10 md:h-9 text-sm px-4"
-                  >
-                    <Check className="w-5 h-5 md:w-4 md:h-4 mr-1" />
-                    목표 완료
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedGoal(null)}
-                  className="h-10 md:h-9 text-sm px-4"
-                >
-                  닫기
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MandalaGoalDetail
+            selectedGoal={selectedGoal}
+            setSelectedGoal={setSelectedGoal}
+            handleUpdateGoalProgress={handleUpdateGoalProgress}
+            handleCompleteGoalFromDetail={handleCompleteGoalFromDetail}
+          />
         )}
-
-        {/* Instructions */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-4">
-            <div className="space-y-2 text-sm text-blue-900">
-              <p>
-                <strong>81칸 만다라트 사용법:</strong>
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><strong>Level 1 (9칸):</strong> 중심 목표 주변 8개 세부 목표</li>
-                <li><strong>확장 버튼 (⤢):</strong> 노드를 클릭하여 8개 하위 노드 생성 (Level 2 → 27칸)</li>
-                <li><strong>Level 2:</strong> 각 Level 1 노드를 8개로 세분화</li>
-                <li><strong>Level 3 (81칸):</strong> Level 2 노드를 더 확장하여 최대 81칸 달성</li>
-                <li><strong>자식 보기 (👁):</strong> 확장된 노드의 하위 레벨로 이동</li>
-                <li><strong>축소 (⤓):</strong> 노드를 축소하여 하위 노드 숨기기 (삭제 아님)</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     )
   }
