@@ -3,7 +3,9 @@
  * Extracted from App.jsx to reduce monolithic component complexity
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { loadWeekDataNew as loadChildData } from '@/lib/database-new.js'
+import { useWeekData, weekDataKeys } from '@/hooks/useWeekData.js'
 import { createWeekDualWrite, updateHabitRecordDualWrite } from '@/lib/dual-write.js'
 import { getCurrentUser, signOut, onAuthStateChange } from '@/lib/auth.js'
 import { notifyWeekSave, notifyWeekComplete, notifyWeekSummary, calculateWeekStats, calculateDetailedWeekStats } from '@/lib/discord.js'
@@ -89,75 +91,82 @@ export function useHabitTracker() {
     alert(`템플릿이 적용되었습니다! ${templateHabits.length}개의 습관이 설정되었습니다.`)
   }, [])
 
-  // Load week data
-  const loadWeekData = useCallback(async (childName, weekPeriod) => {
-    if (!childName || !weekPeriod) return
+  // React Query for week data fetching (read path only)
+  const queryClient = useQueryClient()
+  const { data: weekQueryData, error: weekQueryError, dataUpdatedAt } = useWeekData(selectedChild, weekStartDate)
+  const lastProcessedAt = useRef(0)
 
-    try {
-      const match = weekPeriod.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
-      if (!match) return
+  // Process fetched week data when React Query delivers new results
+  useEffect(() => {
+    if (!dataUpdatedAt || dataUpdatedAt === lastProcessedAt.current) return
+    lastProcessedAt.current = dataUpdatedAt
 
-      const weekStartDateISO = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
-      const data = await loadChildData(childName, weekStartDateISO)
-
-      if (data) {
-        if (data.week_not_found) {
-          resetDataKeepDate()
-          setCurrentWeekId(null)
-          setCurrentChildId(data.child_id)
-          if (!showDashboard) {
-            alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
-          }
-        } else {
-          if (!showDashboard) {
-            const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
-                                  theme || reflection.bestDay || reflection.easiestHabit ||
-                                  reflection.nextWeekGoal || reward
-
-            if (hasCurrentData) {
-              const confirmLoad = window.confirm(
-                '현재 입력 중인 데이터가 있습니다. 기존 데이터로 덮어쓰시겠습니까?'
-              )
-              if (!confirmLoad) return
-            }
-          }
-
-          setTheme(data.theme || '')
-          setHabits(data.habits || habits)
-          setReflection(data.reflection || reflection)
-          setReward(data.reward || '')
-          setCurrentWeekId(data.id || null)
-          setCurrentChildId(data.child_id || null)
-          setHasChanges(false)
-
-          if (data.week_start_date) {
-            setWeekStartDate(data.week_start_date)
-          } else if (data.week_period) {
-            const m = data.week_period.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
-            if (m) {
-              setWeekStartDate(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`)
-            }
-          }
-        }
-      } else {
-        resetDataKeepDate()
-        setCurrentWeekId(null)
-        setCurrentChildId(null)
-        setHasChanges(false)
-        if (!showDashboard) {
-          alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
-        }
-      }
-    } catch (error) {
-      console.error('데이터 로드 실패:', error)
+    if (weekQueryError) {
+      console.error('데이터 로드 실패:', weekQueryError)
       resetDataKeepDate()
       setCurrentWeekId(null)
       setCurrentChildId(null)
       if (!showDashboard) {
         alert('데이터 로드 중 오류가 발생했습니다. 새로운 데이터를 입력해주세요.')
       }
+      return
     }
-  }, [showDashboard, habits, theme, reflection, reward, resetDataKeepDate])
+
+    const data = weekQueryData
+    if (data) {
+      if (data.week_not_found) {
+        resetDataKeepDate()
+        setCurrentWeekId(null)
+        setCurrentChildId(data.child_id)
+        if (!showDashboard) {
+          alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
+        }
+      } else {
+        if (!showDashboard) {
+          const hasCurrentData = habits.some(habit => habit.times.some(time => time !== '')) ||
+                                theme || reflection.bestDay || reflection.easiestHabit ||
+                                reflection.nextWeekGoal || reward
+
+          if (hasCurrentData) {
+            const confirmLoad = window.confirm(
+              '현재 입력 중인 데이터가 있습니다. 기존 데이터로 덮어쓰시겠습니까?'
+            )
+            if (!confirmLoad) return
+          }
+        }
+
+        setTheme(data.theme || '')
+        setHabits(data.habits || habits)
+        setReflection(data.reflection || reflection)
+        setReward(data.reward || '')
+        setCurrentWeekId(data.id || null)
+        setCurrentChildId(data.child_id || null)
+        setHasChanges(false)
+
+        if (data.week_period && !data.week_start_date) {
+          const m = data.week_period.match(/(\d{4})년 (\d{1,2})월 (\d{1,2})일/)
+          if (m) {
+            setWeekStartDate(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`)
+          }
+        }
+      }
+    } else {
+      resetDataKeepDate()
+      setCurrentWeekId(null)
+      setCurrentChildId(null)
+      setHasChanges(false)
+      if (!showDashboard) {
+        alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
+      }
+    }
+  }, [dataUpdatedAt])
+
+  // Thin wrapper for callers that need to trigger a refetch (e.g., after save or error recovery)
+  const loadWeekData = useCallback(async () => {
+    if (selectedChild && weekStartDate) {
+      await queryClient.invalidateQueries({ queryKey: weekDataKeys.detail(selectedChild, weekStartDate) })
+    }
+  }, [selectedChild, weekStartDate, queryClient])
 
   // Save data
   const saveData = useCallback(async (forceSave = false) => {
@@ -215,8 +224,10 @@ export function useHabitTracker() {
     } finally {
       setSaving(false)
       setHasChanges(false)
+      // Invalidate React Query cache so next navigation to this week shows fresh data
+      queryClient.invalidateQueries({ queryKey: weekDataKeys.detail(selectedChild, weekStartDate) })
     }
-  }, [selectedChild, weekPeriod, weekStartDate, theme, habits, reflection, reward, pendingSaveData])
+  }, [selectedChild, weekPeriod, weekStartDate, theme, habits, reflection, reward, pendingSaveData, queryClient])
 
   // Streak achievements
   const checkStreakAchievements = useCallback(async (habitName, childName) => {
@@ -344,7 +355,7 @@ export function useHabitTracker() {
       alert(`${DAYS[dayIndex]}의 모든 습관이 업데이트되었습니다!`)
     } catch (error) {
       alert('일부 습관 업데이트에 실패했습니다. 다시 시도해주세요.')
-      loadWeekData(selectedChild, weekPeriod)
+      loadWeekData()
     }
   }, [selectedChild, weekStartDate, habits, weekPeriod, loadWeekData, scheduleAutoSave])
 
@@ -410,14 +421,13 @@ export function useHabitTracker() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Auto-load week data when weekStartDate changes
+  // Update weekPeriod display string when weekStartDate changes
+  // (data loading is handled by useWeekData hook automatically)
   useEffect(() => {
-    if (weekStartDate && selectedChild) {
-      const newWeekPeriod = formatWeekPeriod(weekStartDate)
-      setWeekPeriod(newWeekPeriod)
-      loadWeekData(selectedChild, newWeekPeriod)
+    if (weekStartDate) {
+      setWeekPeriod(formatWeekPeriod(weekStartDate))
     }
-  }, [weekStartDate, selectedChild])
+  }, [weekStartDate])
 
   return {
     // Auth
