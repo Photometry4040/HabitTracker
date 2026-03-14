@@ -101,18 +101,26 @@ export async function ensureWeekExists(childId, weekStartDate) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // 월요일로 자동 조정 (database-new.js와 동일 패턴)
+  const startDate = new Date(weekStartDate);
+  const dayOfWeek = startDate.getDay();
+  if (dayOfWeek !== 1) {
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startDate.setDate(startDate.getDate() - diff);
+  }
+  const adjustedDate = startDate.toISOString().split('T')[0];
+
   // Check if week exists
   const { data: existingWeek } = await supabase
     .from('weeks')
     .select('id')
     .eq('child_id', childId)
-    .eq('week_start_date', weekStartDate)
+    .eq('week_start_date', adjustedDate)
     .maybeSingle();
 
   if (existingWeek) return existingWeek.id;
 
   // Calculate week_end_date (Sunday = start + 6 days) — required by CHECK constraint
-  const startDate = new Date(weekStartDate);
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
   const weekEndDate = endDate.toISOString().split('T')[0];
@@ -123,7 +131,7 @@ export async function ensureWeekExists(childId, weekStartDate) {
     .insert([{
       user_id: user.id,
       child_id: childId,
-      week_start_date: weekStartDate,
+      week_start_date: adjustedDate,
       week_end_date: weekEndDate,
     }])
     .select('id')
