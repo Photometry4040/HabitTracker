@@ -587,7 +587,7 @@ function HabitTrackerView({
                       <div className="flex flex-col items-center gap-1">
                         <span className="font-semibold">{day}</span>
                         <select onChange={(e) => { if (e.target.value) { bulkUpdateDay(dayIndex, e.target.value); e.target.value = '' } }}
-                          className="text-xs px-1 py-0.5 rounded border border-purple-300 bg-white hover:bg-purple-50 cursor-pointer" defaultValue="">
+                          className="text-xs px-1 py-0.5 rounded border border-purple-300 dark:border-purple-600 bg-white dark:bg-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-700 cursor-pointer" defaultValue="">
                           <option value="" disabled>일괄 체크</option>
                           <option value="green">✅ 전체 초록</option>
                           <option value="yellow">⚠️ 전체 노랑</option>

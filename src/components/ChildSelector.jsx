@@ -188,7 +188,7 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
 
   if (loading) {
     return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+      <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg">
         <CardContent className="pt-6">
           <div className="text-center">로딩 중...</div>
         </CardContent>
@@ -197,9 +197,9 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
   }
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+    <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg">
       <CardHeader>
-        <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
+        <CardTitle className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
           <User />
           아이 선택하기
         </CardTitle>
@@ -234,7 +234,7 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
             {children.map((child, index) => (
               <div 
                 key={`${child.child_name}-${index}`}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg hover:bg-gray-50 gap-3"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-3"
               >
                 <div className="flex items-center gap-3 flex-1">
                   <User className="w-5 h-5 text-purple-600" />
@@ -242,13 +242,13 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
                     <div className="font-semibold text-sm sm:text-base flex items-center gap-2">
                       {child.child_name}
                       {child.learning_mode_enabled && (
-                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
                           <GraduationCap className="w-3 h-3 mr-1" />
                           학습
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
                       {child.first_week && child.last_week
                         ? child.first_week === child.last_week
@@ -261,9 +261,9 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                   {/* Learning Mode Toggle */}
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md w-full sm:w-auto">
-                    <GraduationCap className="w-4 h-4 text-purple-600" />
-                    <span className="text-xs sm:text-sm text-gray-700 flex-1 sm:flex-none">학습 모드</span>
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-md w-full sm:w-auto">
+                    <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 flex-1 sm:flex-none">학습 모드</span>
                     <Switch
                       checked={child.learning_mode_enabled}
                       onCheckedChange={() => handleToggleLearningMode(child.child_name, child.learning_mode_enabled)}
@@ -299,7 +299,7 @@ export function ChildSelector({ onChildSelect, onNewChild }) {
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             아직 등록된 아이가 없습니다.
             <br />
             위에서 새로운 아이를 추가해보세요!
