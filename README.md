@@ -8,7 +8,7 @@
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.3-38BDF8?logo=tailwindcss)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**Last Updated**: 2026-03-10 | **Status**: Phase 5.5 Complete + Mobile UX Redesign
+**Last Updated**: 2026-03-14 | **Status**: Phase 5.5 Complete + Mobile UX Redesign
 
 > A visual habit tracking web app for kids to build habits and manage learning goals with parents. Color-coded evaluation system (green/yellow/red), 4-type analytics dashboard, 81-cell Mandala charts, weekly planner, and achievement badges.
 
@@ -381,7 +381,7 @@ flowchart LR
 | **Notifications** | Discord Webhook |
 | **Data Export** | XLSX Library |
 | **PWA** | Web App Manifest + Service Workers |
-| **Build** | Code splitting, Lazy loading (383KB bundle) |
+| **Build** | Code splitting, Lazy loading (~313KB gzip) |
 
 ---
 
@@ -561,6 +561,8 @@ timeline
     2026-03-10 : Mobile UX Redesign (Bottom Nav, Compact Header)
                : Dashboard calculation fix
                : Responsive overflow fixes
+    2026-03-14 : Mandala chart warm design refresh
+               : Weekly planner Monday adjustment fix
 ```
 
 ### Release Tags
@@ -581,7 +583,7 @@ timeline
 | Total Migrations | 38 SQL files |
 | API Functions | 51+ (29 learning + 22 planner) |
 | Components | 20+ React components |
-| Bundle Size | 383KB (57% reduction from 897KB) |
+| Bundle Size | ~313KB gzip (code-split, lazy loaded) |
 | Edge Functions | 3 deployed |
 | Database Tables | 16 (core + learning + planning + rewards) |
 | RLS Policies | Enabled on all tables |
