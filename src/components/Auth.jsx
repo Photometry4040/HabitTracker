@@ -59,17 +59,17 @@ export function Auth({ onAuthSuccess }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-xl">
+      <Card className="w-full max-w-md bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-xl">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Shield className="w-8 h-8 text-purple-600" />
-            <CardTitle className="text-2xl font-bold text-purple-800">
+            <CardTitle className="text-2xl font-bold text-purple-800 dark:text-purple-300">
               {mode === 'login' && '로그인'}
               {mode === 'signup' && '회원가입'}
               {mode === 'reset' && '비밀번호 재설정'}
             </CardTitle>
           </div>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             {mode === 'login' && '아이들의 습관 추적을 시작해보세요'}
             {mode === 'signup' && '새로운 계정을 만들어보세요'}
             {mode === 'reset' && '이메일 주소를 입력해주세요'}
