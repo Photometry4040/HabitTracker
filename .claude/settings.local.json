@@ -40,7 +40,20 @@
       "Bash(git log:*)",
       "Bash(supabase projects:*)",
       "Bash(supabase functions deploy:*)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git fetch:*)",
+      "Bash(grep:*)",
+      "Bash(npm audit:*)",
+      "Bash(wc:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(git add:*)",
+      "Bash(npx vitest:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(find:*)",
+      "Bash(git:*)"
     ],
     "deny": [],
     "ask": []
