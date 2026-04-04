@@ -18,6 +18,14 @@ const GAMES = [
     url: 'https://penaltyshootgoal.netlify.app/',
     color: '#10B981',
   },
+  {
+    id: 'doodle-jump',
+    title: 'Doodle Jump',
+    description: '점프하며 높이 올라가는 중독성 게임!',
+    emoji: '🐸',
+    url: 'https://mydoodlejump.netlify.app/',
+    color: '#8B5CF6',
+  },
 ]
 
 export function GameArcade() {
@@ -36,41 +44,45 @@ export function GameArcade() {
       {/* Game Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {GAMES.map((game) => (
-          <Card
+          <a
             key={game.id}
-            className="border-0 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 rounded-2xl overflow-hidden cursor-pointer group"
-            onClick={() => window.open(game.url, '_blank', 'noopener,noreferrer')}
+            href={game.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
           >
-            <div className="h-1.5" style={{ backgroundColor: game.color }} />
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-start gap-4">
-                <div
-                  className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 text-4xl"
-                  style={{ backgroundColor: `${game.color}15` }}
-                >
-                  {game.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 group-hover:text-gray-900 dark:group-hover:text-white">
-                    {game.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    {game.description}
-                  </p>
-                  <div className="mt-3">
-                    <span
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white transition-opacity group-hover:opacity-90"
-                      style={{ backgroundColor: game.color }}
-                    >
-                      <Gamepad2 className="w-4 h-4" />
-                      게임 시작
-                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                    </span>
+            <Card className="border-0 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 rounded-2xl overflow-hidden cursor-pointer group">
+              <div className="h-1.5" style={{ backgroundColor: game.color }} />
+              <CardContent className="pt-5 pb-5">
+                <div className="flex items-start gap-4">
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 text-4xl"
+                    style={{ backgroundColor: `${game.color}15` }}
+                  >
+                    {game.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 group-hover:text-gray-900 dark:group-hover:text-white">
+                      {game.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                      {game.description}
+                    </p>
+                    <div className="mt-3">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white transition-opacity group-hover:opacity-90"
+                        style={{ backgroundColor: game.color }}
+                      >
+                        <Gamepad2 className="w-4 h-4" />
+                        게임 시작
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </a>
         ))}
       </div>
 

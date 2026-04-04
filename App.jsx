@@ -466,7 +466,7 @@ function NavigationButtons({
   ]
 
   return (
-    <div className="grid grid-cols-3 lg:flex gap-2">
+    <div className="grid grid-cols-4 lg:flex gap-2">
       {buttons.map(({ setter, current, color, Icon, label, mobileLabel }, i) => (
         <Button key={i} onClick={() => toggle(setter, current)} className={`${color} ${btnClass}`}>
           <Icon className="w-6 h-6 lg:w-4 lg:h-4 lg:mr-1" />

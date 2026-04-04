@@ -35,6 +35,7 @@ export function useHabitTracker() {
   const [hasChanges, setHasChanges] = useState(false)
   const autoSaveTimerRef = useRef(null)
   const autoSaveClearRef = useRef(null)
+  const skipNextRefetchRef = useRef(false)
 
   // View toggles
   const [showDashboard, setShowDashboard] = useState(false)
@@ -109,6 +110,11 @@ export function useHabitTracker() {
     if (!dataUpdatedAt || dataUpdatedAt === lastProcessedAt.current) return
     lastProcessedAt.current = dataUpdatedAt
 
+    // Skip refetch processing if auto-save is in progress or pending — local state is authoritative
+    if (autoSaveStatus === 'saving' || autoSaveStatus === 'pending') {
+      return
+    }
+
     if (weekQueryError) {
       console.error('데이터 로드 실패:', weekQueryError)
       resetDataKeepDate()
@@ -167,7 +173,7 @@ export function useHabitTracker() {
         alert('해당 주간에 저장된 데이터가 없습니다. 새로운 데이터를 입력해주세요.')
       }
     }
-  }, [dataUpdatedAt])
+  }, [dataUpdatedAt, autoSaveStatus])
 
   // Thin wrapper for callers that need to trigger a refetch (e.g., after save or error recovery)
   const loadWeekData = useCallback(async () => {
@@ -177,7 +183,8 @@ export function useHabitTracker() {
   }, [selectedChild, weekStartDate, queryClient])
 
   // Save data
-  const saveData = useCallback(async (forceSave = false) => {
+  // skipRefetch: when true, skip cache invalidation to prevent refetch from overwriting local state
+  const saveData = useCallback(async (forceSave = false, { skipRefetch = false } = {}) => {
     if (!selectedChild) return
 
     try {
@@ -232,8 +239,10 @@ export function useHabitTracker() {
     } finally {
       setSaving(false)
       setHasChanges(false)
-      // Invalidate React Query cache so next navigation to this week shows fresh data
-      queryClient.invalidateQueries({ queryKey: weekDataKeys.detail(selectedChild, weekStartDate) })
+      if (!skipRefetch) {
+        // Invalidate React Query cache so next navigation to this week shows fresh data
+        queryClient.invalidateQueries({ queryKey: weekDataKeys.detail(selectedChild, weekStartDate) })
+      }
     }
   }, [selectedChild, weekPeriod, weekStartDate, theme, habits, reflection, reward, pendingSaveData, queryClient])
 
@@ -271,7 +280,7 @@ export function useHabitTracker() {
     autoSaveTimerRef.current = setTimeout(async () => {
       setAutoSaveStatus('saving')
       try {
-        await saveData(true)
+        await saveData(true, { skipRefetch: true })
         setAutoSaveStatus('saved')
         autoSaveClearRef.current = setTimeout(() => setAutoSaveStatus(null), 2000)
       } catch {
