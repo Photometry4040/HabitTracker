@@ -26,6 +26,14 @@ const GAMES = [
     url: 'https://mydoodlejump.netlify.app/',
     color: '#8B5CF6',
   },
+  {
+    id: 'tetris',
+    title: 'Tetris',
+    description: '블록을 쌓아 줄을 없애는 고전 퍼즐 게임!',
+    emoji: '🟦',
+    url: 'https://splendid-douhua-772902.netlify.app/',
+    color: '#EF4444',
+  },
 ]
 
 export function GameArcade() {

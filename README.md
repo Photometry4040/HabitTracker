@@ -71,6 +71,15 @@
 | Pill Tab Navigation | Scrollable dashboard tabs |
 | Slide-up Sheets | Learning mode & more options overlay |
 
+### Playground (Game Arcade)
+
+| Game | Description |
+|------|-------------|
+| Brick Broker | 벽돌 깨기 스트레스 해소 게임 |
+| Penalty Shoot Goal | 승부차기 슛 게임 |
+| Doodle Jump | 점프 플랫폼 게임 |
+| Tetris | 블록 쌓기 고전 퍼즐 게임 |
+
 ---
 
 ## Architecture
@@ -568,6 +577,7 @@ This app uses PWA (Service Worker + precache). After deploying a new build, user
 | **Phase 6** | 2025-10-30 | Code review, refactoring, test infrastructure |
 | | 2026-03-10 | Mobile UX Redesign (Bottom Nav, Compact Header), Dashboard fix |
 | | 2026-03-14 | Mandala chart warm design refresh, Weekly planner Monday fix |
+| | 2026-05-03 | Tetris game added to Playground |
 
 ### Release Tags
 
@@ -591,6 +601,26 @@ This app uses PWA (Service Worker + precache). After deploying a new build, user
 | Edge Functions | 3 deployed |
 | Database Tables | 16 (core + learning + planning + rewards) |
 | RLS Policies | Enabled on all tables |
+
+---
+
+## Known Issues & Future Plans
+
+### Active Issues
+
+| Issue | Status | Detail |
+|-------|--------|--------|
+| `dashboard-aggregation` Edge Function 500 | 🔴 Active | Direct DB queries used as workaround in `useDashboardData.ts` |
+
+### Planned Features
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Edge Function 디버그 및 복구 | High | `dashboard-aggregation` 500 에러 원인 조사 (뷰/권한 문제) |
+| Supabase Realtime 실시간 동기화 | Medium | `docs/01-architecture/REALTIME_STRATEGY.md` 기획 존재 |
+| 다국어 지원 (i18n) | Medium | 현재 한국어 전용 |
+| 코드 스플리팅 / 번들 최적화 | Low | 현재 ~759KB, lazy loading 확대 가능 |
+| 가족 채팅 기능 | Low | TECH_SPEC.md 원안에 포함 |
 
 ---
 
