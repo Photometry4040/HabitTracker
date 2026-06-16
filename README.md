@@ -42,6 +42,9 @@
 | Manual Save | Explicit save for data safety |
 | Habit Templates | Reusable habit sets with default template support |
 
+
+<img width="1133" height="1152" alt="image" src="https://github.com/user-attachments/assets/c295b721-f4b7-4322-b2a7-e44e73dd5d18" />
+
 ### Dashboard - 4 Analytics Views
 
 | View | Description |
@@ -71,6 +74,8 @@
 | Pill Tab Navigation | Scrollable dashboard tabs |
 | Slide-up Sheets | Learning mode & more options overlay |
 
+<img width="1137" height="1148" alt="image" src="https://github.com/user-attachments/assets/67a4550d-4591-46d3-882c-2f1849e32f30" />
+
 ### Playground (Game Arcade)
 
 | Game | Description |
@@ -79,6 +84,9 @@
 | Penalty Shoot Goal | 승부차기 슛 게임 |
 | Doodle Jump | 점프 플랫폼 게임 |
 | Tetris | 블록 쌓기 고전 퍼즐 게임 |
+
+<img width="1146" height="1121" alt="image" src="https://github.com/user-attachments/assets/632003ba-2645-4c6e-a208-da42051417a0" />
+<img width="1140" height="555" alt="image" src="https://github.com/user-attachments/assets/83bf0ae2-832d-4875-85f0-315bde3efc11" />
 
 ---
 
